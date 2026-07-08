@@ -7,9 +7,9 @@ import { GridPanel } from "@/components/geometry-panel/GridPanel";
 import { StoryPanel } from "@/components/geometry-panel/StoryPanel";
 import { MaterialPanel } from "@/components/library-panel/MaterialPanel";
 import { SectionPanel } from "@/components/library-panel/SectionPanel";
-import { ElementPanel } from "@/components/element-panel/ElementPanel";
-import { AreaElementPanel } from "@/components/element-panel/AreaElementPanel";
-import { FootingPanel } from "@/components/element-panel/FootingPanel";
+import { ElementPanel } from "@/components/elements-panel/ElementPanel";
+import { AreaElementPanel } from "@/components/elements-panel/AreaElementPanel";
+import { FootingPanel } from "@/components/elements-panel/FootingPanel";
 import { LoadPatternPanel } from "@/components/load-panel/LoadPatternPanel";
 import { WindLoadPanel } from "@/components/load-panel/WindLoadPanel";
 import { SeismicLoadPanel } from "@/components/load-panel/SeismicLoadPanel";
@@ -247,3 +247,4 @@ export default function StructuralModelPage({ params }: PageProps) {
     </main>
   );
 }
+
