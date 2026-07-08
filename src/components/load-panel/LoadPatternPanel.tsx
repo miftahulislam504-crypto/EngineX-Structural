@@ -1,0 +1,157 @@
+"use client";
+
+import { useState } from "react";
+import type { LoadCategory, LoadPattern } from "@/lib/types/load";
+import { createLoadPattern, PLACEHOLDER_LOAD_CATEGORIES } from "@/lib/types/load";
+import { useLoadStore } from "@/lib/loads/useLoadStore";
+
+interface LoadPatternPanelProps {
+  onAddPattern: (pattern: LoadPattern) => void;
+  onDeletePattern: (patternId: string) => void;
+}
+
+/**
+ * সব functional (non-placeholder) category এখানে দেখানো হয়। wind ও
+ * earthquake এর জন্য এখানে শুধু pattern তৈরি করা হয় (নাম দেওয়া) —
+ * প্রকৃত BNBC calculation WindLoadPanel/SeismicLoadPanel এ আলাদাভাবে
+ * হয়, তারপর সেই ফলাফল থেকে element-level load case তৈরি হয়।
+ */
+const RAW_CATEGORY_OPTIONS: { value: LoadCategory; label: string }[] = [
+  { value: "dead", label: "Dead (DL)" },
+  { value: "live", label: "Live (LL)" },
+  { value: "wind", label: "Wind" },
+  { value: "earthquake", label: "Earthquake" },
+  { value: "snow", label: "Snow" },
+  { value: "rain", label: "Rain" },
+  { value: "temperature", label: "Temperature" },
+  { value: "settlement", label: "Settlement" },
+  { value: "hydrostatic", label: "Hydrostatic" },
+  { value: "soil-pressure", label: "Soil Pressure" },
+  { value: "impact", label: "Impact" },
+  { value: "dynamic", label: "Dynamic" },
+  { value: "construction", label: "Construction" },
+  { value: "equipment", label: "Equipment" },
+  { value: "custom", label: "Custom" },
+];
+
+/**
+ * placeholder category (moving-vehicle, bridge, blast) যদি ভুলবশত
+ * উপরের তালিকায় যোগ হয়ে যায় (ভবিষ্যতে কেউ কপি-পেস্ট করার সময়), এই
+ * filter সেটা runtime এ বাদ দেয় — একটা defensive safeguard, যাতে
+ * এমন কোনো category কখনো UI তে select করার সুযোগ না পায় যেটার
+ * জন্য কোনো নির্ভরযোগ্য calculation নেই।
+ */
+const CATEGORY_OPTIONS = RAW_CATEGORY_OPTIONS.filter(
+  (opt) => !PLACEHOLDER_LOAD_CATEGORIES.has(opt.value)
+);
+
+export function LoadPatternPanel({ onAddPattern, onDeletePattern }: LoadPatternPanelProps) {
+  const patterns = useLoadStore((s) => s.patternLibrary.patterns);
+
+  const [name, setName] = useState("");
+  const [category, setCategory] = useState<LoadCategory>("dead");
+  const [formError, setFormError] = useState<string | null>(null);
+
+  function resetForm() {
+    setName("");
+    setFormError(null);
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      setFormError("Pattern নাম আবশ্যক (যেমন: Dead Load (DL))");
+      return;
+    }
+
+    const pattern = createLoadPattern({
+      name: trimmedName,
+      category,
+      selfWeightMultiplier: category === "dead" ? 1.0 : undefined,
+    });
+
+    onAddPattern(pattern);
+    resetForm();
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-sm font-medium text-slate-200 mb-2">Load Patterns</h3>
+
+        {patterns.length === 0 ? (
+          <p className="text-xs text-slate-500">কোনো load pattern যোগ করা হয়নি।</p>
+        ) : (
+          <ul className="space-y-1">
+            {patterns.map((pattern) => (
+              <li
+                key={pattern.patternId}
+                className="flex items-center justify-between rounded-md px-2.5 py-1.5 text-sm hover:bg-slate-800/60 text-slate-300"
+              >
+                <span>
+                  <span className="font-medium">{pattern.name}</span>
+                  <span className="text-slate-500 ml-1.5 text-xs">({pattern.category})</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onDeletePattern(pattern.patternId)}
+                  className="text-xs text-red-500/70 hover:text-red-400 px-1"
+                  title="ডিলিট করুন"
+                >
+                  ✕
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-2.5 border-t border-slate-800 pt-3">
+        <div>
+          <label className="block text-xs text-slate-500 mb-1">ক্যাটাগরি</label>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value as LoadCategory)}
+            className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+          >
+            {CATEGORY_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-xs text-slate-500 mb-1">নাম</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Dead Load (DL)"
+            className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+          />
+        </div>
+
+        {formError && <p className="text-xs text-red-400">{formError}</p>}
+
+        <button
+          type="submit"
+          className="w-full rounded-md bg-sky-700 hover:bg-sky-600 text-white text-sm font-medium py-1.5 transition-colors"
+        >
+          + Pattern যোগ করুন
+        </button>
+      </form>
+
+      <div className="text-xs text-slate-600 border-t border-slate-800 pt-3">
+        <p>
+          ℹ️ Bridge Load, Vehicle/Moving Load, এবং Blast Load এখানে দেওয়া হয়নি — এগুলোর
+          নির্ভরযোগ্য গণনা এখনো সাপোর্টেড না (কারণ বিস্তারিত{" "}
+          <code className="text-slate-500">src/lib/types/load.ts</code> এর হেডার মন্তব্যে)।
+        </p>
+      </div>
+    </div>
+  );
+}

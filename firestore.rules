@@ -1,0 +1,34 @@
+rules_version = '2';
+
+// CivilOS Structural — Firestore Security Rules (baseline, Phase 1)
+//
+// এই ফাইলটা এখনো fine-grained permission enforce করে না (owner/editor/
+// viewer role অনুযায়ী আলাদা আচরণ, যেটা src/lib/hub/permissions.ts এ
+// সংজ্ঞায়িত আছে) — এটা এখন শুধু "signed-in ইউজার হলেই read/write
+// করতে পারবে" স্তরের একটা baseline, যাতে Phase 1 টেস্ট করার সময়
+// permission-denied error না আসে।
+//
+// TODO (ভবিষ্যতে, সম্ভবত Phase 5 এর কাছাকাছি যখন multi-user সহযোগিতা
+// গুরুত্বপূর্ণ হয়ে উঠবে): projects/{projectId} ডকুমেন্টে থাকা
+// permissions অ্যারে পড়ে role-based rules বসাতে হবে, যাতে viewer রা
+// লিখতে না পারে এবং প্রজেক্টে যুক্ত নয় এমন কেউ পড়তেও না পারে।
+//
+// ডিপ্লয় করতে হলে: Firebase Console → Firestore Database → Rules ট্যাবে
+// এই কন্টেন্ট পেস্ট করে Publish করুন। অথবা Firebase CLI থাকলে:
+//   firebase deploy --only firestore:rules
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /projects/{projectId} {
+      allow read: if request.auth != null;
+      // এই App প্রজেক্ট ডকুমেন্ট নিজে লেখে না (Hub-এর দায়িত্ব),
+      // তাই write এখানে বন্ধ রাখা হলো।
+      allow write: if false;
+
+      match /{document=**} {
+        allow read, write: if request.auth != null;
+      }
+    }
+  }
+}
