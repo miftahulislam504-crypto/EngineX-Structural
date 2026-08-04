@@ -35,6 +35,17 @@ export interface ConcreteMaterial extends BaseMaterial {
   poissonsRatio: number; // সাধারণত 0.2
   thermalExpansionCoefficient: number; // per °C, সাধারণত 10e-6
   shearModulus?: number; // G, MPa — override না দিলে G = Ec / (2(1+ν)) থেকে হিসাব
+  /**
+   * Phase 6 (RC Design Engine) — এই material দিয়ে ডিজাইন করা element এ
+   * ব্যবহৃত reinforcing bar এর yield strength, MPa (ACI/BNBC: fy)।
+   * সাধারণ মান: Grade 60 rebar = 414 MPa, Grade 500 (BS/Eurocode-style
+   * rebar, বাংলাদেশে অনেক সময় ব্যবহৃত) = 500 MPa। concrete material
+   * নিজে rebar না, কিন্তু rebar grade প্রতিটা element আলাদা করে না
+   * বেছে সাধারণত পুরো project/material-level এ ধ্রুবক থাকে বলে এখানে
+   * optional override হিসেবে রাখা হলো — undefined হলে RC Design
+   * Engine ডিফল্ট 414 MPa (Grade 60) ধরে নেবে।
+   */
+  rebarFy?: number;
 }
 
 /**
@@ -170,6 +181,7 @@ export function createDefaultConcreteMaterial(id: string, name: string): Concret
     unitWeight: 24,
     poissonsRatio: 0.2,
     thermalExpansionCoefficient: 10e-6,
+    rebarFy: 414, // Grade 60 rebar, বাংলাদেশে/ACI প্র্যাকটিসে সবচেয়ে প্রচলিত
     createdAt: now,
     updatedAt: now,
   };

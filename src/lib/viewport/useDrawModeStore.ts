@@ -1,20 +1,27 @@
 import { create } from "zustand";
 import type { Point3D } from "@/lib/types/element";
 
-export type DrawableCategory = "slab" | "wall" | "shear-wall" | "core-wall";
+export type DrawableCategory = "slab" | "wall" | "shear-wall" | "core-wall" | "mat-foundation";
 
 /**
  * DrawableCategory এর সাথে একসাথে রাখা হয়েছে (একই ফাইলে) যাতে নতুন
  * category যোগ করার সময় টাইপ ও তার label একসাথে আপডেট হয় — আলাদা
  * ফাইলে থাকলে একটা আপডেট করে আরেকটা ভুলে যাওয়ার ঝুঁকি থাকতো।
  * AreaElementPanel ও DrawModeToolbar দুটোই এখান থেকে import করে,
- * কোনো ডুপ্লিকেট map রাখা হয়নি।
+ * কোনো ডুপ্লিকেট map রাখা হয়নি। mat-foundation (Phase 7c) এখানে
+ * যোগ করা হয়েছে কারণ সেটাও polygon-vertex ভিত্তিক area geometry
+ * শেয়ার করে, যদিও এর design workflow সম্পূর্ণ আলাদা (RcWallDesignPanel/
+ * ElementLoadPanel/loadVerification.ts এ mat-foundation ইচ্ছাকৃতভাবে
+ * অন্তর্ভুক্ত করা হয়নি — ওগুলো explicit literal category set ব্যবহার
+ * করে, DrawableCategory না, তাই mat-foundation ভুলবশত wall-এর load/
+ * design logic এ ঢুকে পড়বে না)।
  */
 export const DRAWABLE_CATEGORY_LABELS: Record<DrawableCategory, string> = {
   slab: "Slab",
   wall: "Wall",
   "shear-wall": "Shear Wall",
   "core-wall": "Core Wall",
+  "mat-foundation": "Mat Foundation",
 };
 
 export const DRAWABLE_CATEGORY_LABEL_PREFIXES: Record<DrawableCategory, string> = {
@@ -22,6 +29,7 @@ export const DRAWABLE_CATEGORY_LABEL_PREFIXES: Record<DrawableCategory, string> 
   wall: "W1",
   "shear-wall": "SW1",
   "core-wall": "CW1",
+  "mat-foundation": "MAT1",
 };
 
 interface DrawModeState {

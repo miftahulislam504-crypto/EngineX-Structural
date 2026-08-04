@@ -61,7 +61,8 @@ export function AreaElementPanel({ onAddElement, onDeleteElement }: AreaElementP
       e.category === "slab" ||
       e.category === "wall" ||
       e.category === "shear-wall" ||
-      e.category === "core-wall"
+      e.category === "core-wall" ||
+      e.category === "mat-foundation"
   );
 
   function getDrawElevation(): number {
@@ -124,7 +125,7 @@ export function AreaElementPanel({ onAddElement, onDeleteElement }: AreaElementP
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-2">Slab / Wall / Shear Wall / Core Wall</h3>
+        <h3 className="text-sm font-medium text-slate-200 mb-2">Slab / Wall / Shear Wall / Core Wall / Mat Foundation</h3>
 
         {areaElements.length === 0 ? (
           <p className="text-xs text-slate-500">কোনো element যোগ করা হয়নি।</p>
@@ -135,7 +136,8 @@ export function AreaElementPanel({ onAddElement, onDeleteElement }: AreaElementP
                 element.category === "slab" ||
                 element.category === "wall" ||
                 element.category === "shear-wall" ||
-                element.category === "core-wall";
+                element.category === "core-wall" ||
+                element.category === "mat-foundation";
               if (!isAreaElement) return null;
               const area = computePolygonPlanArea(element.vertices);
               return (
@@ -191,7 +193,7 @@ export function AreaElementPanel({ onAddElement, onDeleteElement }: AreaElementP
         </p>
       ) : (
         <div className="grid grid-cols-2 gap-2 border-t border-slate-800 pt-3">
-          {(["slab", "wall", "shear-wall", "core-wall"] as const).map((category) => (
+          {(["slab", "wall", "shear-wall", "core-wall", "mat-foundation"] as const).map((category) => (
             <button
               key={category}
               type="button"

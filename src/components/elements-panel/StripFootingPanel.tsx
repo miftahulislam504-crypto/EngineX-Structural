@@ -1,0 +1,259 @@
+"use client";
+
+import { useState } from "react";
+import type { Point3D, StructuralElement } from "@/lib/types/element";
+import { createStripFooting } from "@/lib/types/element";
+import { useLibraryStore } from "@/lib/library/useLibraryStore";
+import { useElementsStore } from "@/lib/elements/useElementsStore";
+import { useSelectionStore } from "@/lib/viewport/useSelectionStore";
+
+interface StripFootingPanelProps {
+  onAddElement: (element: StructuralElement) => void;
+  onDeleteElement: (elementId: string) => void;
+}
+
+function parsePoint(x: string, y: string, z: string): Point3D | null {
+  const px = Number(x);
+  const py = Number(y);
+  const pz = Number(z);
+  if ([x, y, z].some((v) => v.trim() === "") || [px, py, pz].some(Number.isNaN)) {
+    return null;
+  }
+  return { x: px, y: py, z: pz };
+}
+
+/**
+ * Strip Footing এর জন্য দুই-পয়েন্ট ফর্ম (Beam এর মতো start/end
+ * পয়েন্ট) — একটা wall বা কলাম-সারি বরাবর চলা continuous footing।
+ * width এখানে ইনপুট না (Design panel এ sizing থেকে আসে)।
+ */
+export function StripFootingPanel({ onAddElement, onDeleteElement }: StripFootingPanelProps) {
+  const elements = useElementsStore((s) => s.elements);
+  const materials = useLibraryStore((s) => s.materialLibrary.materials);
+  const selection = useSelectionStore((s) => s.selection);
+  const setSelection = useSelectionStore((s) => s.setSelection);
+
+  const [label, setLabel] = useState("");
+  const [materialId, setMaterialId] = useState("");
+  const [startX, setStartX] = useState("0");
+  const [startY, setStartY] = useState("0");
+  const [startZ, setStartZ] = useState("0");
+  const [endX, setEndX] = useState("0");
+  const [endY, setEndY] = useState("0");
+  const [endZ, setEndZ] = useState("0");
+  const [thickness, setThickness] = useState("450");
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const selectedElementId = selection.type === "element" ? selection.elementId : null;
+  const stripFootings = elements.filter((e) => e.category === "strip-footing");
+
+  function resetForm() {
+    setLabel("");
+    setFormError(null);
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    const trimmedLabel = label.trim();
+    if (!trimmedLabel) {
+      setFormError("Strip Footing লেবেল আবশ্যক (যেমন: SF1)");
+      return;
+    }
+
+    if (!materialId) {
+      setFormError("একটা Material নির্বাচন করুন");
+      return;
+    }
+
+    const startPoint = parsePoint(startX, startY, startZ);
+    const endPoint = parsePoint(endX, endY, endZ);
+    if (!startPoint || !endPoint) {
+      setFormError("Start ও End Point বৈধ সংখ্যা হতে হবে");
+      return;
+    }
+
+    if (startPoint.x === endPoint.x && startPoint.y === endPoint.y && startPoint.z === endPoint.z) {
+      setFormError("Start ও End Point একই বিন্দুতে হতে পারবে না");
+      return;
+    }
+
+    const thicknessValue = Number(thickness);
+    if (!thicknessValue || thicknessValue <= 0) {
+      setFormError("Thickness একটা বৈধ পজিটিভ সংখ্যা হতে হবে (mm)");
+      return;
+    }
+
+    const element = createStripFooting({
+      label: trimmedLabel,
+      materialId,
+      startPoint,
+      endPoint,
+      thickness: thicknessValue,
+    });
+
+    onAddElement(element);
+    resetForm();
+  }
+
+  const noMaterials = materials.length === 0;
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-sm font-medium text-slate-200 mb-2">Strip Footing</h3>
+
+        {stripFootings.length === 0 ? (
+          <p className="text-xs text-slate-500">কোনো Strip Footing যোগ করা হয়নি।</p>
+        ) : (
+          <ul className="space-y-1">
+            {stripFootings.map((element) => {
+              if (element.category !== "strip-footing") return null;
+              return (
+                <li
+                  key={element.elementId}
+                  onClick={() => setSelection({ type: "element", elementId: element.elementId })}
+                  className={`flex items-center justify-between rounded-md px-2.5 py-1.5 text-sm cursor-pointer transition-colors ${
+                    selectedElementId === element.elementId
+                      ? "bg-sky-950 text-sky-300 ring-1 ring-sky-800"
+                      : "hover:bg-slate-800/60 text-slate-300"
+                  }`}
+                >
+                  <span>
+                    <span className="font-medium">{element.label}</span>
+                    <span className="text-slate-500 ml-1.5 text-xs">(t={element.thickness}mm)</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteElement(element.elementId);
+                    }}
+                    className="text-xs text-red-500/70 hover:text-red-400 px-1"
+                    title="ডিলিট করুন"
+                  >
+                    ✕
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+
+      {noMaterials ? (
+        <p className="text-xs text-amber-500 border-t border-slate-800 pt-3">
+          Strip Footing যোগ করার আগে অন্তত একটা Material লাইব্রেরিতে থাকতে হবে।
+        </p>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-2.5 border-t border-slate-800 pt-3">
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">লেবেল</label>
+            <input
+              type="text"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              placeholder="SF1"
+              className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">Material</label>
+            <select
+              value={materialId}
+              onChange={(e) => setMaterialId(e.target.value)}
+              className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+            >
+              <option value="">নির্বাচন করুন</option>
+              {materials.map((m) => (
+                <option key={m.materialId} value={m.materialId}>
+                  {m.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <p className="text-xs text-slate-500 mb-1">Start Point (m)</p>
+            <div className="grid grid-cols-3 gap-1.5">
+              <input
+                type="number"
+                step="any"
+                value={startX}
+                onChange={(e) => setStartX(e.target.value)}
+                placeholder="X"
+                className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+              />
+              <input
+                type="number"
+                step="any"
+                value={startY}
+                onChange={(e) => setStartY(e.target.value)}
+                placeholder="Y"
+                className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+              />
+              <input
+                type="number"
+                step="any"
+                value={startZ}
+                onChange={(e) => setStartZ(e.target.value)}
+                placeholder="Z"
+                className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+              />
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs text-slate-500 mb-1">End Point (m)</p>
+            <div className="grid grid-cols-3 gap-1.5">
+              <input
+                type="number"
+                step="any"
+                value={endX}
+                onChange={(e) => setEndX(e.target.value)}
+                placeholder="X"
+                className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+              />
+              <input
+                type="number"
+                step="any"
+                value={endY}
+                onChange={(e) => setEndY(e.target.value)}
+                placeholder="Y"
+                className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+              />
+              <input
+                type="number"
+                step="any"
+                value={endZ}
+                onChange={(e) => setEndZ(e.target.value)}
+                placeholder="Z"
+                className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">Thickness (mm)</label>
+            <input
+              type="number"
+              value={thickness}
+              onChange={(e) => setThickness(e.target.value)}
+              className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+            />
+          </div>
+
+          {formError && <p className="text-xs text-red-400">{formError}</p>}
+
+          <button
+            type="submit"
+            className="w-full rounded-md bg-sky-700 hover:bg-sky-600 text-white text-sm font-medium py-1.5 transition-colors"
+          >
+            + Strip Footing যোগ করুন
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}

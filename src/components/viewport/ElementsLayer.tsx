@@ -26,6 +26,11 @@ const COLOR_WALL = "#78716c"; // stone
 const COLOR_SHEAR_WALL = "#dc2626"; // red — lateral system এর গুরুত্বপূর্ণ অংশ হিসেবে দৃষ্টি আকর্ষণ করে
 const COLOR_CORE_WALL = "#b91c1c"; // darker red — shear wall এর কাছাকাছি কিন্তু distinguishable
 const COLOR_FOOTING = "#a16207"; // amber-brown
+const COLOR_COMBINED_FOOTING = "#b45309"; // amber-700 — isolated footing এর কাছাকাছি কিন্তু distinguishable
+const COLOR_STRIP_FOOTING = "#92400e"; // amber-800
+const COLOR_MAT_FOUNDATION = "#78350f"; // amber-900 — সবচেয়ে গাঢ়, mat সবচেয়ে বড় foundation element
+const COLOR_PILE_CAP = "#854d0e"; // yellow-800, footing এর কাছাকাছি কিন্তু distinguishable
+const COLOR_PILE_GROUP = "#57534e"; // stone-600 — pile নিজে সাধারণত deep grey/concrete tone
 const COLOR_SELECTED = "#38bdf8"; // sky
 
 /**
@@ -90,6 +95,75 @@ export function ElementsLayer({
                 length={element.length}
                 thickness={element.thickness}
                 color={isSelected ? COLOR_SELECTED : COLOR_FOOTING}
+                onSelect={() => onSelectElement(element.elementId)}
+                interactionDisabled={interactionDisabled}
+              />
+            );
+
+          case "combined-footing":
+            return (
+              <CombinedFootingMesh
+                key={element.elementId}
+                columnALocation={element.columnALocation}
+                columnBLocation={element.columnBLocation}
+                thickness={element.thickness}
+                color={isSelected ? COLOR_SELECTED : COLOR_COMBINED_FOOTING}
+                onSelect={() => onSelectElement(element.elementId)}
+                interactionDisabled={interactionDisabled}
+              />
+            );
+
+          case "strip-footing":
+            return (
+              <StripFootingMesh
+                key={element.elementId}
+                startPoint={element.startPoint}
+                endPoint={element.endPoint}
+                thickness={element.thickness}
+                color={isSelected ? COLOR_SELECTED : COLOR_STRIP_FOOTING}
+                onSelect={() => onSelectElement(element.elementId)}
+                interactionDisabled={interactionDisabled}
+              />
+            );
+
+          case "mat-foundation":
+            return (
+              <AreaElementMesh
+                key={element.elementId}
+                vertices={element.vertices}
+                thickness={element.thickness}
+                color={isSelected ? COLOR_SELECTED : COLOR_MAT_FOUNDATION}
+                onSelect={() => onSelectElement(element.elementId)}
+                interactionDisabled={interactionDisabled}
+              />
+            );
+
+          case "pile-cap":
+            return (
+              <FootingMesh
+                key={element.elementId}
+                location={element.location}
+                width={element.width}
+                length={element.length}
+                thickness={element.thickness}
+                color={isSelected ? COLOR_SELECTED : COLOR_PILE_CAP}
+                onSelect={() => onSelectElement(element.elementId)}
+                interactionDisabled={interactionDisabled}
+              />
+            );
+
+          case "pile-group":
+            return (
+              <PileGroupMesh
+                key={element.elementId}
+                centroidLocation={element.centroidLocation}
+                pileShape={element.pileShape}
+                pileDiameterOrWidthMm={element.pileDiameterOrWidthMm}
+                embeddedLengthMm={element.embeddedLengthMm}
+                pileSpacingCenterToCenterMm={element.pileSpacingCenterToCenterMm}
+                numberOfRows={element.numberOfRows}
+                numberOfColumns={element.numberOfColumns}
+                color={isSelected ? COLOR_SELECTED : COLOR_PILE_GROUP}
                 onSelect={() => onSelectElement(element.elementId)}
                 interactionDisabled={interactionDisabled}
               />
@@ -309,5 +383,210 @@ function FootingMesh({
       <boxGeometry args={[widthM, thicknessM, lengthM]} />
       <meshStandardMaterial color={color} />
     </mesh>
+  );
+}
+
+interface CombinedFootingMeshProps {
+  columnALocation: { x: number; y: number; z: number };
+  columnBLocation: { x: number; y: number; z: number };
+  thickness: number;
+  color: string;
+  onSelect: () => void;
+  interactionDisabled?: boolean;
+}
+
+/**
+ * Combined Footing — দুই কলামের মাঝে একটা flat box হিসেবে schematic
+ * render করা হয় (প্রকৃত sized rectangle, যা Design panel-এ sizing
+ * calculation থেকে আসে, viewport-এ প্রতিফলিত হয় না — এটা isolated
+ * FootingMesh এর মতোই একটা schematic representation, শুধু দুই
+ * কলামের মাঝের span বরাবর প্রসারিত)। Width (perpendicular direction)
+ * একটা fixed schematic মান ধরা হয়েছে কারণ element নিজে সেটা জানে না
+ * (sizing শুধু Design panel রানটাইমে গণনা হয়, element geometry-তে
+ * persist হয় না)।
+ */
+function CombinedFootingMesh({
+  columnALocation,
+  columnBLocation,
+  thickness,
+  color,
+  onSelect,
+  interactionDisabled = false,
+}: CombinedFootingMeshProps) {
+  const SCHEMATIC_WIDTH_M = 1.5; // perpendicular দিকে schematic প্রস্থ, Design panel-এর প্রকৃত sizing এর প্রতিফলন না
+
+  const { midpoint, length, quaternion } = useMemo(() => {
+    const a = new THREE.Vector3(columnALocation.x, columnALocation.y, columnALocation.z);
+    const b = new THREE.Vector3(columnBLocation.x, columnBLocation.y, columnBLocation.z);
+    const direction = new THREE.Vector3().subVectors(b, a);
+    const len = direction.length();
+    const mid = new THREE.Vector3().addVectors(a, b).multiplyScalar(0.5);
+
+    const quat = new THREE.Quaternion().setFromUnitVectors(
+      new THREE.Vector3(0, 1, 0),
+      direction.clone().normalize()
+    );
+
+    return { midpoint: mid, length: len, quaternion: quat };
+  }, [columnALocation, columnBLocation]);
+
+  const thicknessM = thickness / 1000;
+
+  return (
+    <mesh
+      position={midpoint}
+      quaternion={quaternion}
+      onClick={
+        interactionDisabled
+          ? undefined
+          : (e) => {
+              e.stopPropagation();
+              onSelect();
+            }
+      }
+    >
+      <boxGeometry args={[SCHEMATIC_WIDTH_M, length, thicknessM]} />
+      <meshStandardMaterial color={color} />
+    </mesh>
+  );
+}
+
+interface StripFootingMeshProps {
+  startPoint: { x: number; y: number; z: number };
+  endPoint: { x: number; y: number; z: number };
+  thickness: number;
+  color: string;
+  onSelect: () => void;
+  interactionDisabled?: boolean;
+}
+
+/**
+ * Strip Footing — দুই প্রান্ত বিন্দুর মাঝে একটা flat box, CombinedFootingMesh
+ * এর মতোই schematic width ধরা হয়েছে (Design panel sizing runtime
+ * calculation, element geometry-তে persist হয় না)।
+ */
+function StripFootingMesh({
+  startPoint,
+  endPoint,
+  thickness,
+  color,
+  onSelect,
+  interactionDisabled = false,
+}: StripFootingMeshProps) {
+  const SCHEMATIC_WIDTH_M = 0.6; // isolated/combined footing এর তুলনায় সরু schematic প্রস্থ (typical wall strip footing)
+
+  const { midpoint, length, quaternion } = useMemo(() => {
+    const a = new THREE.Vector3(startPoint.x, startPoint.y, startPoint.z);
+    const b = new THREE.Vector3(endPoint.x, endPoint.y, endPoint.z);
+    const direction = new THREE.Vector3().subVectors(b, a);
+    const len = direction.length();
+    const mid = new THREE.Vector3().addVectors(a, b).multiplyScalar(0.5);
+
+    const quat = new THREE.Quaternion().setFromUnitVectors(
+      new THREE.Vector3(0, 1, 0),
+      direction.clone().normalize()
+    );
+
+    return { midpoint: mid, length: len, quaternion: quat };
+  }, [startPoint, endPoint]);
+
+  const thicknessM = thickness / 1000;
+
+  return (
+    <mesh
+      position={midpoint}
+      quaternion={quaternion}
+      onClick={
+        interactionDisabled
+          ? undefined
+          : (e) => {
+              e.stopPropagation();
+              onSelect();
+            }
+      }
+    >
+      <boxGeometry args={[SCHEMATIC_WIDTH_M, length, thicknessM]} />
+      <meshStandardMaterial color={color} />
+    </mesh>
+  );
+}
+
+interface PileGroupMeshProps {
+  centroidLocation: { x: number; y: number; z: number };
+  pileShape: "circular" | "square";
+  pileDiameterOrWidthMm: number;
+  embeddedLengthMm: number;
+  pileSpacingCenterToCenterMm: number;
+  numberOfRows: number;
+  numberOfColumns: number;
+  color: string;
+  onSelect: () => void;
+  interactionDisabled?: boolean;
+}
+
+/**
+ * Pile Group — centroid থেকে rows/columns/spacing দিয়ে প্রতিটা pile-এর
+ * local (x,z) position derive করে, তারপর প্রতিটাকে centroidLocation.y
+ * থেকে নিচের দিকে embeddedLengthMm প্রসারিত একটা cylinder/box হিসেবে
+ * render করে। Position-generation লজিক pileCapGroupDesign.ts এর
+ * generatePilePositions() এর সাথে সামঞ্জস্যপূর্ণ (একই centroid-কেন্দ্রিক
+ * গ্রিড সূত্র) — যদিও এখানে duplicate করা হয়েছে কারণ ওটা lib/design এ
+ * (calculation layer), এটা components/viewport এ (render layer),
+ * এবং viewport render logic কে design-calculation module এর উপর
+ * নির্ভরশীল করা architecturally অনুচিত।
+ */
+function PileGroupMesh({
+  centroidLocation,
+  pileShape,
+  pileDiameterOrWidthMm,
+  embeddedLengthMm,
+  pileSpacingCenterToCenterMm,
+  numberOfRows,
+  numberOfColumns,
+  color,
+  onSelect,
+  interactionDisabled = false,
+}: PileGroupMeshProps) {
+  const spacingM = pileSpacingCenterToCenterMm / 1000;
+  const diameterM = pileDiameterOrWidthMm / 1000;
+  const embeddedM = embeddedLengthMm / 1000;
+
+  const totalWidthX = (numberOfColumns - 1) * spacingM;
+  const totalWidthZ = (numberOfRows - 1) * spacingM;
+
+  const positions: { x: number; z: number }[] = [];
+  for (let row = 0; row < numberOfRows; row++) {
+    for (let col = 0; col < numberOfColumns; col++) {
+      positions.push({
+        x: col * spacingM - totalWidthX / 2,
+        z: row * spacingM - totalWidthZ / 2,
+      });
+    }
+  }
+
+  const handleClick = interactionDisabled
+    ? undefined
+    : (e: { stopPropagation: () => void }) => {
+        e.stopPropagation();
+        onSelect();
+      };
+
+  return (
+    <group>
+      {positions.map((p, i) => (
+        <mesh
+          key={i}
+          position={[centroidLocation.x + p.x, centroidLocation.y - embeddedM / 2, centroidLocation.z + p.z]}
+          onClick={handleClick}
+        >
+          {pileShape === "circular" ? (
+            <cylinderGeometry args={[diameterM / 2, diameterM / 2, embeddedM, 16]} />
+          ) : (
+            <boxGeometry args={[diameterM, embeddedM, diameterM]} />
+          )}
+          <meshStandardMaterial color={color} />
+        </mesh>
+      ))}
+    </group>
   );
 }

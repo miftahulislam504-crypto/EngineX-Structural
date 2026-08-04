@@ -54,7 +54,12 @@ export type ElementCategory =
   | "wall"
   | "shear-wall"
   | "core-wall"
-  | "footing";
+  | "footing"
+  | "combined-footing"
+  | "strip-footing"
+  | "mat-foundation"
+  | "pile-cap"
+  | "pile-group";
 
 interface BaseElement {
   elementId: string;
@@ -71,12 +76,25 @@ interface BaseElement {
  * সংজ্ঞায়িত। connectionType বলে দেয় এন্ড কন্ডিশন কেমন — "moment"
  * (rigid frame connection, ডিফল্ট Beam/Column-এর জন্য) বা "pin"
  * (truss-এর মতো আচরণ, শুধু axial force, কোনো moment transfer না)।
+ *
+ * hingeAtStart/hingeAtEnd (উভয়ই ঐচ্ছিক, ডিফল্ট undefined ≈ false) —
+ * Nonlinear Static Analysis (Phase 4, Concentrated Plastic Hinge
+ * পদ্ধতি) এর জন্য — কোন প্রান্তে একটা moment hinge assign করা আছে।
+ * hinge এর yield moment capacity নিজে element-এ না, বরং
+ * SectionLibrary এর সেই element যে section ব্যবহার করছে সেখানে থাকে
+ * (StructuralSection.yieldMomentMzKNm) — কারণ capacity মূলত section
+ * geometry ও material grade এর ফাংশন, প্রতিটা element instance এর
+ * না। hingeAtStart/hingeAtEnd true থাকলেও section এর yield capacity
+ * সেট না থাকলে (0 বা undefined), সেই প্রান্ত backend এ কার্যত elastic
+ * থেকে যায় (solveNonlinearStatic() docstring দেখুন, backend repo)।
  */
 interface LineElement extends BaseElement {
   sectionId: string; // SectionLibrary এর একটা entry রেফারেন্স করে
   startPoint: Point3D;
   endPoint: Point3D;
   connectionType: "moment" | "pin";
+  hingeAtStart?: boolean;
+  hingeAtEnd?: boolean;
 }
 
 export interface BeamElement extends LineElement {
@@ -159,6 +177,101 @@ export interface FootingElement extends BaseElement {
   thickness: number; // mm
 }
 
+/**
+ * Combined Footing — Phase 7a। দুটো কলাম (সাধারণত একটা প্রপার্টি লাইন
+ * বা কাছাকাছি দূরত্বে থাকা কলামের জন্য, যেখানে আলাদা isolated footing
+ * ওভারল্যাপ করে ফেলত) একটাই rectangular footing-এ বহন করে। Footing-এর
+ * নিজস্ব দুই প্রান্ত বিন্দু (columnALocation/columnBLocation) দিয়ে
+ * সংজ্ঞায়িত — isolated footing-এর মতো একক center point না, কারণ
+ * combined footing-এর geometry দুই কলামের অবস্থান ও তাদের মধ্যে
+ * spacing-এর উপর নির্ভরশীল। Plan dimension (width/length) sizing
+ * ক্যালকুলেশনের আউটপুট হিসেবে আসে (combinedFootingSizing.ts), তাই
+ * isolated FootingElement-এর মতো ইঞ্জিনিয়ার-ইনপুট width/length ফিল্ড
+ * এখানে নেই — শুধু thickness element property হিসেবে থাকে।
+ */
+export interface CombinedFootingElement extends BaseElement {
+  category: "combined-footing";
+  columnALocation: Point3D;
+  columnBLocation: Point3D;
+  thickness: number; // mm
+}
+
+/**
+ * Strip/Continuous Footing — Phase 7b। একটা wall বা কলামের সারির
+ * নিচে চলা continuous footing, দুই প্রান্ত বিন্দু দিয়ে সংজ্ঞায়িত
+ * (LineElement এর মতো জ্যামিতিকভাবে, কিন্তু sectionId/
+ * connectionType নেই কারণ এটা কোনো frame member না — Footing
+ * category-র মতোই material+geometry-driven)। width sizing calculation
+ * থেকে আসে (per-meter-run bearing check), তাই ইঞ্জিনিয়ার-ইনপুট width
+ * ফিল্ড এখানে রাখা হয়নি — শুধু thickness element property হিসেবে
+ * থাকে, ঠিক CombinedFootingElement-এর প্যাটার্নে।
+ */
+export interface StripFootingElement extends BaseElement {
+  category: "strip-footing";
+  startPoint: Point3D;
+  endPoint: Point3D;
+  thickness: number; // mm
+}
+
+/**
+ * Mat/Raft Foundation — Phase 7c। AreaElement-এর মতোই polygon
+ * vertices দিয়ে সংজ্ঞায়িত (Slab-এর জন্য ব্যবহৃত একই geometry ভিত্তি),
+ * কারণ mat/raft একটা বড়, পুরো ভবনের নিচে বিছানো slab-সদৃশ ফাউন্ডেশন।
+ * আলাদা category রাখা হয়েছে (Slab-এর সাথে না মিশিয়ে) কারণ design
+ * checks সম্পূর্ণ ভিন্ন (soil bearing rigid-method pressure
+ * distribution, punching shear প্রতিটা কলামের নিচে, ইত্যাদি) এবং
+ * storyId কখনো প্রযোজ্য না (mat সবসময় base level-এ)। rigid-method
+ * পদ্ধতি ব্যবহার করা হয়েছে (uniform বা linear-eccentric pressure) —
+ * FE shell stress recovery এখনো নেই (Phase 4a সীমাবদ্ধতা), তাই
+ * flexible-mat (beam-on-elastic-foundation) মডেল সম্ভব না।
+ */
+export interface MatFoundationElement extends BaseElement {
+  category: "mat-foundation";
+  vertices: Point3D[]; // ন্যূনতম ৩টা পয়েন্ট, XZ প্লেনে polygon
+  thickness: number; // mm
+}
+
+/**
+ * Pile Group — Phase 7d। একাধিক pile-এর একটা নিয়মিত (uniform-spacing)
+ * rectangular গ্রিড, একটা centroid বিন্দু দিয়ে সংজ্ঞায়িত (individual
+ * pile-এর geometry এখানে duplicate করা হয়নি — group-এর rows/columns/
+ * spacing/pile dimension থেকেই প্রতিটা pile-এর অবস্থান derive করা
+ * যায়, Design panel-এ pileGroupCapacity.ts এর মাধ্যমে)। এটা একটা
+ * সরলীকরণ — অনিয়মিত (non-grid) pile arrangement এই v1-এ সমর্থিত না,
+ * কারণ বেশিরভাগ ব্যবহারিক pile group নিয়মিত গ্রিডেই ডিজাইন করা হয়।
+ * embeddedLengthMm ও pile shape/dimension সব pile-এর জন্য অভিন্ন ধরা
+ * হয়েছে (mixed-length বা mixed-diameter group সমর্থিত না)।
+ */
+export interface PileGroupElement extends BaseElement {
+  category: "pile-group";
+  centroidLocation: Point3D; // pile cap বটম লেভেলে group-এর কেন্দ্র
+  pileShape: "circular" | "square";
+  pileDiameterOrWidthMm: number;
+  embeddedLengthMm: number;
+  pileSpacingCenterToCenterMm: number;
+  numberOfRows: number; // Z-দিকে (local)
+  numberOfColumns: number; // X-দিকে (local)
+}
+
+/**
+ * Pile Cap — Phase 7d। FootingElement-এর মতো একটা point element
+ * (একটা কেন্দ্রবিন্দুতে বসে, নিজস্ব width/length dimension থাকে) —
+ * isolated footing-এর geometry প্যাটার্ন পুনঃব্যবহার করা হয়েছে কারণ
+ * pile cap ও isolated footing উভয়ই rectangular plan, single-location
+ * ভিত্তিক ফাউন্ডেশন এলিমেন্ট। pileGroupId দিয়ে সংশ্লিষ্ট PileGroupElement-কে
+ * রেফারেন্স করে (একটা pile cap ঠিক একটা pile group বহন করে — একাধিক
+ * pile group শেয়ার করা কোনো cap এই v1-এ সমর্থিত না, সেটা কার্যত mat
+ * foundation-এর মতো একটা আলাদা সমস্যা)।
+ */
+export interface PileCapElement extends BaseElement {
+  category: "pile-cap";
+  location: Point3D;
+  width: number; // mm
+  length: number; // mm
+  thickness: number; // mm
+  pileGroupId: string;
+}
+
 export type StructuralElement =
   | BeamElement
   | ColumnElement
@@ -168,7 +281,12 @@ export type StructuralElement =
   | WallElement
   | ShearWallElement
   | CoreWallElement
-  | FootingElement;
+  | FootingElement
+  | CombinedFootingElement
+  | StripFootingElement
+  | MatFoundationElement
+  | PileGroupElement
+  | PileCapElement;
 
 /** দুটো পয়েন্টের মধ্যে দূরত্ব (Beam/Column এর length হিসাব করতে কাজে লাগে)। */
 export function distanceBetweenPoints(a: Point3D, b: Point3D): number {
@@ -326,6 +444,116 @@ export function createFooting(params: {
   return {
     elementId: makeElementId(),
     category: "footing",
+    ...params,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+/**
+ * নতুন Combined Footing তৈরির হেল্পার। storyId নেই (isolated
+ * FootingElement-এর মতোই base level-এ বসে, কোনো story-র elevation-এ
+ * না)।
+ */
+export function createCombinedFooting(params: {
+  label: string;
+  materialId: string;
+  columnALocation: Point3D;
+  columnBLocation: Point3D;
+  thickness: number;
+}): CombinedFootingElement {
+  const now = new Date().toISOString();
+  return {
+    elementId: makeElementId(),
+    category: "combined-footing",
+    ...params,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+/**
+ * নতুন Strip Footing তৈরির হেল্পার। storyId নেই (footing base
+ * level-এ বসে)।
+ */
+export function createStripFooting(params: {
+  label: string;
+  materialId: string;
+  startPoint: Point3D;
+  endPoint: Point3D;
+  thickness: number;
+}): StripFootingElement {
+  const now = new Date().toISOString();
+  return {
+    elementId: makeElementId(),
+    category: "strip-footing",
+    ...params,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+/**
+ * নতুন Mat/Raft Foundation তৈরির হেল্পার। storyId নেই (base level-এ
+ * বসে)।
+ */
+export function createMatFoundation(params: {
+  label: string;
+  materialId: string;
+  vertices: Point3D[];
+  thickness: number;
+}): MatFoundationElement {
+  const now = new Date().toISOString();
+  return {
+    elementId: makeElementId(),
+    category: "mat-foundation",
+    ...params,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+/**
+ * নতুন Pile Group তৈরির হেল্পার। storyId নেই (foundation, base
+ * level-এর নিচে)।
+ */
+export function createPileGroup(params: {
+  label: string;
+  materialId: string;
+  centroidLocation: Point3D;
+  pileShape: "circular" | "square";
+  pileDiameterOrWidthMm: number;
+  embeddedLengthMm: number;
+  pileSpacingCenterToCenterMm: number;
+  numberOfRows: number;
+  numberOfColumns: number;
+}): PileGroupElement {
+  const now = new Date().toISOString();
+  return {
+    elementId: makeElementId(),
+    category: "pile-group",
+    ...params,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+/**
+ * নতুন Pile Cap তৈরির হেল্পার। storyId নেই (base level-এ বসে)।
+ */
+export function createPileCap(params: {
+  label: string;
+  materialId: string;
+  location: Point3D;
+  width: number;
+  length: number;
+  thickness: number;
+  pileGroupId: string;
+}): PileCapElement {
+  const now = new Date().toISOString();
+  return {
+    elementId: makeElementId(),
+    category: "pile-cap",
     ...params,
     createdAt: now,
     updatedAt: now,

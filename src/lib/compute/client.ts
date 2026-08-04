@@ -9,18 +9,52 @@
 
 export type AnalysisType =
   | "linear-static"
-  | "nonlinear-static"
   | "modal"
-  | "response-spectrum"
-  | "time-history"
-  | "p-delta"
   | "buckling"
+  | "pdelta"
+  | "response-spectrum"
+  | "nonlinear-static"
   | "pushover";
+// নোট: "time-history" ইচ্ছাকৃতভাবে এই union থেকে বাদ দেওয়া হলো —
+// backend (app/main.py) এই মুহূর্তে এই টাইপ সমর্থন করে না (501 Not
+// Implemented দেবে), যোগ হলে এখানে ফিরিয়ে আনা হবে। "p-delta" এর বদলে
+// "pdelta" (হাইফেনবিহীন) — backend এর analysis_type স্ট্রিং এর সাথে
+// ঠিক মিলিয়ে (আগে এখানে "p-delta" লেখা ছিল যা backend কখনো accept
+// করত না — 501 দিত, কিন্তু frontend UI এই analysis type চালানোর কোনো
+// উপায়ই ছিল না বলে এই mismatch ধরা পড়েনি)।
 
 export interface AnalysisJobRequest {
   projectId: string;
   analysisType: AnalysisType;
   modelPayload: Record<string, unknown>;
+  /** analysisType="modal"/"buckling"/"response-spectrum" এর জন্য — কতগুলো mode চাই। */
+  numModes?: number;
+  /** analysisType="response-spectrum" এর জন্য আবশ্যক — BNBC 2020 সিসমিক জোন ('1'-'4')। */
+  seismicZone?: string;
+  /** analysisType="response-spectrum" এর জন্য আবশ্যক — BNBC 2020 site class ('SA'-'SE')। */
+  siteClass?: string;
+  /** analysisType="response-spectrum" এর জন্য — ground motion direction (0=X, 1=Y, 2=Z), ডিফল্ট 0। */
+  directionDof?: number;
+  /** analysisType="response-spectrum" এর জন্য — modal damping ratio, ডিফল্ট 0.05। */
+  dampingRatio?: number;
+  /** analysisType="nonlinear-static" এর জন্য — সম্পূর্ণ load কে কতগুলো increment এ ভাগ করা হবে, ডিফল্ট 10। */
+  numLoadSteps?: number;
+  /** analysisType="nonlinear-static"/"pushover" এর জন্য — প্রতিটা load/push step এ সর্বোচ্চ Newton-Raphson iteration, ডিফল্ট 30। */
+  maxIterationsPerStep?: number;
+  /** analysisType="nonlinear-static"/"pushover" এর জন্য — convergence tolerance, ডিফল্ট 1e-4। */
+  convergenceTolerance?: number;
+  /** analysisType="pushover" এর জন্য আবশ্যক — control point এর x/y/z coordinate (মিটার), capacity curve এর displacement অক্ষ যেখান থেকে পড়া হবে। */
+  controlPointX?: number;
+  controlPointY?: number;
+  controlPointZ?: number;
+  /** analysisType="pushover" এর জন্য — push direction এর translational DOF (0=X, 1=Y, 2=Z), ডিফল্ট 2। */
+  controlDof?: number;
+  /** analysisType="pushover" এর জন্য আবশ্যক — control point এর target displacement (মিটার, magnitude)। */
+  targetControlDisplacementM?: number;
+  /** analysisType="pushover" এর জন্য — প্রতিটা push step এ load pattern কতটুকু বাড়বে (0-1 fraction), ডিফল্ট 0.02। */
+  loadStepIncrement?: number;
+  /** analysisType="pushover" এর জন্য — সর্বোচ্চ push step সংখ্যা, ডিফল্ট 200। */
+  maxPushSteps?: number;
 }
 
 export interface AnalysisJobResponse {
@@ -65,6 +99,23 @@ export async function submitAnalysisJob(
       project_id: request.projectId,
       analysis_type: request.analysisType,
       model_payload: request.modelPayload,
+      ...(request.numModes !== undefined && { num_modes: request.numModes }),
+      ...(request.seismicZone !== undefined && { seismic_zone: request.seismicZone }),
+      ...(request.siteClass !== undefined && { site_class: request.siteClass }),
+      ...(request.directionDof !== undefined && { direction_dof: request.directionDof }),
+      ...(request.dampingRatio !== undefined && { damping_ratio: request.dampingRatio }),
+      ...(request.numLoadSteps !== undefined && { num_load_steps: request.numLoadSteps }),
+      ...(request.maxIterationsPerStep !== undefined && { max_iterations_per_step: request.maxIterationsPerStep }),
+      ...(request.convergenceTolerance !== undefined && { convergence_tolerance: request.convergenceTolerance }),
+      ...(request.controlPointX !== undefined && { control_point_x: request.controlPointX }),
+      ...(request.controlPointY !== undefined && { control_point_y: request.controlPointY }),
+      ...(request.controlPointZ !== undefined && { control_point_z: request.controlPointZ }),
+      ...(request.controlDof !== undefined && { control_dof: request.controlDof }),
+      ...(request.targetControlDisplacementM !== undefined && {
+        target_control_displacement_m: request.targetControlDisplacementM,
+      }),
+      ...(request.loadStepIncrement !== undefined && { load_step_increment: request.loadStepIncrement }),
+      ...(request.maxPushSteps !== undefined && { max_push_steps: request.maxPushSteps }),
     }),
   });
 

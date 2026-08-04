@@ -11,7 +11,7 @@ requirement এড়াতে; কোড/Dockerfile অপরিবর্তি
 
 ---
 
-## এখন পর্যন্ত কী বসানো হয়েছে (Phase 0 - Phase 3)
+## এখন পর্যন্ত কী বসানো হয়েছে (Phase 0 - Phase 4a)
 
 ### Phase 0 — Hub Integration Foundation
 - Next.js 16 + TypeScript + Tailwind (App Router, `src/` layout)
@@ -51,6 +51,39 @@ requirement এড়াতে; কোড/Dockerfile অপরিবর্তি
 - **সবচেয়ে গুরুত্বপূর্ণ যাচাই:** Seismic vertical distribution-এর সব story force-এর যোগফল ঠিক base shear-এর সমান (পার্থক্য 0.0000) — এই mathematical invariant fail করলে বুঝা যেত distribution logic-এ মৌলিক ভুল আছে
 
 **সততার সাথে সীমাবদ্ধতা:** Wind/Seismic calculator দুটোই BNBC 2020-এর **সরলীকৃত প্রাথমিক পদ্ধতি** — rigid structure, নিয়মিত আকৃতি, ৪০-৬০ মিটারের নিচের ভবন ধরে নিয়ে। Flexible structure, উঁচু ভবন, বা irregular geometry-তে পূর্ণাঙ্গ BNBC 2020 Dynamic Analysis প্রয়োজন যা এই ক্যালকুলেটর করে না — উভয় প্যানেলেই সেই ক্ষেত্রে on-screen warning দেখায়।
+
+---
+
+### Phase 4a — FE Solver Integration (Linear Static Analysis)
+
+- **নতুন "Analysis" ট্যাব** — `src/components/analysis-panel/AnalysisPanel.tsx`
+- **Analysis orchestration** (`src/lib/analysis/runAnalysis.ts`) — Firestore থেকে পড়া elements/materials/sections/loadCases একত্র করে backend এর প্রত্যাশিত payload বানায় (section properties precompute করে), backend এর `/jobs/analysis` কল করে, ফলাফল টাইপ-নিরাপদ shape এ পার্স করে
+- Backend-এ (`civilos-structural-solver` repo) C++ FE solver ইন্টিগ্রেট করা হয়েছে — বিস্তারিত সেই repo এর README এ, সংক্ষেপে: Direct Stiffness Method, 3D frame element, sparse Cholesky solver, pybind11 দিয়ে Python bridge
+- **সব ইঞ্জিনিয়ারিং গণনা backend (C++) এ, frontend শুধু orchestration করে** — Master Plan এর মূল আর্কিটেকচারাল নিয়ম ("Solver কখনো JavaScript/TypeScript এ লিখবেন না") এখানে মানা হয়েছে
+
+**⚠️ গুরুত্বপূর্ণ ফোল্ডার নাম পরিবর্তন:** `src/components/element-panel/` (singular)
+থেকে **`src/components/elements-panel/`** (plural) এ rename করা হয়েছে
+এই Phase এ — এটা Miftahul এর deploy environment এ Vercel এর
+case-sensitive Linux build এর কারণে আগেই ঘটেছিল এবং কনফার্ম করা হয়েছে
+এটাই এখন সঠিক অবস্থা। যদি আপনার লোকাল/GitHub এ এখনো `element-panel`
+(singular) থাকে, এই zip সেটা প্রতিস্থাপন করবে `elements-panel`
+(plural) দিয়ে — কোনো ম্যানুয়াল rename দরকার নেই, পুরো ফোল্ডারই zip এ
+সঠিক নামে আছে।
+
+**Phase 4a-তে যাচাইকৃত (backend README এ বিস্তারিত, সারাংশ):**
+- Cantilever ও simply-supported beam — classical textbook সূত্রের সাথে exact numerical মিল
+- Full HTTP pipeline (mm/MPa raw input থেকে C++ solver পর্যন্ত) — portal frame দিয়ে টেস্ট করা, base moment = force × arm length ভেরিফাই করা হয়েছে
+
+**সততার সাথে সীমাবদ্ধতা (frontend এ প্রাসঙ্গিক অংশ, backend README এ পূর্ণাঙ্গ তালিকা):**
+- শুধু Beam/Column/Brace/Pile সলভ হয় — Slab/Wall skip হয় (warning সহ)
+- Brace এর pin-connection এখনো প্রয়োগ করা হয়নি (rigid হিসেবে সলভ হয়, warning সহ)
+- Mid-span Point Load সঠিকভাবে হ্যান্ডল হয় না — nearest endpoint এ snap হয় (🔴 warning সহ, element নাম উল্লেখ করে)
+- Support condition auto-detected (Y≈0 heuristic), manual support-definition UI এখনো নেই
+- শুধু "linear-static" — বাকি ১৮টা analysis type 501 দেয়
+
+`AnalysisPanel` এই সব warning সবসময় prominently দেখায়, success হলেও —
+কারণ একটা "সফল" analysis-ও এমন approximation নিয়ে চলতে পারে যা
+ইঞ্জিনিয়ারের জানা দরকার ফলাফল বিশ্বাস করার আগে।
 
 ---
 
@@ -112,6 +145,42 @@ https://<your-app>.vercel.app/model/demo-project
 
 ---
 
+## Deploy-পরবর্তী যাচাই (Phase 4a — সবচেয়ে গুরুত্বপূর্ণ নতুন অংশ)
+
+এটাই প্রথমবার যেখানে backend-এর C++ solver সরাসরি frontend থেকে কল
+হচ্ছে — নিশ্চিত করুন `civilos-structural-solver` আগে deploy হয়েছে
+(নতুন Dockerfile সহ, C++ কম্পাইল করে) এবং তার URL ঠিকভাবে
+`NEXT_PUBLIC_COMPUTE_SERVICE_URL` এ বসানো আছে।
+
+একটা সহজ, নির্ভরযোগ্য টেস্ট কেস (mid-span load এড়িয়ে, যেটা এখনো
+সীমাবদ্ধ):
+
+1. **Materials** ট্যাবে একটা Concrete material যোগ করুন (fc'=28)
+2. **Materials → Section** এ একটা Rectangular section যোগ করুন (300x500mm)
+3. **Elements** ট্যাবে একটা Column তৈরি করুন: Start (0,0,0) → End (0,3,0)
+4. **Loads → Patterns** এ একটা Dead Load pattern তৈরি করুন
+5. **Loads → Apply** এ গিয়ে সেই Column সিলেক্ট করুন, "Point" টাইপ বেছে
+   Force Y = -20, **Position = 1** (element এর একদম শেষ প্রান্তে, mid-span
+   না — এটাই গুরুত্বপূর্ণ যাতে mid-span limitation এড়ানো যায়)
+6. **Analysis** ট্যাবে যান, "▶ Run Analysis" চাপুন
+7. **প্রত্যাশিত ফলাফল:**
+   - "✓ Analysis সম্পন্ন" (সবুজ) দেখা উচিত, 2 node, 1 element
+   - সতর্কতা সেকশনে একটা ℹ️ (base-support heuristic) warning থাকা
+     উচিত, কিন্তু কোনো 🔴 (mid-span snap) warning **না** থাকা উচিত
+     যেহেতু Position=1 ব্যবহার করা হয়েছে
+   - Nodal Displacements এ node 1 (top) এ কিছু non-zero ux/uy/uz
+     দেখা উচিত
+
+**যদি "Analysis ব্যর্থ হয়েছে" দেখায় ৫০৩ error সহ:** backend এর
+`civilos_solver` module ঠিকভাবে কম্পাইল/deploy হয়নি — backend README
+এর "যদি build fail করে" সেকশন দেখুন, build log backend থেকে চেক করুন।
+
+**যদি "Run Analysis" বাটন disabled থাকে:** উপরে দেওয়া ধাপগুলো ক্রম
+অনুযায়ী সম্পূর্ণ করেছেন কিনা যাচাই করুন — বাটনের ঠিক উপরে কেন disabled
+তার কারণ (amber রঙে) দেখানো থাকার কথা।
+
+---
+
 ## লোকাল ডেভেলপমেন্ট
 
 ```bash
@@ -125,3 +194,67 @@ npm run dev
 ```bash
 npm run build
 ```
+
+---
+
+## Workflow Layer — ৯-Stage Wizard (Phase 10 এর পরে, আলাদা sprint)
+
+Master Plan এর "Workflow Layer" সেকশন অনুযায়ী এটা কোনো নতুন Phase না
+— Phase 1-10 এ যা আগে থেকেই বসানো আছে (Geometry/Library/Elements/
+Loads/Analysis/Validation/Design/Detailing ট্যাব) তার উপরে একটা UI
+orchestration layer। `/model/[projectId]` পেজে এখন দুইটা মোড আছে:
+
+- **Wizard Mode** (ডিফল্ট) — বাম পাশে ৯টা stage-এর progress sidebar
+  (`src/components/workflow/WorkflowSidebar.tsx`): Preliminary → Model
+  → Loads → Analysis → Design → Optimization → Verification →
+  Documentation → Export। প্রতিটা stage ক্লিক করলে সংশ্লিষ্ট existing
+  ট্যাবে/sub-ট্যাবে নিয়ে যায় — এটা কোনো নতুন panel বানায়নি, শুধু
+  existing panel-গুলোকে গাইডেড ক্রমে সাজিয়ে দেখায়।
+- **Expert Mode** — আগের মতোই flat tab sidebar (ডান পাশ), কোনো
+  পরিবর্তন হয়নি।
+
+top-left এ একটা Wizard/Expert টগল দিয়ে দুই মোডের মধ্যে যেকোনো সময়
+সুইচ করা যায় (`src/components/workflow/WorkflowModeToggle.tsx`)।
+
+**Progress কীভাবে গণনা হয়:** কোনো নতুন Firestore ফিল্ড বা flag তৈরি
+করা হয়নি। `src/lib/workflow/useWorkflowProgress.ts` সরাসরি existing
+store থেকে completion derive করে —
+
+| Stage | সোর্স |
+|---|---|
+| Preliminary | Material + Section library (`useLibraryStore`) |
+| Model | Grid/Story (`useGeometryStore`) + Elements (`useElementsStore`) |
+| Loads | Pattern + প্রয়োগকৃত Load Case + সক্রিয় Combination (`useLoadStore`) |
+| Analysis | সর্বশেষ সফল রান (`useAnalysisResultStore.sourceAnalysisType`) |
+| Design | DCR record populated কিনা (`useDcrStore`, design panel সফল রান হলে push করে) |
+| Optimization | ঐচ্ছিক ধাপ, design শুরু হলেই "available" |
+| Verification | `runValidation` এর Health Score + error count |
+| Documentation / Export | এখনো "শীঘ্রই আসছে" — Phase 11+ scope, কোনো report/export builder এখনো নেই |
+
+এই approach এর সুবিধা: wizard বসানোর জন্য কোনো migration লাগেনি, এবং
+ডেটা ও progress এর মধ্যে ডিসিঙ্ক হওয়ার সুযোগ নেই (progress আসলে
+ডেটার-ই একটা derived view)।
+
+**Gating নীতি — soft lock, hard block না:** একটা stage আগের stage
+শুরু না হলে UI তে 🔒 দেখায়, কিন্তু ক্লিক করলে ব্লক হয় না — বরং একটা
+ছোট কনফার্মেশন ("আগের ধাপ সম্পূর্ণ হয়নি, তবু যেতে চান?") দেখিয়ে
+ইঞ্জিনিয়ারকে override করতে দেয়। এটা ইচ্ছাকৃত: বাস্তব স্ট্রাকচারাল
+ডিজাইন workflow প্রায়ই non-linear (Analysis চালানোর পর Model এ ফিরে
+গিয়ে element পরিবর্তন করা স্বাভাবিক), তাই hard-lock করলে সেই বাস্তব
+কাজের ধরনটাই ব্লক করে ফেলত।
+
+**নতুন ফাইল:**
+```
+src/lib/workflow/types.ts               — StageId/StageStatus/StageDef টাইপ
+src/lib/workflow/stageTabs.ts           — ৯টা stage-এর সংজ্ঞা + tab mapping
+src/lib/workflow/useWorkflowProgress.ts — existing store থেকে progress derive
+src/lib/workflow/useWorkflowUiStore.ts  — wizard/expert টগল + active stage (session-only)
+src/components/workflow/WorkflowSidebar.tsx    — বাম sidebar (progress bar + ৯টা stage card)
+src/components/workflow/WorkflowModeToggle.tsx — Wizard/Expert সুইচ
+src/components/workflow/ActiveStageBanner.tsx  — viewport overlay, বর্তমান stage-এর গাইডেন্স
+```
+
+`page.tsx` এ `SidebarTab`/`LoadSubTab`/`DesignSubTab` টাইপ তিনটা আগে
+লোকাল ছিল, এখন `src/lib/workflow/stageTabs.ts` থেকে import হয় (single
+source of truth, যাতে stage → tab mapping এবং page.tsx এর tab state
+কখনো আলাদা হয়ে না যায়)। বাকি সব existing panel/hook/store অপরিবর্তিত।

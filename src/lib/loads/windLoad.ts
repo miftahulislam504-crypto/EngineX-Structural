@@ -5,12 +5,15 @@
  *
  * সততার সাথে একটা গুরুত্বপূর্ণ সীমাবদ্ধতা বলা দরকার: এই মডিউলটা
  * BNBC 2020-এর **সরলীকৃত/প্রাথমিক ডিজাইন পদ্ধতি** বাস্তবায়ন করে —
- * বেসিক wind speed থেকে design wind pressure পর্যন্ত মূল সূত্রগুলো।
- * এটা BNBC 2020-এর সম্পূর্ণ Chapter 2 না — Gust Effect Factor-এর
- * পূর্ণাঙ্গ dynamic/resonant calculation (buildings with h > 60m বা
- * flexible structures এর জন্য প্রয়োজনীয়), Directionality Factor-এর
- * সব case, এবং Topographic Factor Kzt এর পূর্ণাঙ্গ hill/ridge geometry
- * bad এখানে সরলীকৃত (rigid structure, flat terrain ধরে নেওয়া হয়েছে)।
+ * বেসিক wind speed থেকে design wind pressure ও per-story vertical
+ * distribution পর্যন্ত মূল সূত্রগুলো (Phase 8b)। এটা BNBC 2020-এর
+ * সম্পূর্ণ Chapter 2 না — Gust Effect Factor-এর পূর্ণাঙ্গ dynamic/
+ * resonant calculation (buildings with h > 60m বা flexible structures
+ * এর জন্য প্রয়োজনীয়), Directionality Factor-এর সব case, এবং
+ * Topographic Factor Kzt এর পূর্ণাঙ্গ hill/ridge geometry এখানে
+ * সরলীকৃত (rigid structure, flat terrain ধরে নেওয়া হয়েছে)। Leeward
+ * wall suction ও side wall shear (Cp এর negative মান) এখনো এখানে নেই
+ * — শুধু windward wall pressure হিসাব হয়।
  * একটা rigid, নিয়মিত আকৃতির (< 60m উঁচু) building-এর preliminary
  * design-এর জন্য এই হিসাব যথেষ্ট নির্ভরযোগ্য, কিন্তু চূড়ান্ত ডিজাইনের
  * আগে একজন লাইসেন্সপ্রাপ্ত ইঞ্জিনিয়ারের ফুল BNBC/ASCE 7 চেক করা উচিত।
@@ -23,13 +26,26 @@ export interface WindLoadInput {
   buildingWidth: number; // মিটার, wind এর perpendicular দিকের প্রস্থ (windward face width)
   importanceFactor: number; // BNBC 2020 Table 6.2.9 অনুযায়ী — সাধারণ ভবন: 1.0, জরুরি সেবা ভবন (হাসপাতাল ইত্যাদি): 1.15
   structureType: "rigid" | "flexible"; // flexible হলে (h/w > 4, বা natural period > 1 sec) dynamic gust effect লাগে যা এই মডিউলে সরলীকৃত করা হয়নি
+  numberOfStories: number; // per-story vertical distribution এর জন্য (Phase 8b) — সমান story height ধরে নেওয়া হয় (buildingHeight / numberOfStories), সিসমিক মডিউলের মতোই সরলীকরণ
 }
 
 export interface WindLoadResult {
   velocityPressure: number; // qz, kN/m² — reference velocity pressure, mean roof height এ
   gustEffectFactor: number; // G — rigid structure এর জন্য BNBC 2020 এ সাধারণত 0.85 ব্যবহৃত হয় (simplified)
   designWindPressure: number; // p = qz * G * Cp, kN/m² (windward face, Cp ধরা হয়েছে 0.8 — BNBC Table অনুযায়ী rectangular building windward wall)
-  totalBaseShearEstimate: number; // kN — designWindPressure * buildingHeight * buildingWidth (একটা rough estimate, actual distribution Phase 8 এ বিস্তারিত হবে)
+  totalBaseShearEstimate: number; // kN — designWindPressure * buildingHeight * buildingWidth (rough single-point estimate, storyForces এর যোগফলের কাছাকাছি কিন্তু সমান না, কারণ এটা mean-height qz ব্যবহার করে, height-varying qz না)
+  /**
+   * Vertical distribution — প্রতিটা story-র windward face-এ প্রযোজ্য
+   * force, height-varying qz (Kz প্রতি story-র উচ্চতায় আলাদাভাবে হিসাব
+   * করে, getExposureConstant() একই ফাংশন যা mean-roof-height এ ব্যবহৃত
+   * হয়) ও সেই story-র tributary facade area (আশেপাশের অর্ধেক story
+   * height, ASCE 7 Commentary এর প্রচলিত পদ্ধতি — উপরের ও নিচের story
+   * এর মাঝামাঝি পর্যন্ত সেই floor level "দায়ী") দিয়ে গুণ করে বের করা।
+   * seismicLoad.ts এর storyForces এর মতোই shape (storyIndex 1 = base
+   * এর ঠিক উপরের তলা), যাতে Analysis Panel/Story Drift Check উভয় লোড
+   * টাইপকে একই রকম ভাবে treat করতে পারে।
+   */
+  storyForces: { storyIndex: number; elevation: number; velocityPressureAtStory: number; force: number; cumulativeShear: number }[];
   warnings: string[];
 }
 
@@ -93,11 +109,51 @@ export function computeWindLoad(input: WindLoadInput): WindLoadResult {
   const designWindPressure = velocityPressure * gustEffectFactor * Cp;
   const totalBaseShearEstimate = designWindPressure * input.buildingHeight * input.buildingWidth;
 
+  // Per-story vertical distribution (Phase 8b) — প্রতিটা story-র
+  // elevation এ আলাদাভাবে Kz (height-varying) হিসাব করে qz বের করা
+  // হচ্ছে, তারপর সেই story-র tributary facade height (উপরের ও নিচের
+  // story-র মাঝামাঝি পর্যন্ত, base ও roof story তে half-height শুধু
+  // এক দিকে) × buildingWidth দিয়ে গুণ করে force পাওয়া যাচ্ছে। এটা
+  // seismicLoad.ts এর storyForces এর সাথে shape-সামঞ্জস্যপূর্ণ, যাতে
+  // Story Drift Check (Phase 8c) উভয় load type এর সাথে একইভাবে কাজ
+  // করতে পারে।
+  if (!Number.isInteger(input.numberOfStories) || input.numberOfStories < 1) {
+    warnings.push(
+      "⚠️ numberOfStories একটা positive integer হতে হবে — per-story distribution হিসাব করা যায়নি।"
+    );
+  }
+
+  const storyForces: WindLoadResult["storyForces"] = [];
+  if (Number.isInteger(input.numberOfStories) && input.numberOfStories >= 1) {
+    const storyHeight = input.buildingHeight / input.numberOfStories;
+
+    let cumulativeShear = 0;
+    for (let i = input.numberOfStories; i >= 1; i--) {
+      const elevation = i * storyHeight;
+      const KzAtStory = getExposureConstant(input.exposureCategory, elevation);
+      const velocityPressurePaAtStory =
+        0.613 * KzAtStory * Kzt * Kd * input.basicWindSpeed ** 2 * input.importanceFactor;
+      const velocityPressureAtStory = velocityPressurePaAtStory / 1000; // Pa → kN/m²
+      const pressureAtStory = velocityPressureAtStory * gustEffectFactor * Cp;
+
+      // Tributary height: top story-তে শুধু নিচের দিকে অর্ধেক (উপরে আর
+      // কোনো story নেই), বাকি সব story-তে উপরে ও নিচে উভয় দিকে
+      // অর্ধেক-অর্ধেক (স্ট্যান্ডার্ড windward-pressure tributary area
+      // পদ্ধতি)।
+      const tributaryHeight = i === input.numberOfStories ? storyHeight / 2 : storyHeight;
+      const force = pressureAtStory * tributaryHeight * input.buildingWidth;
+      cumulativeShear += force;
+      storyForces.push({ storyIndex: i, elevation, velocityPressureAtStory, force, cumulativeShear });
+    }
+    storyForces.reverse(); // storyIndex 1 (নিচের তলা) আগে দেখানোর জন্য
+  }
+
   return {
     velocityPressure,
     gustEffectFactor,
     designWindPressure,
     totalBaseShearEstimate,
+    storyForces,
     warnings,
   };
 }

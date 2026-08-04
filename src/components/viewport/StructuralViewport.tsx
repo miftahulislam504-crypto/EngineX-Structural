@@ -7,12 +7,14 @@ import { GridLines } from "./GridLines";
 import { StoryPlanes } from "./StoryPlanes";
 import { OriginMarker } from "./OriginMarker";
 import { ElementsLayer } from "./ElementsLayer";
+import { DetailingLayer } from "./DetailingLayer";
 import { DrawPlane } from "./DrawPlane";
 import { DrawPreview } from "./DrawPreview";
 import { useGeometryStore } from "@/lib/geometry/useGeometryStore";
 import { useElementsStore } from "@/lib/elements/useElementsStore";
 import { useSelectionStore } from "@/lib/viewport/useSelectionStore";
 import { useDrawModeStore } from "@/lib/viewport/useDrawModeStore";
+import { useDetailingStore } from "@/lib/detailing/useDetailingStore";
 import { snapToNearestGrid } from "@/lib/viewport/gridSnap";
 import type { Point3D } from "@/lib/types/element";
 
@@ -39,14 +41,38 @@ import type { Point3D } from "@/lib/types/element";
  *   - DrawPlane নামের একটা অদৃশ্য প্লেন mount হয় যেটা raw click point
  *     ধরে, grid snap করে, এবং draw store এ যোগ করে।
  *
+ * Phase 10 (Detailing tab): + Detailing overlay — showDetailing=true
+ * হলে DetailingLayer mount হয়, যা useDetailingStore-এ generate করা
+ * rebar geometry-কে (Design panel-এর "Send to Detailing Model" বাটন
+ * থেকে) প্রতিটা element-এর প্রকৃত world position-এ বসায়। CSI-এর
+ * Detailing view-এর মতো, main structural viewport-এরই একটা
+ * টগল-করা যায় এমন layer — আলাদা viewport না, কারণ rebar কে সবসময়
+ * member-এর প্রকৃত context এ দেখাই বেশি অর্থবহ। (এটা Visualization
+ * tab/VisualizationViewport, Phase 10i, থেকে ইচ্ছাকৃতভাবে আলাদা —
+ * সেটা ভবিষ্যতের stress contour/DCR/mode-shape কাজের জন্য সংরক্ষিত,
+ * নিজস্ব read-only viewport হিসেবে।)
+ *
  * ক্যামেরা একটা isometric-এর কাছাকাছি default angle এ শুরু হয়,
  * যেটা CAD সফটওয়্যারে পরিচিত কনভেনশন।
  */
-export function StructuralViewport() {
+interface StructuralViewportProps {
+  showDetailing?: boolean;
+  showStirrups?: boolean;
+  showMesh?: boolean;
+  isolateElementId?: string | null;
+}
+
+export function StructuralViewport({
+  showDetailing = false,
+  showStirrups = true,
+  showMesh = true,
+  isolateElementId = null,
+}: StructuralViewportProps = {}) {
   const geometry = useGeometryStore((s) => s.geometry);
   const elements = useElementsStore((s) => s.elements);
   const selection = useSelectionStore((s) => s.selection);
   const setSelection = useSelectionStore((s) => s.setSelection);
+  const detailingResults = useDetailingStore((s) => s.results);
 
   const drawActiveCategory = useDrawModeStore((s) => s.activeCategory);
   const drawPoints = useDrawModeStore((s) => s.points);
@@ -108,6 +134,16 @@ export function StructuralViewport() {
             onSelectElement={(elementId) => setSelection({ type: "element", elementId })}
             interactionDisabled={isDrawing}
           />
+
+          {showDetailing && (
+            <DetailingLayer
+              elements={elements}
+              detailingResults={detailingResults}
+              showStirrups={showStirrups}
+              showMesh={showMesh}
+              isolateElementId={isolateElementId}
+            />
+          )}
 
           {isDrawing && (
             <>

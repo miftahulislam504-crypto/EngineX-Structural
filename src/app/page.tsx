@@ -8,8 +8,9 @@ export default function Home() {
           CivilOS — Structural Analysis &amp; Design
         </h1>
         <p className="text-slate-400">
-          Phase 0-3 সম্পূর্ণ: Hub Integration, Geometry Core, Elements/
-          Materials/Sections, এবং BNBC 2020 Wind/Seismic সহ Loads।
+          Phase 0-4a সম্পূর্ণ: Hub Integration থেকে শুরু করে C++ FE
+          Solver (Direct Stiffness Method, Linear Static Analysis)
+          পর্যন্ত — একটা কাজ-করা structural analysis pipeline।
         </p>
         <div className="flex items-center justify-center gap-3">
           <Link

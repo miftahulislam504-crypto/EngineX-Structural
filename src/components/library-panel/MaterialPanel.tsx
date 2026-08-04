@@ -48,7 +48,7 @@ const MATERIAL_CONFIGS: MaterialTypeConfig[] = [
     placeholder: "28",
     createDefault: createDefaultConcreteMaterial,
     applyStrength: (m, v) => (m.type === "concrete" ? { ...m, fc: v } : m),
-    summarize: (m) => (m.type === "concrete" ? `f'c=${m.fc} MPa` : ""),
+    summarize: (m) => (m.type === "concrete" ? `f'c=${m.fc} MPa, rebar fy=${m.rebarFy ?? 414} MPa` : ""),
   },
   {
     type: "steel",
@@ -131,6 +131,7 @@ export function MaterialPanel({ onAddMaterial, onDeleteMaterial }: MaterialPanel
   const [materialType, setMaterialType] = useState<MaterialType>("concrete");
   const [name, setName] = useState("");
   const [strengthValue, setStrengthValue] = useState("");
+  const [rebarFyValue, setRebarFyValue] = useState("414");
   const [formError, setFormError] = useState<string | null>(null);
 
   const activeConfig = getConfig(materialType);
@@ -138,6 +139,7 @@ export function MaterialPanel({ onAddMaterial, onDeleteMaterial }: MaterialPanel
   function resetForm() {
     setName("");
     setStrengthValue("");
+    setRebarFyValue("414");
     setFormError(null);
   }
 
@@ -158,7 +160,14 @@ export function MaterialPanel({ onAddMaterial, onDeleteMaterial }: MaterialPanel
 
     const id = makeMaterialId();
     const baseMaterial = activeConfig.createDefault(id, trimmedName);
-    const material = activeConfig.applyStrength(baseMaterial, value);
+    let material = activeConfig.applyStrength(baseMaterial, value);
+
+    if (material.type === "concrete") {
+      const rebarFy = Number(rebarFyValue);
+      if (rebarFyValue.trim() !== "" && !Number.isNaN(rebarFy) && rebarFy > 0) {
+        material = { ...material, rebarFy };
+      }
+    }
 
     onAddMaterial(material);
     resetForm();
@@ -249,6 +258,22 @@ export function MaterialPanel({ onAddMaterial, onDeleteMaterial }: MaterialPanel
             className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
           />
         </div>
+
+        {materialType === "concrete" && (
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">
+              Rebar fy (MPa) — Phase 6 RC Design এ ব্যবহৃত হবে
+            </label>
+            <input
+              type="number"
+              step="any"
+              value={rebarFyValue}
+              onChange={(e) => setRebarFyValue(e.target.value)}
+              placeholder="414"
+              className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+            />
+          </div>
+        )}
 
         {formError && <p className="text-xs text-red-400">{formError}</p>}
 

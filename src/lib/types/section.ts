@@ -49,6 +49,18 @@ interface BaseSection {
   name: string; // যেমন "300x500 RC Beam", "W12x26"
   shape: SectionShape;
   source: "user-defined" | "standard-database";
+  /**
+   * Nonlinear Static Analysis (Phase 4, Concentrated Plastic Hinge
+   * পদ্ধতি) এর জন্য ঐচ্ছিক — এই section এর major-axis (strong axis,
+   * Mz) yield moment capacity, kN·m একক। ইঞ্জিনিয়ার সরাসরি input
+   * দেন (design-code-specific হিসাব — steel: Zx·Fy/ASD বা Zx·Fy,
+   * concrete: ACI 318/BNBC nominal moment capacity Mn — এই অ্যাপ
+   * নিজে fy/rebar থেকে recompute করে না, Design Engine Phase এ যোগ
+   * হবে)। undefined বা 0 মানে এই section ব্যবহার করা element এর
+   * কোনো প্রান্তে hinge assign করলেও (LineElement.hingeAtStart/
+   * hingeAtEnd) সেই প্রান্ত backend এ কার্যত elastic থেকে যাবে।
+   */
+  yieldMomentMzKNm?: number;
   createdAt: string;
   updatedAt: string;
 }

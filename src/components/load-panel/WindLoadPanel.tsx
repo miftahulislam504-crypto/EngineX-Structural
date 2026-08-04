@@ -20,14 +20,16 @@ export function WindLoadPanel() {
   const [buildingWidth, setBuildingWidth] = useState("15");
   const [importanceFactor, setImportanceFactor] = useState("1.0");
   const [structureType, setStructureType] = useState<WindLoadInput["structureType"]>("rigid");
+  const [numberOfStories, setNumberOfStories] = useState("6");
 
   const result = useMemo(() => {
     const V = Number(basicWindSpeed);
     const h = Number(buildingHeight);
     const w = Number(buildingWidth);
     const I = Number(importanceFactor);
+    const n = Number(numberOfStories);
 
-    if (!V || !h || !w || !I || V <= 0 || h <= 0 || w <= 0 || I <= 0) {
+    if (!V || !h || !w || !I || !n || V <= 0 || h <= 0 || w <= 0 || I <= 0 || n <= 0) {
       return null;
     }
 
@@ -38,8 +40,9 @@ export function WindLoadPanel() {
       buildingWidth: w,
       importanceFactor: I,
       structureType,
+      numberOfStories: n,
     });
-  }, [basicWindSpeed, exposureCategory, buildingHeight, buildingWidth, importanceFactor, structureType]);
+  }, [basicWindSpeed, exposureCategory, buildingHeight, buildingWidth, importanceFactor, structureType, numberOfStories]);
 
   return (
     <div className="space-y-4">
@@ -121,6 +124,16 @@ export function WindLoadPanel() {
               </select>
             </div>
           </div>
+
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">Number of Stories</label>
+            <input
+              type="number"
+              value={numberOfStories}
+              onChange={(e) => setNumberOfStories(e.target.value)}
+              className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+            />
+          </div>
         </div>
       </div>
 
@@ -146,6 +159,23 @@ export function WindLoadPanel() {
               {result.totalBaseShearEstimate.toFixed(1)} kN
             </span>
           </p>
+
+          {result.storyForces.length > 0 && (
+            <div className="pt-1.5 border-t border-slate-800">
+              <p className="text-xs text-slate-500 mb-1">Story Force Distribution (Windward)</p>
+              <div className="max-h-40 overflow-y-auto space-y-0.5">
+                {[...result.storyForces].reverse().map((sf) => (
+                  <div
+                    key={sf.storyIndex}
+                    className="flex justify-between text-xs text-slate-400 px-1"
+                  >
+                    <span>Story {sf.storyIndex}</span>
+                    <span>{sf.force.toFixed(1)} kN</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {result.warnings.map((warning, i) => (
             <p key={i} className="text-xs text-amber-400 pt-1 border-t border-slate-800 mt-1.5">

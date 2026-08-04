@@ -13,6 +13,7 @@
  *   projects/{projectId}/structuralModel/loadPatterns      ← Load Pattern list (Phase 3, single doc — সংখ্যায় কম, সাধারণত ১০-২০টার বেশি হয় না)
  *   projects/{projectId}/structuralModel/loadCombinations  ← Load Combination list (Phase 3, single doc — একই যুক্তি)
  *   projects/{projectId}/structuralElements/{elementId}    ← Beam/Column/Slab/... (subcollection, কারণ সংখ্যায় শত-হাজার হতে পারে)
+ *   projects/{projectId}/elementDetailing/{elementId}      ← Phase 10j — প্রতি element-এর persisted rebar detailing result (subcollection, elements-এর সাথে ১:১, তাই একই sizing যুক্তি)
  *   projects/{projectId}/loadCases/{loadCaseId}            ← প্রতিটা element-এ প্রযুক্ত নির্দিষ্ট লোড (subcollection, কারণ প্রতিটা element একাধিক load case নিতে পারে — Materials/Sections/Patterns এর থেকে ভিন্ন, এটা elements-এর মতোই সংখ্যায় বড় হতে পারে)
  *   projects/{projectId}/analysisRuns/{runId}
  *   projects/{projectId}/analysisRuns/{runId}/results/{resultId}
@@ -37,6 +38,11 @@ export const firestorePaths = {
     `projects/${projectId}/structuralElements`,
   structuralElement: (projectId: string, elementId: string) =>
     `projects/${projectId}/structuralElements/${elementId}`,
+
+  elementDetailingResults: (projectId: string) =>
+    `projects/${projectId}/elementDetailing`,
+  elementDetailingResult: (projectId: string, elementId: string) =>
+    `projects/${projectId}/elementDetailing/${elementId}`,
 
   loadPatterns: (projectId: string) => `projects/${projectId}/structuralModel/loadPatterns`,
 
