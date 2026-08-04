@@ -48,11 +48,7 @@ export function WorkflowSidebar({ onNavigate }: WorkflowSidebarProps) {
   }
 
   return (
-    // md+ এ fixed w-72 পাশের প্যানেল হিসেবে বসে (page.tsx এ `hidden
-    // md:block` wrapper এর ভেতরে)। মোবাইলে page.tsx এটাকে একটা
-    // ফুল-স্ক্রিন drawer এর ভেতরে বসায়, তাই সেখানে w-full/h-full নিয়ে
-    // ভরে যাওয়া দরকার — সেই wrapper এ border-r ও অপ্রাসঙ্গিক।
-    <aside className="w-full h-full md:w-72 md:h-auto border-slate-800 md:border-r bg-slate-900/60 flex flex-col">
+    <aside className="w-72 border-r border-slate-800 bg-slate-900/60 flex flex-col">
       <div className="px-4 pt-4 pb-3 border-b border-slate-800">
         <div className="flex items-center justify-between mb-1.5">
           <h2 className="text-sm font-medium text-slate-200">Design Workflow</h2>

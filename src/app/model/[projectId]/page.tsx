@@ -65,6 +65,7 @@ import { useLoadStore } from "@/lib/loads/useLoadStore";
 import { useDrawModeStore } from "@/lib/viewport/useDrawModeStore";
 import { usePendingAreaElementStore } from "@/lib/elements/usePendingAreaElementStore";
 import { WorkflowSidebar } from "@/components/workflow/WorkflowSidebar";
+import { TabNavBar } from "@/components/workflow/TabNavBar";
 import { WorkflowModeToggle } from "@/components/workflow/WorkflowModeToggle";
 import { ActiveStageBanner } from "@/components/workflow/ActiveStageBanner";
 import { useWorkflowUiStore } from "@/lib/workflow/useWorkflowUiStore";
@@ -77,59 +78,6 @@ export type { SidebarTab, LoadSubTab, DesignSubTab };
 interface PageProps {
   params: Promise<{ projectId: string }>;
 }
-
-const TABS: { id: SidebarTab; label: string }[] = [
-  { id: "geometry", label: "Geometry" },
-  { id: "library", label: "Materials" },
-  { id: "elements", label: "Elements" },
-  { id: "loads", label: "Loads" },
-  { id: "analysis", label: "Analysis" },
-  { id: "validation", label: "Validation" },
-  { id: "design", label: "Design" },
-  { id: "detailing", label: "Detailing" },
-  { id: "visualization", label: "Visualization" },
-];
-
-const LOAD_SUB_TABS: { id: LoadSubTab; label: string }[] = [
-  { id: "patterns", label: "Patterns" },
-  { id: "wind", label: "Wind" },
-  { id: "seismic", label: "EQ" },
-  { id: "apply", label: "Apply" },
-  { id: "combinations", label: "Combos" },
-];
-
-const DESIGN_SUB_TABS: { id: DesignSubTab; label: string }[] = [
-  { id: "beam", label: "RC Beam" },
-  { id: "column", label: "RC Column" },
-  { id: "steel-beam", label: "Steel Beam" },
-  { id: "steel-column", label: "Steel Column" },
-  { id: "slab", label: "RC Slab" },
-  { id: "wall", label: "RC Wall" },
-  { id: "footing", label: "Footing" },
-  { id: "combined-footing", label: "Combined Footing" },
-  { id: "strip-footing", label: "Strip Footing" },
-  { id: "mat-foundation", label: "Mat Foundation" },
-  { id: "pile", label: "Pile" },
-  { id: "pile-cap", label: "Pile Cap" },
-  { id: "connection", label: "Connection" },
-  { id: "retaining-wall", label: "Retaining Wall" },
-  { id: "geotechnical", label: "Geotechnical" },
-  { id: "foundation-optimization", label: "Foundation Optimization" },
-  { id: "section-optimization", label: "Section Optimization" },
-  { id: "weight-optimization", label: "Weight Optimization" },
-  { id: "cost-optimization", label: "Cost Optimization" },
-  { id: "construction-ai-topology-optimization", label: "Construction/AI/Topology Optimization" },
-  { id: "base-isolation", label: "Base Isolation" },
-  { id: "collapse-prediction", label: "Collapse Prediction" },
-  { id: "rebar-layout", label: "Rebar Layout" },
-  { id: "stirrup-tie-zones", label: "Stirrup/Tie Zones" },
-  { id: "development-length", label: "Development/Lap Length" },
-  { id: "bar-bending-schedule", label: "Bar Bending Schedule" },
-  { id: "section-detail", label: "Section Detail" },
-  { id: "connection-detail", label: "Connection Detail" },
-  { id: "general-notes", label: "General Notes" },
-  { id: "drawing-sync", label: "Drawing Sync" },
-];
 
 /**
  * Structural Model পেজ। এই App-এর কোনো "Project Create" নেই, তাই
@@ -222,11 +170,16 @@ export default function StructuralModelPage({ params }: PageProps) {
   const [showDetailingStirrups, setShowDetailingStirrups] = useState(true);
   const [showDetailingMesh, setShowDetailingMesh] = useState(true);
   const [detailingIsolateElementId, setDetailingIsolateElementId] = useState<string | null>(null);
-  // মোবাইলে ডান প্যানেল ডিফল্টে বন্ধ থাকে যাতে viewport-টা প্রথমে
-  // দেখা যায়; ট্যাব বার থেকে খোলা/বন্ধ করা যায়। md+ এ এই state
-  // ব্যবহার হয় না (sidebar সবসময় দেখা যায়)।
+
+  // --- Mobile layout ---
+  // ছোট স্ক্রিনে (lg breakpoint এর নিচে) WorkflowSidebar (w-72) ও ডান
+  // aside (w-80) — দুটোই একসাথে flex child হিসেবে বসালে viewport এর
+  // জন্য কোনো জায়গা থাকে না (দুটো মিলেই বেশিরভাগ ফোন স্ক্রিনের চেয়ে
+  // চওড়া)। তাই lg এর নিচে viewport সবসময় ফুল-স্ক্রিন থাকে, আর এই
+  // দুটো প্যানেল fixed overlay sheet হিসেবে খোলে/বন্ধ হয় — lg এবং
+  // তার উপরে আগের মতোই permanent side column হিসেবে থাকে।
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
-  const [mobileWorkflowOpen, setMobileWorkflowOpen] = useState(false);
+  const [mobileWizardOpen, setMobileWizardOpen] = useState(false);
 
   const { addGrid, updateGrid, deleteGrid, addStory, updateStory, deleteStory } =
     useGeometryCore(projectId);
@@ -272,7 +225,6 @@ export default function StructuralModelPage({ params }: PageProps) {
     const { points, storyId } = finishDrawing();
     setPendingAreaElement({ category: drawActiveCategory, vertices: points, storyId });
     setActiveTab("elements");
-    setMobilePanelOpen(true);
   }
 
   // --- Workflow Layer (Wizard Mode) ---
@@ -298,6 +250,12 @@ export default function StructuralModelPage({ params }: PageProps) {
     const stage = STAGES.find((s) => s.id === stageId);
     if (!stage) return;
     setActiveTab(stage.targetTab);
+    // মোবাইলে stage select করার পর wizard drawer বন্ধ করে সরাসরি
+    // panel sheet খুলে দেওয়া হয়, যাতে ইঞ্জিনিয়ারকে আলাদা করে আবার
+    // panel বাটন চাপতে না হয়। lg+ এ কোনো প্রভাব নেই (দুটোই এমনিতে
+    // permanent visible)।
+    setMobileWizardOpen(false);
+    setMobilePanelOpen(true);
 
     if (stageId === "optimization" && stage.targetTab === "design") {
       setActiveDesignSubTab(OPTIMIZATION_DESIGN_SUB_TABS[0]);
@@ -309,42 +267,143 @@ export default function StructuralModelPage({ params }: PageProps) {
     } else if (stageId === "loads") {
       setActiveLoadSubTab("patterns");
     }
-    // মোবাইলে: stage-এ ক্লিক করলে workflow drawer বন্ধ হয়ে ডান
-    // প্যানেল খুলে যায়, যাতে ব্যবহারকারী সাথে সাথে প্যানেলটা দেখতে
-    // পান (নাহলে দুটো drawer stack হয়ে বিভ্রান্তিকর হতো)।
-    setMobileWorkflowOpen(false);
-    setMobilePanelOpen(true);
+  }
+
+  /**
+   * Panel এর ভেতরের কন্টেন্ট (tab অনুযায়ী form/list) — এটা desktop এ
+   * permanent `aside` এর ভেতরে এবং মোবাইলে fixed full-screen sheet এর
+   * ভেতরে দুই জায়গাতেই বসে। state/handler সব বাইরের component scope
+   * থেকেই আসে (closure), তাই আলাদা করে prop pass করার দরকার নেই —
+   * শুধু duplicate JSX এড়াতে function এ বের করে আনা হয়েছে।
+   */
+  function renderPanelContent() {
+    return isAnyLoading ? (
+      <p className="text-sm text-slate-500">লোড হচ্ছে...</p>
+    ) : (
+      <>
+        {activeTab === "geometry" && (
+          <div className="space-y-6">
+            <GridPanel onAddGrid={addGrid} onUpdateGrid={updateGrid} onDeleteGrid={deleteGrid} />
+            <StoryPanel onAddStory={addStory} onUpdateStory={updateStory} onDeleteStory={deleteStory} />
+          </div>
+        )}
+
+        {activeTab === "library" && (
+          <div className="space-y-6">
+            <MaterialPanel onAddMaterial={addMaterial} onDeleteMaterial={deleteMaterial} />
+            <SectionPanel onAddSection={addSection} onDeleteSection={deleteSection} />
+          </div>
+        )}
+
+        {activeTab === "elements" && (
+          <div className="space-y-6">
+            <ElementPanel onAddElement={addElement} onDeleteElement={removeElement} />
+            <AreaElementPanel onAddElement={addElement} onDeleteElement={removeElement} />
+            <FootingPanel onAddElement={addElement} onDeleteElement={removeElement} />
+            <CombinedFootingPanel onAddElement={addElement} onDeleteElement={removeElement} />
+            <StripFootingPanel onAddElement={addElement} onDeleteElement={removeElement} />
+            <PileGroupPanel onAddElement={addElement} onDeleteElement={removeElement} />
+            <PileCapPanel onAddElement={addElement} onDeleteElement={removeElement} />
+          </div>
+        )}
+
+        {activeTab === "loads" && (
+          <>
+            {activeLoadSubTab === "patterns" && (
+              <LoadPatternPanel onAddPattern={addPattern} onDeletePattern={deletePattern} />
+            )}
+            {activeLoadSubTab === "wind" && <WindLoadPanel />}
+            {activeLoadSubTab === "seismic" && <SeismicLoadPanel />}
+            {activeLoadSubTab === "apply" && (
+              <ElementLoadPanel onAddLoadCase={addLoadCase} onDeleteLoadCase={removeLoadCase} />
+            )}
+            {activeLoadSubTab === "combinations" && (
+              <LoadCombinationPanel
+                onToggleCombination={toggleCombination}
+                onAddCustomCombination={addCustomCombination}
+              />
+            )}
+          </>
+        )}
+
+        {activeTab === "analysis" && <AnalysisPanel projectId={projectId} />}
+        {activeTab === "validation" && <ValidationPanel />}
+        {activeTab === "design" && activeDesignSubTab === "beam" && <RcBeamDesignPanel />}
+        {activeTab === "design" && activeDesignSubTab === "column" && <RcColumnDesignPanel />}
+        {activeTab === "design" && activeDesignSubTab === "steel-beam" && <SteelBeamDesignPanel />}
+        {activeTab === "design" && activeDesignSubTab === "steel-column" && <SteelColumnDesignPanel />}
+        {activeTab === "design" && activeDesignSubTab === "slab" && <RcSlabDesignPanel />}
+        {activeTab === "design" && activeDesignSubTab === "wall" && <RcWallDesignPanel />}
+        {activeTab === "design" && activeDesignSubTab === "footing" && <FootingDesignPanel />}
+        {activeTab === "design" && activeDesignSubTab === "combined-footing" && <CombinedFootingDesignPanel />}
+        {activeTab === "design" && activeDesignSubTab === "strip-footing" && <StripFootingDesignPanel />}
+        {activeTab === "design" && activeDesignSubTab === "mat-foundation" && <MatFoundationDesignPanel />}
+        {activeTab === "design" && activeDesignSubTab === "pile" && <PileDesignPanel />}
+        {activeTab === "design" && activeDesignSubTab === "pile-cap" && <PileCapDesignPanel />}
+        {activeTab === "design" && activeDesignSubTab === "connection" && <SteelConnectionDesignPanel />}
+        {activeTab === "design" && activeDesignSubTab === "retaining-wall" && <RetainingWallDesignPanel />}
+        {activeTab === "design" && activeDesignSubTab === "geotechnical" && <GeotechnicalToolsPanel />}
+        {activeTab === "design" && activeDesignSubTab === "foundation-optimization" && <FoundationOptimizationPanel />}
+        {activeTab === "design" && activeDesignSubTab === "section-optimization" && <SectionOptimizationPanel />}
+        {activeTab === "design" && activeDesignSubTab === "weight-optimization" && <WeightOptimizationPanel />}
+        {activeTab === "design" && activeDesignSubTab === "cost-optimization" && <CostOptimizationPanel />}
+        {activeTab === "design" && activeDesignSubTab === "construction-ai-topology-optimization" && (
+          <ConstructionAiTopologyOptimizationPanel />
+        )}
+        {activeTab === "design" && activeDesignSubTab === "base-isolation" && <BaseIsolationEnergyDissipationPanel />}
+        {activeTab === "design" && activeDesignSubTab === "collapse-prediction" && <CollapsePredictionPanel />}
+        {activeTab === "design" && activeDesignSubTab === "rebar-layout" && <RebarLayoutPanel />}
+        {activeTab === "design" && activeDesignSubTab === "stirrup-tie-zones" && <StirrupTieZonePanel />}
+        {activeTab === "design" && activeDesignSubTab === "development-length" && <DevelopmentLengthPanel />}
+        {activeTab === "design" && activeDesignSubTab === "bar-bending-schedule" && <BarBendingSchedulePanel />}
+        {activeTab === "design" && activeDesignSubTab === "section-detail" && <SectionDetailPanel />}
+        {activeTab === "design" && activeDesignSubTab === "connection-detail" && <ConnectionDetailPanel />}
+        {activeTab === "design" && activeDesignSubTab === "general-notes" && <GeneralNotesPanel />}
+        {activeTab === "design" && activeDesignSubTab === "drawing-sync" && <DrawingSyncPanel />}
+        {activeTab === "detailing" && (
+          <DetailingPanel
+            showStirrups={showDetailingStirrups}
+            onToggleStirrups={setShowDetailingStirrups}
+            showMesh={showDetailingMesh}
+            onToggleMesh={setShowDetailingMesh}
+            isolateElementId={detailingIsolateElementId}
+            onSetIsolateElementId={setDetailingIsolateElementId}
+          />
+        )}
+        {activeTab === "visualization" && <VisualizationControlsPanel />}
+      </>
+    );
   }
 
   return (
-    <main className="h-dvh w-screen flex overflow-hidden bg-slate-950 text-slate-100">
-      {/* Workflow Sidebar: md+ এ পাশাপাশি প্যানেল, মোবাইলে ফুল-স্ক্রিন drawer */}
+    <main className="h-screen w-screen flex bg-slate-950 text-slate-100 overflow-hidden">
+      {/* --- Wizard sidebar: lg+ এ permanent column, তার নিচে fixed drawer --- */}
       {wizardMode && (
         <>
-          <div className="hidden md:block">
+          <div className="hidden lg:block">
             <WorkflowSidebar onNavigate={handleStageNavigate} />
           </div>
-          {mobileWorkflowOpen && (
-            <div className="md:hidden fixed inset-0 z-40 bg-slate-950 flex flex-col">
-              <div className="flex items-center justify-between px-3 py-2 border-b border-slate-800">
-                <span className="text-sm font-medium text-slate-200">Design Workflow</span>
-                <button
-                  type="button"
-                  onClick={() => setMobileWorkflowOpen(false)}
-                  className="text-xs px-2.5 py-1 rounded-md bg-slate-800 text-slate-300"
-                >
-                  বন্ধ করুন ✕
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto">
+          {mobileWizardOpen && (
+            <div className="lg:hidden fixed inset-0 z-40 flex">
+              {/* WorkflowSidebar এর নিজের root এ `w-72` বসানো আছে (permanent
+                  desktop column হিসেবে) — মোবাইলে পুরো 85vw/max-w-sm প্রস্থ
+                  আর ফুল height পেতে child override করা হচ্ছে ([&>aside]
+                  দিয়ে ভেতরের <aside> ট্যাগ টার্গেট করে)। */}
+              <div className="w-[85vw] max-w-sm h-full shadow-2xl [&>aside]:w-full [&>aside]:h-full">
                 <WorkflowSidebar onNavigate={handleStageNavigate} />
               </div>
+              <button
+                type="button"
+                aria-label="বন্ধ করুন"
+                onClick={() => setMobileWizardOpen(false)}
+                className="flex-1 bg-black/60 backdrop-blur-sm"
+              />
             </div>
           )}
         </>
       )}
 
-      <div className="flex-1 min-w-0 relative">
+      <div className="flex-1 relative min-w-0">
         {activeTab === "visualization" ? (
           <VisualizationViewport />
         ) : (
@@ -367,17 +426,17 @@ export default function StructuralModelPage({ params }: PageProps) {
         )}
 
         <div className="absolute top-3 left-3 right-3 flex items-center gap-2 flex-wrap">
-          {wizardMode ? (
+          {wizardMode && (
             <button
               type="button"
-              onClick={() => setMobileWorkflowOpen(true)}
-              className="md:hidden text-xs px-2.5 py-1 rounded-md bg-slate-900/80 backdrop-blur border border-slate-800 text-sky-400"
+              onClick={() => setMobileWizardOpen(true)}
+              className="lg:hidden text-xs text-slate-300 bg-slate-900/80 backdrop-blur rounded-md px-2.5 py-1 border border-slate-700"
             >
-              Stage {activeStage ? STAGES.find((s) => s.id === activeStage)?.order : 1}/9 ☰
+              ☰ Workflow
             </button>
-          ) : null}
+          )}
           <WorkflowModeToggle wizardMode={wizardMode} onChange={setWizardMode} />
-          <span className="text-xs text-slate-500 bg-slate-900/80 backdrop-blur rounded-md px-2.5 py-1 truncate max-w-[40vw] md:max-w-none">
+          <span className="hidden sm:inline text-xs text-slate-500 bg-slate-900/80 backdrop-blur rounded-md px-2.5 py-1">
             Project: {projectId}
           </span>
           {isSaving && (
@@ -393,209 +452,62 @@ export default function StructuralModelPage({ params }: PageProps) {
         </div>
 
         {wizardMode && (
-          <div className="hidden md:block absolute top-3 right-3 max-w-xs">
+          <div className="hidden lg:block absolute top-3 right-3 max-w-xs">
             <ActiveStageBanner stageId={activeStage} />
           </div>
         )}
 
-        {/* মোবাইলে ডান প্যানেল বন্ধ থাকলে খোলার ফ্লোটিং বাটন */}
-        {!mobilePanelOpen && (
-          <button
-            type="button"
-            onClick={() => setMobilePanelOpen(true)}
-            className="md:hidden absolute bottom-4 right-4 z-30 rounded-full bg-sky-600 text-white w-12 h-12 flex items-center justify-center shadow-lg text-lg"
-            aria-label="প্যানেল খুলুন"
-          >
-            ☰
-          </button>
-        )}
+        {/* মোবাইলে ডান প্যানেল বন্ধ থাকলে এই floating বাটন দিয়ে খোলা যায়;
+            lg+ এ প্যানেল সবসময় visible বলে বাটন লাগে না। */}
+        <button
+          type="button"
+          onClick={() => setMobilePanelOpen(true)}
+          className="lg:hidden fixed bottom-5 right-5 z-20 w-14 h-14 rounded-full bg-sky-600 hover:bg-sky-500 text-white shadow-xl flex items-center justify-center text-xl transition-colors"
+          aria-label="Panel খুলুন"
+        >
+          ⚙
+        </button>
       </div>
 
-      {/* ডান প্যানেল: md+ এ সবসময় দৃশ্যমান পাশের sidebar, মোবাইলে
-          bottom-sheet-style ফুল overlay drawer (ট্যাব বাটনে চাপলে খোলে) */}
-      <aside
-        className={`
-          fixed md:static inset-0 md:inset-auto z-30
-          ${mobilePanelOpen ? "flex" : "hidden md:flex"}
-          w-full md:w-80 border-l border-slate-800 bg-slate-900 md:bg-slate-900/60 flex-col
-        `}
-      >
-        {/* মোবাইলে drawer বন্ধ করার হেডার — md+ এ লাগে না কারণ sidebar
-            সবসময় দৃশ্যমান, বন্ধ করার প্রয়োজন নেই */}
-        <div className="md:hidden flex items-center justify-between px-3 py-2 border-b border-slate-800">
-          <span className="text-sm font-medium text-slate-200">{TABS.find((t) => t.id === activeTab)?.label}</span>
-          <button
-            type="button"
-            onClick={() => setMobilePanelOpen(false)}
-            className="text-xs px-2.5 py-1 rounded-md bg-slate-800 text-slate-300"
-          >
-            বন্ধ করুন ✕
-          </button>
-        </div>
+      {/* --- ডান panel: lg+ এ permanent w-80 column, তার নিচে fixed full-screen sheet --- */}
+      <aside className="hidden lg:flex w-80 border-l border-slate-800 bg-slate-900/60 flex-col">
+        <TabNavBar
+          activeTab={activeTab}
+          onChangeTab={setActiveTab}
+          activeLoadSubTab={activeLoadSubTab}
+          onChangeLoadSubTab={setActiveLoadSubTab}
+          activeDesignSubTab={activeDesignSubTab}
+          onChangeDesignSubTab={setActiveDesignSubTab}
+        />
 
-        {/* ৯টা main ট্যাব: flex-1 দিয়ে সংকুচিত না করে horizontal-scroll —
-            নাহলে মোবাইলে সব লেবেল জোড়া লেগে অপাঠ্য হয়ে যায় */}
-        <div className="flex overflow-x-auto border-b border-slate-800 no-scrollbar">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-none px-3.5 md:flex-1 md:px-0 whitespace-nowrap text-sm py-2.5 transition-colors ${
-                activeTab === tab.id
-                  ? "text-sky-400 border-b-2 border-sky-500 bg-slate-900"
-                  : "text-slate-500 hover:text-slate-300"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {activeTab === "loads" && (
-          <div className="flex overflow-x-auto border-b border-slate-800 bg-slate-950/50 no-scrollbar">
-            {LOAD_SUB_TABS.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveLoadSubTab(tab.id)}
-                className={`flex-none px-3 md:flex-1 md:px-0 whitespace-nowrap text-xs py-2 transition-colors ${
-                  activeLoadSubTab === tab.id
-                    ? "text-sky-400 bg-slate-900"
-                    : "text-slate-600 hover:text-slate-400"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {activeTab === "design" && (
-          // ২৯টা sub-tab flex-1 দিয়ে এক row-তে রাখলে (আগের মতো) label
-          // অপাঠ্য হয়ে যায় — ৩২০px sidebar এও, মোবাইলে তো আরও বেশি।
-          // dropdown এ সব কটা পুরো নাম নিয়ে দেখা যায়, এক ট্যাপে বদলানো
-          // যায়।
-          <div className="border-b border-slate-800 bg-slate-950/50 px-3 py-2">
-            <select
-              value={activeDesignSubTab}
-              onChange={(e) => setActiveDesignSubTab(e.target.value as DesignSubTab)}
-              className="w-full text-sm bg-slate-900 border border-slate-700 rounded-md px-2.5 py-2 text-sky-400"
-            >
-              {DESIGN_SUB_TABS.map((tab) => (
-                <option key={tab.id} value={tab.id} className="bg-slate-900 text-slate-200">
-                  {tab.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        <div className="flex-1 overflow-y-auto p-4">
-          {isAnyLoading ? (
-            <p className="text-sm text-slate-500">লোড হচ্ছে...</p>
-          ) : (
-            <>
-              {activeTab === "geometry" && (
-                <div className="space-y-6">
-                  <GridPanel
-                    onAddGrid={addGrid}
-                    onUpdateGrid={updateGrid}
-                    onDeleteGrid={deleteGrid}
-                  />
-                  <StoryPanel
-                    onAddStory={addStory}
-                    onUpdateStory={updateStory}
-                    onDeleteStory={deleteStory}
-                  />
-                </div>
-              )}
-
-              {activeTab === "library" && (
-                <div className="space-y-6">
-                  <MaterialPanel onAddMaterial={addMaterial} onDeleteMaterial={deleteMaterial} />
-                  <SectionPanel onAddSection={addSection} onDeleteSection={deleteSection} />
-                </div>
-              )}
-
-              {activeTab === "elements" && (
-                <div className="space-y-6">
-                  <ElementPanel onAddElement={addElement} onDeleteElement={removeElement} />
-                  <AreaElementPanel onAddElement={addElement} onDeleteElement={removeElement} />
-                  <FootingPanel onAddElement={addElement} onDeleteElement={removeElement} />
-                  <CombinedFootingPanel onAddElement={addElement} onDeleteElement={removeElement} />
-                  <StripFootingPanel onAddElement={addElement} onDeleteElement={removeElement} />
-                  <PileGroupPanel onAddElement={addElement} onDeleteElement={removeElement} />
-                  <PileCapPanel onAddElement={addElement} onDeleteElement={removeElement} />
-                </div>
-              )}
-
-              {activeTab === "loads" && (
-                <>
-                  {activeLoadSubTab === "patterns" && (
-                    <LoadPatternPanel onAddPattern={addPattern} onDeletePattern={deletePattern} />
-                  )}
-                  {activeLoadSubTab === "wind" && <WindLoadPanel />}
-                  {activeLoadSubTab === "seismic" && <SeismicLoadPanel />}
-                  {activeLoadSubTab === "apply" && (
-                    <ElementLoadPanel onAddLoadCase={addLoadCase} onDeleteLoadCase={removeLoadCase} />
-                  )}
-                  {activeLoadSubTab === "combinations" && (
-                    <LoadCombinationPanel
-                      onToggleCombination={toggleCombination}
-                      onAddCustomCombination={addCustomCombination}
-                    />
-                  )}
-                </>
-              )}
-
-              {activeTab === "analysis" && <AnalysisPanel projectId={projectId} />}
-              {activeTab === "validation" && <ValidationPanel />}
-              {activeTab === "design" && activeDesignSubTab === "beam" && <RcBeamDesignPanel />}
-              {activeTab === "design" && activeDesignSubTab === "column" && <RcColumnDesignPanel />}
-              {activeTab === "design" && activeDesignSubTab === "steel-beam" && <SteelBeamDesignPanel />}
-              {activeTab === "design" && activeDesignSubTab === "steel-column" && <SteelColumnDesignPanel />}
-              {activeTab === "design" && activeDesignSubTab === "slab" && <RcSlabDesignPanel />}
-              {activeTab === "design" && activeDesignSubTab === "wall" && <RcWallDesignPanel />}
-              {activeTab === "design" && activeDesignSubTab === "footing" && <FootingDesignPanel />}
-              {activeTab === "design" && activeDesignSubTab === "combined-footing" && <CombinedFootingDesignPanel />}
-              {activeTab === "design" && activeDesignSubTab === "strip-footing" && <StripFootingDesignPanel />}
-              {activeTab === "design" && activeDesignSubTab === "mat-foundation" && <MatFoundationDesignPanel />}
-              {activeTab === "design" && activeDesignSubTab === "pile" && <PileDesignPanel />}
-              {activeTab === "design" && activeDesignSubTab === "pile-cap" && <PileCapDesignPanel />}
-              {activeTab === "design" && activeDesignSubTab === "connection" && <SteelConnectionDesignPanel />}
-              {activeTab === "design" && activeDesignSubTab === "retaining-wall" && <RetainingWallDesignPanel />}
-              {activeTab === "design" && activeDesignSubTab === "geotechnical" && <GeotechnicalToolsPanel />}
-              {activeTab === "design" && activeDesignSubTab === "foundation-optimization" && <FoundationOptimizationPanel />}
-              {activeTab === "design" && activeDesignSubTab === "section-optimization" && <SectionOptimizationPanel />}
-              {activeTab === "design" && activeDesignSubTab === "weight-optimization" && <WeightOptimizationPanel />}
-              {activeTab === "design" && activeDesignSubTab === "cost-optimization" && <CostOptimizationPanel />}
-              {activeTab === "design" && activeDesignSubTab === "construction-ai-topology-optimization" && (
-                <ConstructionAiTopologyOptimizationPanel />
-              )}
-              {activeTab === "design" && activeDesignSubTab === "base-isolation" && <BaseIsolationEnergyDissipationPanel />}
-              {activeTab === "design" && activeDesignSubTab === "collapse-prediction" && <CollapsePredictionPanel />}
-              {activeTab === "design" && activeDesignSubTab === "rebar-layout" && <RebarLayoutPanel />}
-              {activeTab === "design" && activeDesignSubTab === "stirrup-tie-zones" && <StirrupTieZonePanel />}
-              {activeTab === "design" && activeDesignSubTab === "development-length" && <DevelopmentLengthPanel />}
-              {activeTab === "design" && activeDesignSubTab === "bar-bending-schedule" && <BarBendingSchedulePanel />}
-              {activeTab === "design" && activeDesignSubTab === "section-detail" && <SectionDetailPanel />}
-              {activeTab === "design" && activeDesignSubTab === "connection-detail" && <ConnectionDetailPanel />}
-              {activeTab === "design" && activeDesignSubTab === "general-notes" && <GeneralNotesPanel />}
-              {activeTab === "design" && activeDesignSubTab === "drawing-sync" && <DrawingSyncPanel />}
-              {activeTab === "detailing" && (
-                <DetailingPanel
-                  showStirrups={showDetailingStirrups}
-                  onToggleStirrups={setShowDetailingStirrups}
-                  showMesh={showDetailingMesh}
-                  onToggleMesh={setShowDetailingMesh}
-                  isolateElementId={detailingIsolateElementId}
-                  onSetIsolateElementId={setDetailingIsolateElementId}
-                />
-              )}
-              {activeTab === "visualization" && <VisualizationControlsPanel />}
-            </>
-          )}
-        </div>
+        <div className="flex-1 overflow-y-auto p-4">{renderPanelContent()}</div>
       </aside>
+
+      {/* --- মোবাইল প্যানেল: fixed full-screen sheet, ⚙ বাটনে খোলে --- */}
+      {mobilePanelOpen && (
+        <div className="lg:hidden fixed inset-0 z-40 flex flex-col bg-slate-950">
+          <div className="flex items-center justify-between border-b border-slate-800 px-3 py-2">
+            <span className="text-sm font-medium text-slate-200">Panel</span>
+            <button
+              type="button"
+              onClick={() => setMobilePanelOpen(false)}
+              className="text-slate-400 hover:text-slate-200 text-lg px-2"
+              aria-label="বন্ধ করুন"
+            >
+              ✕
+            </button>
+          </div>
+          <TabNavBar
+            activeTab={activeTab}
+            onChangeTab={setActiveTab}
+            activeLoadSubTab={activeLoadSubTab}
+            onChangeLoadSubTab={setActiveLoadSubTab}
+            activeDesignSubTab={activeDesignSubTab}
+            onChangeDesignSubTab={setActiveDesignSubTab}
+          />
+          <div className="flex-1 overflow-y-auto p-4">{renderPanelContent()}</div>
+        </div>
+      )}
     </main>
   );
 }
