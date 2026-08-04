@@ -222,6 +222,11 @@ export default function StructuralModelPage({ params }: PageProps) {
   const [showDetailingStirrups, setShowDetailingStirrups] = useState(true);
   const [showDetailingMesh, setShowDetailingMesh] = useState(true);
   const [detailingIsolateElementId, setDetailingIsolateElementId] = useState<string | null>(null);
+  // মোবাইলে ডান প্যানেল ডিফল্টে বন্ধ থাকে যাতে viewport-টা প্রথমে
+  // দেখা যায়; ট্যাব বার থেকে খোলা/বন্ধ করা যায়। md+ এ এই state
+  // ব্যবহার হয় না (sidebar সবসময় দেখা যায়)।
+  const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
+  const [mobileWorkflowOpen, setMobileWorkflowOpen] = useState(false);
 
   const { addGrid, updateGrid, deleteGrid, addStory, updateStory, deleteStory } =
     useGeometryCore(projectId);
@@ -267,6 +272,7 @@ export default function StructuralModelPage({ params }: PageProps) {
     const { points, storyId } = finishDrawing();
     setPendingAreaElement({ category: drawActiveCategory, vertices: points, storyId });
     setActiveTab("elements");
+    setMobilePanelOpen(true);
   }
 
   // --- Workflow Layer (Wizard Mode) ---
@@ -303,13 +309,42 @@ export default function StructuralModelPage({ params }: PageProps) {
     } else if (stageId === "loads") {
       setActiveLoadSubTab("patterns");
     }
+    // মোবাইলে: stage-এ ক্লিক করলে workflow drawer বন্ধ হয়ে ডান
+    // প্যানেল খুলে যায়, যাতে ব্যবহারকারী সাথে সাথে প্যানেলটা দেখতে
+    // পান (নাহলে দুটো drawer stack হয়ে বিভ্রান্তিকর হতো)।
+    setMobileWorkflowOpen(false);
+    setMobilePanelOpen(true);
   }
 
   return (
-    <main className="h-screen w-screen flex bg-slate-950 text-slate-100">
-      {wizardMode && <WorkflowSidebar onNavigate={handleStageNavigate} />}
+    <main className="h-dvh w-screen flex overflow-hidden bg-slate-950 text-slate-100">
+      {/* Workflow Sidebar: md+ এ পাশাপাশি প্যানেল, মোবাইলে ফুল-স্ক্রিন drawer */}
+      {wizardMode && (
+        <>
+          <div className="hidden md:block">
+            <WorkflowSidebar onNavigate={handleStageNavigate} />
+          </div>
+          {mobileWorkflowOpen && (
+            <div className="md:hidden fixed inset-0 z-40 bg-slate-950 flex flex-col">
+              <div className="flex items-center justify-between px-3 py-2 border-b border-slate-800">
+                <span className="text-sm font-medium text-slate-200">Design Workflow</span>
+                <button
+                  type="button"
+                  onClick={() => setMobileWorkflowOpen(false)}
+                  className="text-xs px-2.5 py-1 rounded-md bg-slate-800 text-slate-300"
+                >
+                  বন্ধ করুন ✕
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                <WorkflowSidebar onNavigate={handleStageNavigate} />
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
-      <div className="flex-1 relative">
+      <div className="flex-1 min-w-0 relative">
         {activeTab === "visualization" ? (
           <VisualizationViewport />
         ) : (
@@ -331,9 +366,18 @@ export default function StructuralModelPage({ params }: PageProps) {
           />
         )}
 
-        <div className="absolute top-3 left-3 flex items-center gap-2">
+        <div className="absolute top-3 left-3 right-3 flex items-center gap-2 flex-wrap">
+          {wizardMode ? (
+            <button
+              type="button"
+              onClick={() => setMobileWorkflowOpen(true)}
+              className="md:hidden text-xs px-2.5 py-1 rounded-md bg-slate-900/80 backdrop-blur border border-slate-800 text-sky-400"
+            >
+              Stage {activeStage ? STAGES.find((s) => s.id === activeStage)?.order : 1}/9 ☰
+            </button>
+          ) : null}
           <WorkflowModeToggle wizardMode={wizardMode} onChange={setWizardMode} />
-          <span className="text-xs text-slate-500 bg-slate-900/80 backdrop-blur rounded-md px-2.5 py-1">
+          <span className="text-xs text-slate-500 bg-slate-900/80 backdrop-blur rounded-md px-2.5 py-1 truncate max-w-[40vw] md:max-w-none">
             Project: {projectId}
           </span>
           {isSaving && (
@@ -349,19 +393,54 @@ export default function StructuralModelPage({ params }: PageProps) {
         </div>
 
         {wizardMode && (
-          <div className="absolute top-3 right-3 max-w-xs">
+          <div className="hidden md:block absolute top-3 right-3 max-w-xs">
             <ActiveStageBanner stageId={activeStage} />
           </div>
         )}
+
+        {/* মোবাইলে ডান প্যানেল বন্ধ থাকলে খোলার ফ্লোটিং বাটন */}
+        {!mobilePanelOpen && (
+          <button
+            type="button"
+            onClick={() => setMobilePanelOpen(true)}
+            className="md:hidden absolute bottom-4 right-4 z-30 rounded-full bg-sky-600 text-white w-12 h-12 flex items-center justify-center shadow-lg text-lg"
+            aria-label="প্যানেল খুলুন"
+          >
+            ☰
+          </button>
+        )}
       </div>
 
-      <aside className="w-80 border-l border-slate-800 bg-slate-900/60 flex flex-col">
-        <div className="flex border-b border-slate-800">
+      {/* ডান প্যানেল: md+ এ সবসময় দৃশ্যমান পাশের sidebar, মোবাইলে
+          bottom-sheet-style ফুল overlay drawer (ট্যাব বাটনে চাপলে খোলে) */}
+      <aside
+        className={`
+          fixed md:static inset-0 md:inset-auto z-30
+          ${mobilePanelOpen ? "flex" : "hidden md:flex"}
+          w-full md:w-80 border-l border-slate-800 bg-slate-900 md:bg-slate-900/60 flex-col
+        `}
+      >
+        {/* মোবাইলে drawer বন্ধ করার হেডার — md+ এ লাগে না কারণ sidebar
+            সবসময় দৃশ্যমান, বন্ধ করার প্রয়োজন নেই */}
+        <div className="md:hidden flex items-center justify-between px-3 py-2 border-b border-slate-800">
+          <span className="text-sm font-medium text-slate-200">{TABS.find((t) => t.id === activeTab)?.label}</span>
+          <button
+            type="button"
+            onClick={() => setMobilePanelOpen(false)}
+            className="text-xs px-2.5 py-1 rounded-md bg-slate-800 text-slate-300"
+          >
+            বন্ধ করুন ✕
+          </button>
+        </div>
+
+        {/* ৯টা main ট্যাব: flex-1 দিয়ে সংকুচিত না করে horizontal-scroll —
+            নাহলে মোবাইলে সব লেবেল জোড়া লেগে অপাঠ্য হয়ে যায় */}
+        <div className="flex overflow-x-auto border-b border-slate-800 no-scrollbar">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 text-sm py-2.5 transition-colors ${
+              className={`flex-none px-3.5 md:flex-1 md:px-0 whitespace-nowrap text-sm py-2.5 transition-colors ${
                 activeTab === tab.id
                   ? "text-sky-400 border-b-2 border-sky-500 bg-slate-900"
                   : "text-slate-500 hover:text-slate-300"
@@ -373,12 +452,12 @@ export default function StructuralModelPage({ params }: PageProps) {
         </div>
 
         {activeTab === "loads" && (
-          <div className="flex border-b border-slate-800 bg-slate-950/50">
+          <div className="flex overflow-x-auto border-b border-slate-800 bg-slate-950/50 no-scrollbar">
             {LOAD_SUB_TABS.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveLoadSubTab(tab.id)}
-                className={`flex-1 text-xs py-2 transition-colors ${
+                className={`flex-none px-3 md:flex-1 md:px-0 whitespace-nowrap text-xs py-2 transition-colors ${
                   activeLoadSubTab === tab.id
                     ? "text-sky-400 bg-slate-900"
                     : "text-slate-600 hover:text-slate-400"
@@ -391,20 +470,22 @@ export default function StructuralModelPage({ params }: PageProps) {
         )}
 
         {activeTab === "design" && (
-          <div className="flex border-b border-slate-800 bg-slate-950/50">
-            {DESIGN_SUB_TABS.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveDesignSubTab(tab.id)}
-                className={`flex-1 text-xs py-2 transition-colors ${
-                  activeDesignSubTab === tab.id
-                    ? "text-sky-400 bg-slate-900"
-                    : "text-slate-600 hover:text-slate-400"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+          // ২৯টা sub-tab flex-1 দিয়ে এক row-তে রাখলে (আগের মতো) label
+          // অপাঠ্য হয়ে যায় — ৩২০px sidebar এও, মোবাইলে তো আরও বেশি।
+          // dropdown এ সব কটা পুরো নাম নিয়ে দেখা যায়, এক ট্যাপে বদলানো
+          // যায়।
+          <div className="border-b border-slate-800 bg-slate-950/50 px-3 py-2">
+            <select
+              value={activeDesignSubTab}
+              onChange={(e) => setActiveDesignSubTab(e.target.value as DesignSubTab)}
+              className="w-full text-sm bg-slate-900 border border-slate-700 rounded-md px-2.5 py-2 text-sky-400"
+            >
+              {DESIGN_SUB_TABS.map((tab) => (
+                <option key={tab.id} value={tab.id} className="bg-slate-900 text-slate-200">
+                  {tab.label}
+                </option>
+              ))}
+            </select>
           </div>
         )}
 

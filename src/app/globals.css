@@ -19,8 +19,24 @@
   }
 }
 
+html,
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  /* মোবাইলে fixed-width sidebar/tab bar এর কারণে আগে পুরো পেজ পাশে
+     স্ক্রল হতো — এই গার্ড সেটা আটকায়; ভেতরের element গুলো নিজেদের
+     মতো overflow-x-auto ব্যবহার করে যেখানে দরকার (ট্যাব বার)। */
+  overflow-x: hidden;
+}
+
+/* ট্যাব বার/scroll strip গুলোর জন্য — scrollbar লুকানো কিন্তু scroll
+   কার্যকর থাকে (মোবাইলে touch-scroll, ডেস্কটপে drag/wheel) */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
