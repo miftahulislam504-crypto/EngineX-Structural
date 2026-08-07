@@ -2,24 +2,27 @@ import { create } from "zustand";
 import type { StageId } from "@/lib/workflow/types";
 
 interface WorkflowUiState {
-  /** true হলে page.tsx বাম পাশে WorkflowSidebar দেখাবে (existing tab sidebar এর বদলে না, তার উপরে/আগে)। */
-  wizardMode: boolean;
+  /** true হলে WorkflowSidebar (guided stage panel) খোলা থাকে — Phase 0.5 থেকে on-demand (নতুন Sidebar.tsx এর "Workflow" আইটেমে ক্লিক করলে খোলে, ❌ বাটনে বন্ধ হয়), আগের মতো সবসময়-visible permanent wizard mode না। */
+  workflowPanelOpen: boolean;
   activeStage: StageId;
-  setWizardMode: (on: boolean) => void;
+  setWorkflowPanelOpen: (open: boolean) => void;
   setActiveStage: (stage: StageId) => void;
 }
 
 /**
  * এই store শুধু UI state (কোনো Firestore persistence না) — session
- * শেষ হলে রিসেট হয়ে যাওয়াই ঠিক আছে, কারণ "wizard মোডে ছিলাম না
- * expert মোডে" এটা persist করার মতো গুরুত্বপূর্ণ কিছু না। ডিফল্ট
- * wizardMode=true যাতে নতুন ইঞ্জিনিয়ার প্রথমবার guided flow দেখেন;
- * অভিজ্ঞ ইউজার এক ক্লিকে Expert Mode এ সুইচ করতে পারবেন (flat tabs,
- * আগের মতোই)।
+ * শেষ হলে রিসেট হয়ে যাওয়াই ঠিক আছে।
+ *
+ * Phase 0.5 এ wizardMode (boolean, ডিফল্ট true, permanent-visible
+ * sidebar) থেকে workflowPanelOpen (ডিফল্ট false, on-demand panel) এ
+ * পরিবর্তিত হয়েছে — নতুন vertical Sidebar এ এখন "Workflow" একটা
+ * সাধারণ item, ক্লিক করলে এই panel খোলে, ❌ তে বন্ধ হয়। আগের
+ * Expert/Wizard mode dichotomy আর দরকার নেই কারণ main navigation এখন
+ * সবসময় flat sidebar (আগে wizardMode=false অবস্থাতেই যা দেখাত)।
  */
 export const useWorkflowUiStore = create<WorkflowUiState>((set) => ({
-  wizardMode: true,
+  workflowPanelOpen: false,
   activeStage: "preliminary",
-  setWizardMode: (wizardMode) => set({ wizardMode }),
+  setWorkflowPanelOpen: (workflowPanelOpen) => set({ workflowPanelOpen }),
   setActiveStage: (activeStage) => set({ activeStage }),
 }));

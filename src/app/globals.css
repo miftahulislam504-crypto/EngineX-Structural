@@ -1,26 +1,182 @@
 @import "tailwindcss";
 
+/*
+ * CivilOS Design System — "Light Clean" (grayscale brand, Hub_com এর
+ * সাথে token-for-token মেলানো)।
+ *
+ * সংশোধনের ইতিহাস (Phase 0.3): Phase 0.1-এ এখানে ভুলবশত pure নীল রং
+ * বসানো হয়েছিল, যেটা Hub_com এর *পুরনো, এখন অব্যবহৃত* tailwind.config.ts
+ * থেকে কপি করা হয়েছিল। কিন্তু Hub_com Tailwind v4-এ migrate হওয়ার সময়
+ * (postcss.config.mjs দেখুন) সেই config file বাতিল হয়ে গেছে — Hub-এর
+ * প্রকৃত/সক্রিয় রং এখন app/globals.css এর @theme ব্লকে, এবং সেটা নীল
+ * থেকে grayscale-এ পরিবর্তিত হয়েছে (Hub এর কমেন্ট: "brand color scale
+ * changed from blue to grayscale to match the PM app")। এই ফাইল এখন
+ * সেই সঠিক, বর্তমান grayscale মান ব্যবহার করছে — oklch() একই মান,
+ * একই ভেরিয়েবল নাম, যাতে ভবিষ্যতে Hub আবার বদলালে এখানেও মিলিয়ে
+ * আপডেট করা সহজ হয় (শুধু diff করে দেখলেই চলবে)।
+ */
+
+@custom-variant dark (&:is(.dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --radius: 0.625rem;
+
+  --brand-50: oklch(0.985 0 0);
+  --brand-100: oklch(0.97 0 0);
+  --brand-200: oklch(0.922 0 0);
+  --brand-500: oklch(0.556 0 0);
+  --brand-600: oklch(0.435 0 0);
+  --brand-700: oklch(0.32 0 0);
+  --brand-800: oklch(0.205 0 0);
+  --brand-900: oklch(0.145 0 0);
+
+  --surface: oklch(0.985 0 0);
+  --surface-card: oklch(1 0 0);
+  --surface-hover: oklch(0.97 0 0);
+  --surface-border: oklch(0.922 0 0);
+  --text-primary: oklch(0.145 0 0);
+  --text-secondary: oklch(0.32 0 0);
+  --text-muted: oklch(0.556 0 0);
+
+  --status-activeText: oklch(0.45 0.13 145);
+  --status-activeBg: oklch(0.96 0.03 145);
+  --status-activeBorder: oklch(0.85 0.08 145);
+  --status-holdText: oklch(0.55 0.14 75);
+  --status-holdBg: oklch(0.96 0.04 75);
+  --status-holdBorder: oklch(0.85 0.1 75);
+  --status-doneText: oklch(0.32 0 0);
+  --status-doneBg: oklch(0.94 0 0);
+  --status-doneBorder: oklch(0.8 0 0);
+
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+
+  /* raw shadow value — নিচে @theme এ --shadow-* namespace এ map করা
+     হয়েছে (Tailwind v4 তে --shadow-card: var(--shadow-card) লিখলে
+     self-reference হয়ে ভাঙে, তাই আলাদা নাম রাখা হলো) */
+  --raw-shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.07), 0 1px 2px -1px rgb(0 0 0 / 0.07);
 }
 
 @theme inline {
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
+
+  --color-surface: var(--surface);
+  --color-surface-card: var(--surface-card);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-border: var(--surface-border);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+
+  --color-status-activeText: var(--status-activeText);
+  --color-status-activeBg: var(--status-activeBg);
+  --color-status-activeBorder: var(--status-activeBorder);
+  --color-status-holdText: var(--status-holdText);
+  --color-status-holdBg: var(--status-holdBg);
+  --color-status-holdBorder: var(--status-holdBorder);
+  --color-status-doneText: var(--status-doneText);
+  --color-status-doneBg: var(--status-doneBg);
+  --color-status-doneBorder: var(--status-doneBorder);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --shadow-card: var(--raw-shadow-card);
+
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * নিচের component class-গুলো Hub_com/app/globals.css এর সাথে
+ * token-for-token identical (একই bg-brand-600, border-surface-border
+ * ইত্যাদি ব্যবহার করে, আর এখন token নিজেও Hub এর সাথে মেলানো, তাই
+ * pixel-এর কাছাকাছি একই দেখাবে)। Phase 0.2 এ শুধু Login-এর জন্য
+ * দরকারি class আনা হয়েছিল; Phase 0.3 এ Project List এর জন্য badge-*,
+ * table-row, btn-outline যোগ হলো।
+ */
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2
+           bg-brand-600 hover:bg-brand-700 active:bg-brand-800
+           text-white text-sm font-semibold
+           px-4 py-2.5 rounded-lg
+           transition-all duration-150
+           disabled:opacity-50 disabled:cursor-not-allowed
+           shadow-sm;
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2
+           bg-white hover:bg-surface-hover
+           border border-surface-border
+           text-text-secondary hover:text-text-primary text-sm font-medium
+           px-4 py-2.5 rounded-lg
+           transition-all duration-150
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .input-field {
+    @apply w-full bg-white border border-surface-border
+           text-text-primary placeholder-text-muted text-sm
+           px-3.5 py-2.5 rounded-lg
+           outline-none
+           transition-all duration-150
+           focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20;
+  }
+
+  .card {
+    @apply bg-surface-card border border-surface-border rounded-xl shadow-card;
+  }
+
+  .badge-active {
+    @apply inline-flex items-center gap-1 text-xs font-semibold
+           text-status-activeText bg-status-activeBg border border-status-activeBorder
+           px-2 py-0.5 rounded-full;
+  }
+  .badge-hold {
+    @apply inline-flex items-center gap-1 text-xs font-semibold
+           text-status-holdText bg-status-holdBg border border-status-holdBorder
+           px-2 py-0.5 rounded-full;
+  }
+  .badge-done {
+    @apply inline-flex items-center gap-1 text-xs font-semibold
+           text-status-doneText bg-status-doneBg border border-status-doneBorder
+           px-2 py-0.5 rounded-full;
+  }
+
+  .table-row {
+    @apply flex items-center gap-4 px-5 py-3.5
+           border-b border-surface-border last:border-0
+           hover:bg-surface-hover transition-colors duration-100;
+  }
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { @apply bg-surface-border rounded-full; }
+::-webkit-scrollbar-thumb:hover { @apply bg-text-muted; }
+
+.spinner {
+  @apply w-5 h-5 rounded-full border-2 border-surface-border border-t-brand-600 animate-spin;
 }

@@ -26,6 +26,7 @@ export type StageId =
   | "design"
   | "optimization"
   | "verification"
+  | "detailing"
   | "documentation"
   | "export";
 

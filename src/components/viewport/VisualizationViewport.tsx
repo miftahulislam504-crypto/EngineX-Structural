@@ -241,7 +241,7 @@ export function VisualizationViewport() {
   })();
 
   return (
-    <div className="relative w-full h-full bg-slate-950">
+    <div className="relative w-full h-full bg-surface">
       <Canvas
         camera={{ position: [14, 10, 14], fov: 45 }}
         onPointerMissed={() => setSelection({ type: "none" })}
@@ -329,7 +329,7 @@ export function VisualizationViewport() {
 
       {isEmpty && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <p className="text-slate-500 text-sm">
+          <p className="text-text-muted text-sm">
             এখনো কোনো Model নেই। প্রথমে Geometry/Elements ট্যাব থেকে মডেল তৈরি করুন।
           </p>
         </div>

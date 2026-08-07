@@ -144,13 +144,13 @@ export function VisualizationControlsPanel() {
   return (
     <div className="space-y-6">
       <section>
-        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
+        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
           Story Isolation
         </h3>
         <select
           value={isolatedStoryId ?? ""}
           onChange={(e) => setIsolatedStoryId(e.target.value === "" ? null : e.target.value)}
-          className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-sm text-slate-100"
+          className="w-full bg-surface-hover border border-surface-border rounded px-2 py-1.5 text-sm text-text-primary"
         >
           <option value="">All Stories</option>
           {sortedStories.map((story) => (
@@ -161,12 +161,12 @@ export function VisualizationControlsPanel() {
         </select>
 
         {isolatedStoryId && (
-          <label className="flex items-center gap-2 mt-2 text-xs text-slate-400">
+          <label className="flex items-center gap-2 mt-2 text-xs text-text-muted">
             <input
               type="checkbox"
               checked={fadeNonIsolated}
               onChange={(e) => setFadeNonIsolated(e.target.checked)}
-              className="accent-sky-500"
+              className="accent-brand-600"
             />
             Fade other stories (instead of hiding)
           </label>
@@ -174,7 +174,7 @@ export function VisualizationControlsPanel() {
       </section>
 
       <section>
-        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
+        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
           Render Mode
         </h3>
         <div className="flex gap-1">
@@ -184,8 +184,8 @@ export function VisualizationControlsPanel() {
               onClick={() => setRenderMode(rm.mode)}
               className={`flex-1 text-xs py-1.5 rounded transition-colors ${
                 renderMode === rm.mode
-                  ? "bg-sky-600 text-white"
-                  : "bg-slate-800 text-slate-400 hover:text-slate-200"
+                  ? "bg-brand-600 text-white"
+                  : "bg-surface-hover text-text-muted hover:text-text-primary"
               }`}
             >
               {rm.label}
@@ -195,34 +195,34 @@ export function VisualizationControlsPanel() {
       </section>
 
       <section>
-        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
+        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
           Displacement / Deformation
         </h3>
 
         {activeAnalysisType ? (
-          <p className="text-xs text-slate-400 mb-2">
-            Active result: <span className="text-slate-200">{ANALYSIS_TYPE_LABELS[activeAnalysisType]}</span>
+          <p className="text-xs text-text-muted mb-2">
+            Active result: <span className="text-text-primary">{ANALYSIS_TYPE_LABELS[activeAnalysisType]}</span>
           </p>
         ) : (
-          <p className="text-xs text-slate-600 mb-2">
+          <p className="text-xs text-text-secondary mb-2">
             কোনো Analysis result নেই — Analysis ট্যাবে একটা run করুন।
           </p>
         )}
 
         {activeAnalysisType && !DISPLACEMENT_CAPABLE_TYPES.has(activeAnalysisType) && (
-          <p className="text-[11px] text-amber-400/90 mb-2">
+          <p className="text-[11px] text-status-holdText/90 mb-2">
             {ANALYSIS_TYPE_LABELS[activeAnalysisType]} এ সরাসরি deformable displacement নেই (Modal/
             Buckling/Pushover এর mode shape animation পরবর্তী sub-phase এ যোগ হবে)।
           </p>
         )}
 
-        <label className="flex items-center gap-2 text-xs text-slate-300 mb-3">
+        <label className="flex items-center gap-2 text-xs text-text-secondary mb-3">
           <input
             type="checkbox"
             checked={deformationEnabled}
             onChange={(e) => setDeformationEnabled(e.target.checked)}
             disabled={!activeAnalysisType}
-            className="accent-sky-500"
+            className="accent-brand-600"
           />
           Show deformed shape
         </label>
@@ -231,8 +231,8 @@ export function VisualizationControlsPanel() {
           <div className="space-y-3">
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] text-slate-500">Scale factor</span>
-                <span className="text-[11px] text-slate-300">{deformationScale}×</span>
+                <span className="text-[11px] text-text-muted">Scale factor</span>
+                <span className="text-[11px] text-text-secondary">{deformationScale}×</span>
               </div>
               <input
                 type="range"
@@ -241,7 +241,7 @@ export function VisualizationControlsPanel() {
                 step={1}
                 value={deformationScale}
                 onChange={(e) => setDeformationScale(Number(e.target.value))}
-                className="w-full accent-sky-500"
+                className="w-full accent-brand-600"
               />
             </div>
 
@@ -249,8 +249,8 @@ export function VisualizationControlsPanel() {
               onClick={() => setIsAnimating(!isAnimating)}
               className={`w-full text-xs py-1.5 rounded transition-colors ${
                 isAnimating
-                  ? "bg-sky-600 text-white"
-                  : "bg-slate-800 text-slate-300 hover:text-slate-100"
+                  ? "bg-brand-600 text-white"
+                  : "bg-surface-hover text-text-secondary hover:text-text-primary"
               }`}
             >
               {isAnimating ? "⏸ Pause Animation" : "▶ Animate Deformation"}
@@ -260,11 +260,11 @@ export function VisualizationControlsPanel() {
       </section>
 
       <section>
-        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
+        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
           Moment / Shear / Axial Diagram
         </h3>
 
-        <p className="text-[11px] text-slate-600 mb-2">
+        <p className="text-[11px] text-text-secondary mb-2">
           শুধু Beam/Column/Brace/Pile — Slab/Wall এর force recovery নেই
           (Phase 4a সীমাবদ্ধতা, displacement-only)। Diagram piecewise-
           linear approximation, দুই প্রান্তের value দিয়ে (backend থেকে
@@ -272,18 +272,18 @@ export function VisualizationControlsPanel() {
         </p>
 
         {(!elementEndForces || elementEndForces.length === 0) && (
-          <p className="text-xs text-slate-600 mb-2">
+          <p className="text-xs text-text-secondary mb-2">
             কোনো Element End Forces নেই — Analysis ট্যাবে একটা run করুন।
           </p>
         )}
 
-        <label className="flex items-center gap-2 text-xs text-slate-300 mb-3">
+        <label className="flex items-center gap-2 text-xs text-text-secondary mb-3">
           <input
             type="checkbox"
             checked={diagramEnabled}
             onChange={(e) => setDiagramEnabled(e.target.checked)}
             disabled={!elementEndForces || elementEndForces.length === 0}
-            className="accent-sky-500"
+            className="accent-brand-600"
           />
           Show diagram
         </label>
@@ -291,7 +291,7 @@ export function VisualizationControlsPanel() {
         {diagramEnabled && (
           <div className="space-y-3">
             <div>
-              <span className="text-[11px] text-slate-500 block mb-1">Quantity</span>
+              <span className="text-[11px] text-text-muted block mb-1">Quantity</span>
               <div className="flex gap-1">
                 {(["moment", "shear", "axial"] as const).map((q) => (
                   <button
@@ -299,8 +299,8 @@ export function VisualizationControlsPanel() {
                     onClick={() => setDiagramQuantity(q)}
                     className={`flex-1 text-xs py-1 rounded capitalize transition-colors ${
                       diagramQuantity === q
-                        ? "bg-sky-600 text-white"
-                        : "bg-slate-800 text-slate-300 hover:text-slate-100"
+                        ? "bg-brand-600 text-white"
+                        : "bg-surface-hover text-text-secondary hover:text-text-primary"
                     }`}
                   >
                     {q}
@@ -311,8 +311,8 @@ export function VisualizationControlsPanel() {
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] text-slate-500">Scale factor</span>
-                <span className="text-[11px] text-slate-300">{diagramScale.toFixed(3)}</span>
+                <span className="text-[11px] text-text-muted">Scale factor</span>
+                <span className="text-[11px] text-text-secondary">{diagramScale.toFixed(3)}</span>
               </div>
               <input
                 type="range"
@@ -321,17 +321,17 @@ export function VisualizationControlsPanel() {
                 step={0.001}
                 value={diagramScale}
                 onChange={(e) => setDiagramScale(Number(e.target.value))}
-                className="w-full accent-sky-500"
+                className="w-full accent-brand-600"
               />
             </div>
 
-            <div className="flex items-center gap-3 text-[11px] text-slate-500">
+            <div className="flex items-center gap-3 text-[11px] text-text-muted">
               <span className="flex items-center gap-1">
                 <span className="inline-block w-3 h-0.5 bg-orange-500" /> Y-plane
               </span>
               {diagramQuantity !== "axial" && (
                 <span className="flex items-center gap-1">
-                  <span className="inline-block w-3 h-0.5 bg-sky-400" /> Z-plane
+                  <span className="inline-block w-3 h-0.5 bg-brand-600" /> Z-plane
                 </span>
               )}
             </div>
@@ -340,28 +340,28 @@ export function VisualizationControlsPanel() {
       </section>
 
       <section>
-        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
+        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
           Reaction Display
         </h3>
 
-        <p className="text-[11px] text-slate-600 mb-2">
+        <p className="text-[11px] text-text-secondary mb-2">
           শুধু Linear Static এ পাওয়া যায় (backend penalty-method দিয়ে
           global DOF এ reaction গণনা করে, hand-verified)।
         </p>
 
         {!linearStaticResult?.reactionForces?.length && (
-          <p className="text-xs text-slate-600 mb-2">
+          <p className="text-xs text-text-secondary mb-2">
             কোনো Reaction ফলাফল নেই — Analysis ট্যাবে Linear Static চালান।
           </p>
         )}
 
-        <label className="flex items-center gap-2 text-xs text-slate-300 mb-3">
+        <label className="flex items-center gap-2 text-xs text-text-secondary mb-3">
           <input
             type="checkbox"
             checked={reactionEnabled}
             onChange={(e) => setReactionEnabled(e.target.checked)}
             disabled={!linearStaticResult?.reactionForces?.length}
-            className="accent-sky-500"
+            className="accent-brand-600"
           />
           Show reactions
         </label>
@@ -370,8 +370,8 @@ export function VisualizationControlsPanel() {
           <div className="space-y-3">
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] text-slate-500">Arrow size</span>
-                <span className="text-[11px] text-slate-300">{reactionScale.toFixed(2)}</span>
+                <span className="text-[11px] text-text-muted">Arrow size</span>
+                <span className="text-[11px] text-text-secondary">{reactionScale.toFixed(2)}</span>
               </div>
               <input
                 type="range"
@@ -380,16 +380,16 @@ export function VisualizationControlsPanel() {
                 step={0.1}
                 value={reactionScale}
                 onChange={(e) => setReactionScale(Number(e.target.value))}
-                className="w-full accent-sky-500"
+                className="w-full accent-brand-600"
               />
             </div>
 
-            <label className="flex items-center gap-2 text-xs text-slate-300">
+            <label className="flex items-center gap-2 text-xs text-text-secondary">
               <input
                 type="checkbox"
                 checked={reactionShowMoments}
                 onChange={(e) => setReactionShowMoments(e.target.checked)}
-                className="accent-sky-500"
+                className="accent-brand-600"
               />
               Show moment labels
             </label>
@@ -398,11 +398,11 @@ export function VisualizationControlsPanel() {
       </section>
 
       <section>
-        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
+        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
           DCR / Utilization Heat Map
         </h3>
 
-        <p className="text-[11px] text-slate-600 mb-2">
+        <p className="text-[11px] text-text-secondary mb-2">
           Design ট্যাবে যেসব element এর design run হয়েছে, তাদের governing
           utilization ratio অনুযায়ী রং করে (green ≤0.7, yellow 0.7-1.0,
           red ≥1.0)। যে element এর design এখনো চালানো হয়নি সেটা normal
@@ -410,25 +410,25 @@ export function VisualizationControlsPanel() {
         </p>
 
         {dcrRecordCount === 0 && (
-          <p className="text-xs text-slate-600 mb-2">
+          <p className="text-xs text-text-secondary mb-2">
             কোনো DCR ফলাফল নেই — Design ট্যাবে কিছু element এর design
             চালান।
           </p>
         )}
 
-        <label className="flex items-center gap-2 text-xs text-slate-300 mb-2">
+        <label className="flex items-center gap-2 text-xs text-text-secondary mb-2">
           <input
             type="checkbox"
             checked={dcrHeatMapEnabled}
             onChange={(e) => setDcrHeatMapEnabled(e.target.checked)}
             disabled={dcrRecordCount === 0}
-            className="accent-sky-500"
+            className="accent-brand-600"
           />
           Show heat map ({dcrRecordCount} element{dcrRecordCount === 1 ? "" : "s"})
         </label>
 
         {dcrHeatMapEnabled && (
-          <div className="flex items-center gap-3 text-[11px] text-slate-500">
+          <div className="flex items-center gap-3 text-[11px] text-text-muted">
             <span className="flex items-center gap-1">
               <span className="inline-block w-3 h-3 rounded-sm bg-[#22c55e]" /> ≤0.7
             </span>
@@ -443,11 +443,11 @@ export function VisualizationControlsPanel() {
       </section>
 
       <section>
-        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
+        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
           Mode Shape / Buckling Animation
         </h3>
 
-        <p className="text-[11px] text-slate-600 mb-2">
+        <p className="text-[11px] text-text-secondary mb-2">
           Normalized shape (arbitrary scale, physical displacement না) —
           Displacement/Deformation এর সাথে একসাথে চালু করা যায় না।
         </p>
@@ -462,8 +462,8 @@ export function VisualizationControlsPanel() {
               }}
               className={`flex-1 text-xs py-1 rounded capitalize transition-colors ${
                 modeShapeSource === src
-                  ? "bg-sky-600 text-white"
-                  : "bg-slate-800 text-slate-300 hover:text-slate-100"
+                  ? "bg-brand-600 text-white"
+                  : "bg-surface-hover text-text-secondary hover:text-text-primary"
               }`}
             >
               {src}
@@ -472,12 +472,12 @@ export function VisualizationControlsPanel() {
         </div>
 
         {modeCount === 0 && (
-          <p className="text-xs text-slate-600 mb-2">
+          <p className="text-xs text-text-secondary mb-2">
             কোনো {modeShapeSource === "modal" ? "Modal" : "Buckling"} result নেই — Analysis ট্যাবে চালান।
           </p>
         )}
 
-        <label className="flex items-center gap-2 text-xs text-slate-300 mb-3">
+        <label className="flex items-center gap-2 text-xs text-text-secondary mb-3">
           <input
             type="checkbox"
             checked={modeShapeEnabled}
@@ -486,7 +486,7 @@ export function VisualizationControlsPanel() {
               if (e.target.checked) setDeformationEnabled(false); // mutually exclusive
             }}
             disabled={modeCount === 0}
-            className="accent-sky-500"
+            className="accent-brand-600"
           />
           Show mode shape
         </label>
@@ -495,16 +495,16 @@ export function VisualizationControlsPanel() {
           <div className="space-y-3">
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] text-slate-500">
+                <span className="text-[11px] text-text-muted">
                   Mode {modeShapeIndex + 1} of {modeCount}
                 </span>
                 {modeShapeSource === "modal" && modalResult?.modes?.[modeShapeIndex] && (
-                  <span className="text-[11px] text-slate-400">
+                  <span className="text-[11px] text-text-muted">
                     T={(1 / modalResult.modes[modeShapeIndex].naturalFrequencyHz).toFixed(3)}s
                   </span>
                 )}
                 {modeShapeSource === "buckling" && bucklingResult?.modes?.[modeShapeIndex] && (
-                  <span className="text-[11px] text-slate-400">
+                  <span className="text-[11px] text-text-muted">
                     λ={bucklingResult.modes[modeShapeIndex].criticalLoadFactor?.toFixed(2)}
                   </span>
                 )}
@@ -516,14 +516,14 @@ export function VisualizationControlsPanel() {
                 step={1}
                 value={modeShapeIndex}
                 onChange={(e) => setModeShapeIndex(Number(e.target.value))}
-                className="w-full accent-sky-500"
+                className="w-full accent-brand-600"
               />
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] text-slate-500">Scale factor</span>
-                <span className="text-[11px] text-slate-300">{modeShapeScale}×</span>
+                <span className="text-[11px] text-text-muted">Scale factor</span>
+                <span className="text-[11px] text-text-secondary">{modeShapeScale}×</span>
               </div>
               <input
                 type="range"
@@ -532,7 +532,7 @@ export function VisualizationControlsPanel() {
                 step={1}
                 value={modeShapeScale}
                 onChange={(e) => setModeShapeScale(Number(e.target.value))}
-                className="w-full accent-sky-500"
+                className="w-full accent-brand-600"
               />
             </div>
 
@@ -540,8 +540,8 @@ export function VisualizationControlsPanel() {
               onClick={() => setModeShapeAnimating(!modeShapeAnimating)}
               className={`w-full text-xs py-1.5 rounded transition-colors ${
                 modeShapeAnimating
-                  ? "bg-sky-600 text-white"
-                  : "bg-slate-800 text-slate-300 hover:text-slate-100"
+                  ? "bg-brand-600 text-white"
+                  : "bg-surface-hover text-text-secondary hover:text-text-primary"
               }`}
             >
               {modeShapeAnimating ? "⏸ Pause Animation" : "▶ Animate Mode Shape"}
@@ -551,11 +551,11 @@ export function VisualizationControlsPanel() {
       </section>
 
       <section>
-        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
+        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
           Stress / Strain Contour
         </h3>
 
-        <p className="text-[11px] text-amber-400/90 mb-2">
+        <p className="text-[11px] text-status-holdText/90 mb-2">
           এটা প্রকৃত stress না — shell element (Slab/Wall) এ কোনো FE
           stress/moment recovery নেই এই ইঞ্জিনে (শুধু displacement)।
           এই contour প্রতিটা shell element এর গড় displacement
@@ -565,18 +565,18 @@ export function VisualizationControlsPanel() {
           indicator, design এর জন্য ব্যবহারযোগ্য না।
         </p>
 
-        <label className="flex items-center gap-2 text-xs text-slate-300 mb-2">
+        <label className="flex items-center gap-2 text-xs text-text-secondary mb-2">
           <input
             type="checkbox"
             checked={stressContourEnabled}
             onChange={(e) => setStressContourEnabled(e.target.checked)}
-            className="accent-sky-500"
+            className="accent-brand-600"
           />
           Show contour (proxy)
         </label>
 
         {stressContourEnabled && (
-          <div className="flex items-center gap-2 text-[11px] text-slate-500">
+          <div className="flex items-center gap-2 text-[11px] text-text-muted">
             <span>কম</span>
             <span className="flex-1 h-2 rounded-full bg-gradient-to-r from-[#3b82f6] via-[#22c55e] via-[#eab308] to-[#ef4444]" />
             <span>বেশি</span>
@@ -585,11 +585,11 @@ export function VisualizationControlsPanel() {
       </section>
 
       <section>
-        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
+        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
           Crack Prediction / Failure Visualization
         </h3>
 
-        <p className="text-[11px] text-amber-400/90 mb-2">
+        <p className="text-[11px] text-status-holdText/90 mb-2">
           শুধু চূড়ান্ত (converged) hinge অবস্থা দেখায় — কোনো step-by-step
           progressive animation নেই (backend intermediate step সংরক্ষণ
           করে না)। &ldquo;Crack&rdquo; মানে প্রকৃত crack-width model না, শুধু hinge
@@ -599,35 +599,35 @@ export function VisualizationControlsPanel() {
         </p>
 
         {activeHingeCount === 0 && (
-          <p className="text-xs text-slate-600 mb-2">
+          <p className="text-xs text-text-secondary mb-2">
             কোনো Hinge ফলাফল নেই — Analysis ট্যাবে Nonlinear Static বা
             Pushover চালান।
           </p>
         )}
 
-        <label className="flex items-center gap-2 text-xs text-slate-300 mb-2">
+        <label className="flex items-center gap-2 text-xs text-text-secondary mb-2">
           <input
             type="checkbox"
             checked={hingeMarkersEnabled}
             onChange={(e) => setHingeMarkersEnabled(e.target.checked)}
             disabled={activeHingeCount === 0}
-            className="accent-sky-500"
+            className="accent-brand-600"
           />
           Show hinge markers ({activeHingeCount})
         </label>
 
         {hingeMarkersEnabled && (
           <div className="space-y-2">
-            <label className="flex items-center gap-2 text-xs text-slate-300">
+            <label className="flex items-center gap-2 text-xs text-text-secondary">
               <input
                 type="checkbox"
                 checked={hingeMarkerShowLabels}
                 onChange={(e) => setHingeMarkerShowLabels(e.target.checked)}
-                className="accent-sky-500"
+                className="accent-brand-600"
               />
               Show plastic rotation labels
             </label>
-            <div className="flex items-center gap-3 text-[11px] text-slate-500">
+            <div className="flex items-center gap-3 text-[11px] text-text-muted">
               <span className="flex items-center gap-1">
                 <span className="inline-block w-3 h-3 rounded-full bg-[#ef4444]" /> Yielded
               </span>
@@ -641,19 +641,19 @@ export function VisualizationControlsPanel() {
 
       <section>
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+          <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide">
             Element Visibility
           </h3>
           <div className="flex gap-2">
             <button
               onClick={() => setAllCategoriesVisible(true)}
-              className="text-[10px] text-sky-400 hover:text-sky-300"
+              className="text-[10px] text-brand-600 hover:text-brand-800"
             >
               All
             </button>
             <button
               onClick={() => setAllCategoriesVisible(false)}
-              className="text-[10px] text-slate-500 hover:text-slate-300"
+              className="text-[10px] text-text-muted hover:text-text-secondary"
             >
               None
             </button>
@@ -661,45 +661,45 @@ export function VisualizationControlsPanel() {
         </div>
         <div className="space-y-1">
           {CATEGORY_LABELS.filter((c) => categoriesPresent.has(c.category)).map((c) => (
-            <label key={c.category} className="flex items-center gap-2 text-xs text-slate-300">
+            <label key={c.category} className="flex items-center gap-2 text-xs text-text-secondary">
               <input
                 type="checkbox"
                 checked={categoryVisibility[c.category] ?? true}
                 onChange={() => toggleCategoryVisibility(c.category)}
-                className="accent-sky-500"
+                className="accent-brand-600"
               />
               {c.label}
             </label>
           ))}
           {categoriesPresent.size === 0 && (
-            <p className="text-xs text-slate-600">কোনো element এখনো তৈরি হয়নি।</p>
+            <p className="text-xs text-text-secondary">কোনো element এখনো তৈরি হয়নি।</p>
           )}
         </div>
       </section>
 
       <section>
-        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
+        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
           Selected Element
         </h3>
         {selectedElement ? (
-          <div className="bg-slate-800/60 rounded p-2.5 text-xs text-slate-300 space-y-1">
+          <div className="bg-surface-hover/60 rounded p-2.5 text-xs text-text-secondary space-y-1">
             <p>
-              <span className="text-slate-500">Label:</span> {selectedElement.label}
+              <span className="text-text-muted">Label:</span> {selectedElement.label}
             </p>
             <p>
-              <span className="text-slate-500">Category:</span> {selectedElement.category}
+              <span className="text-text-muted">Category:</span> {selectedElement.category}
             </p>
             <p>
-              <span className="text-slate-500">ID:</span> {selectedElement.elementId}
+              <span className="text-text-muted">ID:</span> {selectedElement.elementId}
             </p>
           </div>
         ) : (
-          <p className="text-xs text-slate-600">Viewport এ একটা element ক্লিক করুন।</p>
+          <p className="text-xs text-text-secondary">Viewport এ একটা element ক্লিক করুন।</p>
         )}
       </section>
 
-      <section className="border-t border-slate-800 pt-4">
-        <p className="text-[11px] text-slate-600 leading-relaxed">
+      <section className="border-t border-surface-border pt-4">
+        <p className="text-[11px] text-text-secondary leading-relaxed">
           Phase 10 Visualization সম্পূর্ণ (10i-10r): 3D Viewer Core,
           Rebar Detailing Model, Displacement/Deformation Animation,
           Force Diagram, Reaction Display, DCR Heat Map, Mode Shape/

@@ -4,6 +4,20 @@
  * টাইপগুলো দরকার, তাই এখানে বের করে আনা হয়েছে এবং page.tsx থেকে
  * re-export করা হচ্ছে (কোনো import path ভাঙেনি — page.tsx এ
  * `export type { SidebarTab, LoadSubTab, DesignSubTab }` থাকবে)।
+ *
+ * Phase 0.5 (Sidebar পুনর্গঠন) এ যা বদলেছে:
+ *   - "optimization" এবং "documentation" আগে "design" tab এর sub-tab
+ *     ছিল (OPTIMIZATION_DESIGN_SUB_TABS দিয়ে চিহ্নিত অংশ, আর
+ *     detailing/documentation গ্রুপের ৮টা sub-tab) — এখন দুটোই
+ *     independent top-level SidebarTab, কারণ নতুন vertical Sidebar এ
+ *     সব main section একই level এ ফ্ল্যাট থাকে (কোনো nested dropdown
+ *     না, শুধু Design tab এর নিজের ভেতরে RC/Steel/Foundation/Advanced
+ *     sub-tab bar থাকে, canvas এর উপরে)।
+ *   - DesignSubTab থেকে সরিয়ে আনা মান দুই ভাগে গেছে:
+ *     OptimizationSubTab (৫টা) এবং DocumentationSubTab (৮টা,
+ *     rebar-layout থেকে drawing-sync পর্যন্ত — ব্যবহারকারীর নির্দেশ
+ *     অনুযায়ী এইগুলো Documentation এ যাবে, Detailing এ না; Detailing
+ *     tab শুধু rebar viewport canvas, কোনো sub-tab নেই)।
  */
 export type SidebarTab =
   | "geometry"
@@ -13,8 +27,10 @@ export type SidebarTab =
   | "analysis"
   | "validation"
   | "design"
+  | "optimization"
   | "visualization"
-  | "detailing";
+  | "detailing"
+  | "documentation";
 
 export type LoadSubTab = "patterns" | "wind" | "seismic" | "apply" | "combinations";
 
@@ -34,13 +50,17 @@ export type DesignSubTab =
   | "connection"
   | "retaining-wall"
   | "geotechnical"
+  | "base-isolation"
+  | "collapse-prediction";
+
+export type OptimizationSubTab =
   | "foundation-optimization"
   | "section-optimization"
   | "weight-optimization"
   | "cost-optimization"
-  | "construction-ai-topology-optimization"
-  | "base-isolation"
-  | "collapse-prediction"
+  | "construction-ai-topology-optimization";
+
+export type DocumentationSubTab =
   | "rebar-layout"
   | "stirrup-tie-zones"
   | "development-length"
@@ -49,15 +69,6 @@ export type DesignSubTab =
   | "connection-detail"
   | "general-notes"
   | "drawing-sync";
-
-/** Design sub-tab গুলোর মধ্যে কোনগুলো "Design" stage বনাম "Optimization" stage-এর অন্তর্গত (Master Plan Phase 6 বনাম Phase 9)। */
-export const OPTIMIZATION_DESIGN_SUB_TABS: DesignSubTab[] = [
-  "foundation-optimization",
-  "section-optimization",
-  "weight-optimization",
-  "cost-optimization",
-  "construction-ai-topology-optimization",
-];
 
 /** Verification stage-এ যাওয়ার সময় Design ট্যাবের কোন sub-tab-এ নামানো ভালো (Collapse Prediction, Phase 8/9 এর ভেরিফিকেশন-ঘেঁষা চেক)। */
 export const VERIFICATION_DESIGN_SUB_TAB: DesignSubTab = "collapse-prediction";
@@ -111,32 +122,39 @@ export const STAGES: StageDef[] = [
     label: "Optimization",
     labelBn: "অপ্টিমাইজেশন",
     description: "Section/Weight/Cost অপ্টিমাইজেশন — ঐচ্ছিক ধাপ, ডিজাইন ফাইনাল করার আগে রিফাইন করতে।",
-    targetTab: "design",
+    targetTab: "optimization",
   },
   {
     id: "verification",
     order: 7,
-    label: "Verification",
+    label: "Validation",
     labelBn: "যাচাই",
     description: "Model Health Score, Design Verification, ও Collapse Prediction দিয়ে চূড়ান্ত পরীক্ষা।",
     targetTab: "validation",
   },
   {
-    id: "documentation",
+    id: "detailing",
     order: 8,
+    label: "Detailing",
+    labelBn: "ডিটেইলিং",
+    description: "Rebar geometry viewport — element-ভিত্তিক reinforcement দেখুন।",
+    targetTab: "detailing",
+  },
+  {
+    id: "documentation",
+    order: 9,
     label: "Documentation",
     labelBn: "ডকুমেন্টেশন",
-    description: "রিপোর্ট ও ড্রয়িং জেনারেশন — শীঘ্রই আসছে (Phase 11+)।",
-    targetTab: "detailing",
-    isPlaceholder: true,
+    description: "Bar Bending Schedule, Rebar/Stirrup Layout, Development Length, রিপোর্ট ও ড্রয়িং।",
+    targetTab: "documentation",
   },
   {
     id: "export",
-    order: 9,
+    order: 10,
     label: "Export",
     labelBn: "এক্সপোর্ট",
     description: "Hub-এ ফলাফল পাঠানো ও ফাইল এক্সপোর্ট — শীঘ্রই আসছে (Phase 11+)।",
-    targetTab: "detailing",
+    targetTab: "documentation",
     isPlaceholder: true,
   },
 ];

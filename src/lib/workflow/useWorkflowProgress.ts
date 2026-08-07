@@ -107,7 +107,19 @@ export function useWorkflowProgress(): Record<StageId, StageProgress> {
       }`,
     });
 
-    // 8/9. Documentation & Export — not built yet (Phase 11+)
+    // 8. Detailing — rebar viewport কে design সম্পন্ন হওয়ার পরের ধাপ
+    // হিসেবে ধরা হচ্ছে (DCR record থাকলেই rebar geometry viewport-এ
+    // দেখানোর মতো কিছু আছে ধরে নেওয়া যায়, যেহেতু design output থেকেই
+    // rebar layout আসে)।
+    progress.detailing = deriveProgress({
+      done: false,
+      partial: designedElementCount > 0,
+      detail: designedElementCount > 0
+        ? "ডিজাইন থেকে Rebar geometry দেখা যাবে"
+        : "এখনো কোনো ডিজাইন-চেক নেই",
+    });
+
+    // 9/10. Documentation & Export — not built yet (Phase 11+)
     progress.documentation = { status: "locked", detail: "শীঘ্রই আসছে", percent: 0 };
     progress.export = { status: "locked", detail: "শীঘ্রই আসছে", percent: 0 };
 

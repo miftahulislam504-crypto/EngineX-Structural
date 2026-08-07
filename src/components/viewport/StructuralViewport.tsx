@@ -94,7 +94,7 @@ export function StructuralViewport({
   }
 
   return (
-    <div className="relative w-full h-full bg-slate-950">
+    <div className="relative w-full h-full bg-surface">
       <Canvas
         camera={{ position: [14, 10, 14], fov: 45 }}
         onPointerMissed={() => {
@@ -165,7 +165,7 @@ export function StructuralViewport({
 
       {isEmpty && !isDrawing && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <p className="text-slate-500 text-sm">
+          <p className="text-text-muted text-sm">
             এখনো কোনো Grid, Story বা Element যোগ করা হয়নি। ডানপাশের প্যানেল থেকে শুরু করুন।
           </p>
         </div>

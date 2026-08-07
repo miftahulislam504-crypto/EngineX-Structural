@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import AuthProvider from "@/lib/auth/AuthProvider";
 
 // নোট: next/font/google (Geist) ইচ্ছাকৃতভাবে বাদ দেওয়া হয়েছে — এটা
 // build-time এ fonts.googleapis.com এ নেটওয়ার্ক কল করে, যা একটা
@@ -19,7 +20,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full antialiased">
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

@@ -1,27 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { onAuthStateChanged, signInAnonymously, type User } from "firebase/auth";
+import { onAuthStateChanged, type User } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
 
 /**
- * অস্থায়ী auth bridge (Phase 1)।
+ * Real sign-in bridge (Phase 0.2 থেকে)।
  *
- * প্রেক্ষাপট: firestore.rules এ `request.auth != null` চেক আছে, কিন্তু
- * এই App-এ এখনো কোনো real sign-in UI নেই — Hub থেকে ইউজার সেশন
- * শেয়ার করার প্রকৃত ব্যবস্থা (Firebase Auth custom token বা
- * SSO handoff) একটা পরের Phase-এর কাজ, কারণ এটা Hub App-এর
- * auth architecture এর উপর নির্ভরশীল যা এখনো এই App থেকে দেখা যায়নি।
+ * আগে (Phase 1) এখানে anonymous auth ব্যবহার হতো, কারণ তখনো কোনো
+ * sign-in UI ছিল না — সেই সাময়িক bridge এখন সরানো হয়েছে, কারণ
+ * lib/auth/useAuthStore.ts + app/login/page.tsx দিয়ে real email/
+ * password sign-in এসে গেছে (Hub এর সাথে একই Firebase project শেয়ার
+ * করে, কিন্তু session আলাদা — প্রতিটা App এ আলাদা করে সাইন-ইন লাগে)।
  *
- * এই মুহূর্তে "কোনো sign-in নেই" এবং "firestore.rules সব বন্ধ" এই
- * দুইয়ের মাঝে একটা gap আছে যেটা এখনই ব্লক করে দিত — তাই সাময়িকভাবে
- * anonymous auth ব্যবহার করা হচ্ছে যাতে অন্তত rules কাজ করে এবং
- * Phase 1 এর Grid/Story ফিচার টেস্ট করা যায়।
+ * এখন isReady শুধু তখনই true হয় যখন প্রকৃত (non-null) signed-in user
+ * পাওয়া যায়, অথবা onAuthStateChanged প্রথমবার fire করে জানিয়ে দেয় যে
+ * কেউ signed-in নেই (currentUser === null)। কেউ signed-in না থাকলে
+ * এই hook নিজে redirect করে না — সেই দায়িত্ব যে component এটা call
+ * করে তার (এই App এ: app/model/[projectId]/page.tsx, যেটা user===null
+ * ও isReady===true দেখলে /login এ পাঠিয়ে দেয়)। এভাবে এই hook টা শুধু
+ * "auth অবস্থা কী" জানায়, "না থাকলে কী করব" এর সিদ্ধান্ত component এর
+ * উপর ছেড়ে দেয় — future এ ভিন্ন route ভিন্নভাবে react করতে চাইলে
+ * (যেমন read-only public preview) সহজ হবে।
  *
- * ⚠️ এটা প্রকৃত multi-user permission enforcement না — anonymous
- * user রা একে অপরের থেকে আলাদা করা যায় না এই সেটআপে। Hub-এর সাথে
- * প্রকৃত auth integration হওয়ার আগে এটাকে security boundary হিসেবে
- * ধরা যাবে না।
+ * Geometry/Elements/Library/Loads — এই ৪টা hook এই ফাইলের বাইরের
+ * signature (`{ user, isReady, error }`) এর উপর নির্ভর করে, তাই এই
+ * পরিবর্তনে তাদের কোনো কোড বদলাতে হয়নি — শুধু ভেতরের logic বদলেছে।
  */
 export function useEnsureAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -29,20 +33,17 @@ export function useEnsureAuth() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth(), (currentUser) => {
-      if (currentUser) {
+    const unsubscribe = onAuthStateChanged(
+      auth(),
+      (currentUser) => {
         setUser(currentUser);
         setIsReady(true);
-        return;
-      }
-
-      // কোনো ইউজার সাইন-ইন করা নেই — anonymous auth দিয়ে একটা সেশন
-      // তৈরি করার চেষ্টা করা হচ্ছে।
-      signInAnonymously(auth()).catch((err) => {
+      },
+      (err) => {
         setError(err instanceof Error ? err.message : "Auth ব্যর্থ হয়েছে");
         setIsReady(true);
-      });
-    });
+      }
+    );
 
     return () => unsubscribe();
   }, []);
