@@ -267,6 +267,20 @@ export function GeneralNotesSheet({ context, revisionNumber }: GeneralNotesSheet
     year: "numeric",
   });
 
+  // GeneralNotesData নিজে fyMPa/fcMPa/clearCoverOrHalfSpacingMm রাখে না (ওগুলো
+  // শুধু assembleGeneralNotes()-এর input — দেখুন generalNotes.ts) — development
+  // length টেবিলটা যে material assumption দিয়ে বানানো হয়েছিল, footnote-এ সেটাই
+  // দেখানোর জন্য প্রধান material (materials[0], panel সবসময় একটাই entry push
+  // করে) আর "Exposed" cover condition (panel-এ clearCoverOrHalfSpacingMm হিসেবে
+  // ব্যবহৃত হওয়া entry) থেকে derive করা হচ্ছে।
+  const primaryMaterial = data.materials[0];
+  const exposedCover =
+    data.coverRequirements.find((c) => c.condition === "Exposed (Top/Side)") ??
+    data.coverRequirements[0];
+  const tableFcMPa = primaryMaterial?.concreteFcMPa ?? "—";
+  const tableFyMPa = primaryMaterial?.reinforcementFyMPa ?? "—";
+  const tableClearCoverMm = exposedCover?.coverMm ?? "—";
+
   return (
     <Document
       title={`${project?.projectName ?? "Untitled Project"} — General Notes`}
@@ -323,8 +337,8 @@ export function GeneralNotesSheet({ context, revisionNumber }: GeneralNotesSheet
           rows={data.developmentLengthTable}
         />
         <Text style={styles.footnote}>
-          All lengths in mm, based on f&apos;c = {data.fcMPa} MPa, fy = {data.fyMPa} MPa, clear
-          cover/half-spacing = {data.clearCoverOrHalfSpacingMm} mm as specified above.
+          All lengths in mm, based on f&apos;c = {tableFcMPa} MPa, fy = {tableFyMPa} MPa, clear
+          cover/half-spacing = {tableClearCoverMm} mm as specified above.
         </Text>
       </ReportSheetPage>
     </Document>
