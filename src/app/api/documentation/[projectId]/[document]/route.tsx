@@ -38,7 +38,7 @@
 
 import type { ReactElement } from "react";
 import { NextRequest, NextResponse } from "next/server";
-import { renderToBuffer } from "@react-pdf/renderer";
+import { renderToBuffer, type DocumentProps } from "@react-pdf/renderer";
 import { buildReportContext } from "@/lib/documentation/reportContext";
 import { DesignReportDocument } from "@/lib/documentation/pdf/design-report/DesignReportDocument";
 import { CalcSheetsDocument } from "@/lib/documentation/pdf/calc-sheets/CalcSheetsDocument";
@@ -108,7 +108,15 @@ export async function GET(
       break;
   }
 
-  const buffer = await renderToBuffer(element);
+  // switch-এর প্রতিটা case একটা react-pdf <Document> রুট রিটার্ন করে
+  // (DesignReportDocument, BbsSheetDocument ইত্যাদি সবই এই কনভেনশন
+  // মেনে চলে), কিন্তু TypeScript variable-টাকে generic ReactElement
+  // হিসেবে ইনফার করে (props: unknown) কারণ ছয়টা ভিন্ন কম্পোনেন্টের
+  // রিটার্ন টাইপ union করা হয়েছে। renderToBuffer() এর সিগনেচার
+  // ReactElement<DocumentProps> চায় — তাই এখানে assert করা হলো,
+  // switch-এর প্রতিটা branch সত্যিকারের react-pdf Document element
+  // দিচ্ছে তা কোড রিভিউ থেকে নিশ্চিত হয়েই।
+  const buffer = await renderToBuffer(element as ReactElement<DocumentProps>);
 
   // Node Buffer, Uint8Array-এর subclass — Fetch স্ট্যান্ডার্ড অনুযায়ী
   // সরাসরি valid BodyInit, তাই কোনো conversion লাগে না।
