@@ -128,7 +128,13 @@ export function GridLayoutSketch({ grids, elements, width = 720, height = 380 }:
               strokeWidth={0.6}
               strokeDasharray="2,2"
             />
-            <SvgText x={toX(g.coordinate)} y={margin - 6} fontSize={7} fill={pdfColors.inkMuted} textAnchor="middle">
+            <SvgText
+              x={toX(g.coordinate)}
+              y={margin - 6}
+              style={{ fontSize: 7 }}
+              fill={pdfColors.inkMuted}
+              textAnchor="middle"
+            >
               {g.label}
             </SvgText>
           </Fragment>
@@ -146,7 +152,13 @@ export function GridLayoutSketch({ grids, elements, width = 720, height = 380 }:
               strokeWidth={0.6}
               strokeDasharray="2,2"
             />
-            <SvgText x={margin - 8} y={toY(g.coordinate) + 3} fontSize={7} fill={pdfColors.inkMuted} textAnchor="end">
+            <SvgText
+              x={margin - 8}
+              y={toY(g.coordinate) + 3}
+              style={{ fontSize: 7 }}
+              fill={pdfColors.inkMuted}
+              textAnchor="end"
+            >
               {g.label}
             </SvgText>
           </Fragment>
@@ -167,7 +179,7 @@ export function GridLayoutSketch({ grids, elements, width = 720, height = 380 }:
             return (
               <Fragment key={i}>
                 <Circle cx={cx} cy={cy} r={4} fill={pdfColors.ink} />
-                <SvgText x={cx + 6} y={cy - 4} fontSize={6.5} fill={pdfColors.ink}>
+                <SvgText x={cx + 6} y={cy - 4} style={{ fontSize: 6.5 }} fill={pdfColors.ink}>
                   {item.label}
                 </SvgText>
               </Fragment>

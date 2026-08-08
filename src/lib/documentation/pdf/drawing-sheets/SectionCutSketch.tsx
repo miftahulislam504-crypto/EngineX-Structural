@@ -224,7 +224,7 @@ export function SectionCutSketch({ widthMm, depthMm, detailing, label }: Section
 
         {/* dimension line — width, নিচে */}
         <Line x1={rectX} y1={rectY + rectH + 6} x2={rectX + rectW} y2={rectY + rectH + 6} stroke={pdfColors.inkMuted} strokeWidth={0.5} />
-        <SvgText x={DRAW_WIDTH / 2} y={rectY + rectH + 13} fontSize={6} fill={pdfColors.inkMuted} textAnchor="middle">
+        <SvgText x={DRAW_WIDTH / 2} y={rectY + rectH + 13} style={{ fontSize: 6 }} fill={pdfColors.inkMuted} textAnchor="middle">
           {widthMm}mm
         </SvgText>
       </Svg>

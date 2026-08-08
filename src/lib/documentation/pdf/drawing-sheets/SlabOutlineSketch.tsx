@@ -92,7 +92,7 @@ export function SlabOutlineSketch({ grids, slabs, width = 720, height = 380 }: S
               strokeWidth={0.6}
               strokeDasharray="2,2"
             />
-            <SvgText x={toX(g.coordinate)} y={margin - 6} fontSize={7} fill={pdfColors.inkMuted} textAnchor="middle">
+            <SvgText x={toX(g.coordinate)} y={margin - 6} style={{ fontSize: 7 }} fill={pdfColors.inkMuted} textAnchor="middle">
               {g.label}
             </SvgText>
           </Fragment>
@@ -105,7 +105,7 @@ export function SlabOutlineSketch({ grids, slabs, width = 720, height = 380 }: S
               strokeWidth={0.6}
               strokeDasharray="2,2"
             />
-            <SvgText x={margin - 8} y={toY(g.coordinate) + 3} fontSize={7} fill={pdfColors.inkMuted} textAnchor="end">
+            <SvgText x={margin - 8} y={toY(g.coordinate) + 3} style={{ fontSize: 7 }} fill={pdfColors.inkMuted} textAnchor="end">
               {g.label}
             </SvgText>
           </Fragment>
@@ -117,7 +117,7 @@ export function SlabOutlineSketch({ grids, slabs, width = 720, height = 380 }: S
           return (
             <Fragment key={i}>
               <Path d={polygonPath(slab.vertices)} stroke={pdfColors.statusInfo} strokeWidth={1.2} fill="none" />
-              <SvgText x={cx} y={cy} fontSize={7} fill={pdfColors.ink} textAnchor="middle">
+              <SvgText x={cx} y={cy} style={{ fontSize: 7 }} fill={pdfColors.ink} textAnchor="middle">
                 {slab.label}
               </SvgText>
             </Fragment>
