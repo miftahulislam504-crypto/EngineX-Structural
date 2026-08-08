@@ -5,6 +5,7 @@ import {
   doc,
   setDoc,
   deleteDoc,
+  getDocs,
   onSnapshot,
   serverTimestamp,
   type Unsubscribe,
@@ -36,6 +37,20 @@ export async function saveElement(
 export async function deleteElement(projectId: string, elementId: string): Promise<void> {
   const ref = doc(db(), firestorePaths.structuralElement(projectId, elementId));
   await deleteDoc(ref);
+}
+
+/**
+ * পুরো subcollection এর one-shot fetch — Documentation Engine
+ * (reportContext.ts, Phase 11 merge) এর জন্য দরকার, যেখানে real-time
+ * listener এর বদলে "এই মুহূর্তে সব element" চাওয়া হয় (PDF generate
+ * করার সময় একবারই)। subscribeToElements() এর মতোই
+ * firestorePaths.structuralElements(projectId) collection পড়ে, শুধু
+ * getDocs (one-shot) ব্যবহার করে onSnapshot (live listener) এর বদলে।
+ */
+export async function fetchAllElements(projectId: string): Promise<StructuralElement[]> {
+  const ref = collection(db(), firestorePaths.structuralElements(projectId));
+  const snapshot = await getDocs(ref);
+  return snapshot.docs.map((d) => d.data() as StructuralElement);
 }
 
 /**

@@ -4,6 +4,7 @@ import {
   doc,
   collection,
   getDoc,
+  getDocs,
   setDoc,
   deleteDoc,
   onSnapshot,
@@ -180,4 +181,17 @@ export function subscribeToLoadCases(
     },
     (error) => onError?.(error)
   );
+}
+
+/**
+ * subscribeToLoadCases() এর one-shot সংস্করণ — Documentation Engine
+ * (reportContext.ts, Phase 11 merge) PDF generate করার সময় একবারই
+ * সব load case চায়, live listener না (route.tsx এর server-side GET
+ * handler এ subscription রাখাও অর্থহীন — request শেষ হলেই handler
+ * রিটার্ন করে)।
+ */
+export async function fetchLoadCases(projectId: string): Promise<LoadCase[]> {
+  const ref = collection(db(), firestorePaths.loadCases(projectId));
+  const snapshot = await getDocs(ref);
+  return snapshot.docs.map((d) => d.data() as LoadCase);
 }

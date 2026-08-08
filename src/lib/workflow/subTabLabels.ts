@@ -86,4 +86,5 @@ export const DOCUMENTATION_SUB_TABS: SubTabItem<DocumentationSubTab>[] = [
   { id: "connection-detail", label: "Connection Detail" },
   { id: "general-notes", label: "General Notes" },
   { id: "drawing-sync", label: "Drawing Sync" },
+  { id: "reports-export", label: "Reports & Export" },
 ];

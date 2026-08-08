@@ -68,7 +68,8 @@ export type DocumentationSubTab =
   | "section-detail"
   | "connection-detail"
   | "general-notes"
-  | "drawing-sync";
+  | "drawing-sync"
+  | "reports-export";
 
 /** Verification stage-এ যাওয়ার সময় Design ট্যাবের কোন sub-tab-এ নামানো ভালো (Collapse Prediction, Phase 8/9 এর ভেরিফিকেশন-ঘেঁষা চেক)। */
 export const VERIFICATION_DESIGN_SUB_TAB: DesignSubTab = "collapse-prediction";

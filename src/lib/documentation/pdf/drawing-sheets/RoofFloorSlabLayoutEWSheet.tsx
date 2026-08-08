@@ -1,0 +1,82 @@
+/**
+ * RoofFloorSlabLayoutEWSheet — Phase 11h (S-15)
+ *
+ * TypicalFloorSlabLayoutEWSheet.tsx এর অভিন্ন প্যাটার্ন — roofStoryId bucket।
+ */
+
+import { Document, Text } from "@react-pdf/renderer";
+import { ReportSheetPage } from "@/lib/documentation/pdf/components/ReportSheetPage";
+import { SlabOutlineSketch, type SlabPolygon } from "@/lib/documentation/pdf/drawing-sheets/SlabOutlineSketch";
+import { resolveElementLabel } from "@/lib/documentation/pdf/drawing-sheets/elementLabel";
+import { classifyStories, resolveElementStoryId } from "@/lib/documentation/pdf/drawing-sheets/storyClassification";
+import { pdfFontSize, pdfSpacing, pdfColors } from "@/lib/documentation/pdf/theme";
+import type { ReportContext } from "@/lib/documentation/reportContext";
+import { SHEET_INDEX } from "@/lib/documentation/pdf/drawing-sheets/sheetIndex";
+
+export interface RoofFloorSlabLayoutEWSheetProps {
+  context: ReportContext;
+  revisionNumber: string;
+}
+
+export function RoofFloorSlabLayoutEWSheetContent({ context, revisionNumber }: RoofFloorSlabLayoutEWSheetProps) {
+  const project = context.hub?.projectInfo ?? null;
+  const dateLabel = new Date(context.generatedAt).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+  const entry = SHEET_INDEX.find((s) => s.sheetNumber === "S-15");
+
+  const { roofStoryId } = classifyStories(context.geometry);
+  const roofSlabs = context.elements.filter(
+    (e) =>
+      e.category === "slab" &&
+      roofStoryId !== null &&
+      resolveElementStoryId(context.designResults, e.elementId) === roofStoryId
+  );
+
+  const slabPolygons: SlabPolygon[] = roofSlabs
+    .map((e) => {
+      const vertices = (e as unknown as { vertices?: { x: number; z: number }[] }).vertices;
+      if (!vertices) return null;
+      return { label: resolveElementLabel(context, e.elementId), vertices };
+    })
+    .filter((s): s is SlabPolygon => s !== null);
+
+  return (
+    <ReportSheetPage
+      project={project}
+      sheetNumber="S-15"
+      sheetTitle="Roof Floor Slab Reinf. Layout Plan (E-W Direction)"
+      scale="NTS"
+      date={dateLabel}
+      revisionNumber={revisionNumber}
+    >
+      <Text style={{ fontSize: pdfFontSize.h1, fontFamily: "Helvetica-Bold", marginBottom: 4 }}>
+        Roof Floor Slab Reinf. Layout Plan (E-W Direction)
+      </Text>
+      <Text style={{ fontSize: pdfFontSize.caption, color: pdfColors.inkMuted, marginBottom: pdfSpacing.sectionGap }}>
+        {entry?.limitationNote}
+      </Text>
+      {slabPolygons.length === 0 ? (
+        <Text style={{ fontSize: pdfFontSize.body, color: pdfColors.inkMuted }}>
+          No roof-level slab elements with resolvable geometry found in the current model.
+        </Text>
+      ) : (
+        <SlabOutlineSketch grids={context.geometry.grids} slabs={slabPolygons} />
+      )}
+    </ReportSheetPage>
+  );
+}
+
+export function RoofFloorSlabLayoutEWSheet(props: RoofFloorSlabLayoutEWSheetProps) {
+  const project = props.context.hub?.projectInfo ?? null;
+  return (
+    <Document
+      title={`${project?.projectName ?? "Untitled Project"} — Roof Floor Slab Reinf. Layout Plan (E-W)`}
+      creator="CivilOS Structural — Documentation Engine"
+    >
+      <RoofFloorSlabLayoutEWSheetContent {...props} />
+    </Document>
+  );
+}

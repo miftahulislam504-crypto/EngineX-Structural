@@ -18,6 +18,7 @@
  *   projects/{projectId}/analysisRuns/{runId}
  *   projects/{projectId}/analysisRuns/{runId}/results/{resultId}
  *   projects/{projectId}/designResults/{designId}
+ *   projects/{projectId}/structuralModel/generalNotes      ← General Notes panel input (Phase 11 merge, single doc — একটা project এ একটাই সেট criteria/cover/material)
  *   projects/{projectId}/hubSync/outgoing                ← this app writes, Hub reads
  *   projects/{projectId}/hubSync/incoming                 ← Hub writes, this app reads
  */
@@ -60,6 +61,9 @@ export const firestorePaths = {
     `projects/${projectId}/analysisRuns/${runId}/results`,
 
   designResults: (projectId: string) => `projects/${projectId}/designResults`,
+
+  generalNotes: (projectId: string) =>
+    `projects/${projectId}/structuralModel/generalNotes`,
 
   // Hub sync — Section 20 এর Integration Layer
   hubSyncOutgoing: (projectId: string) =>
