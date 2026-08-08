@@ -12,6 +12,9 @@ import { selectColumnBarArrangement } from "@/lib/design/barSelection";
 import { generateColumnDetailing } from "@/lib/detailing/generateColumnDetailing";
 import { useDetailingStore } from "@/lib/detailing/useDetailingStore";
 import { useDcrStore } from "@/lib/design/useDcrStore";
+import { persistDesignResult } from "@/lib/design/firestore";
+import { persistDetailingResult } from "@/lib/detailing/firestore";
+import { useProjectIdStore } from "@/lib/project/useProjectIdStore";
 
 function elementLength(e: ColumnElement): number {
   const dx = e.endPoint.x - e.startPoint.x;
@@ -42,6 +45,7 @@ export function RcColumnDesignPanel() {
   const sourceAnalysisType = useAnalysisResultStore((s) => s.sourceAnalysisType);
   const setDetailingResult = useDetailingStore((s) => s.setResult);
   const setDcrChecks = useDcrStore((s) => s.setChecks);
+  const projectId = useProjectIdStore((s) => s.projectId);
 
   const columns = useMemo(
     () => elements.filter((e): e is ColumnElement => e.category === "column"),
@@ -114,7 +118,7 @@ export function RcColumnDesignPanel() {
     const fy = columnMaterial.type === "concrete" ? columnMaterial.rebarFy ?? 414 : 414;
     const fc = columnMaterial.type === "concrete" ? columnMaterial.fc : 28;
 
-    const result = runRcColumnDesign({
+    const input = {
       elementLabel: selectedColumn.label,
       widthMm: section.width,
       totalDepthMm: section.depth,
@@ -133,9 +137,9 @@ export function RcColumnDesignPanel() {
       m2KNm: Number(m2KNm) || 0,
       isSingleCurvature,
       criticalBucklingLoadKN: Number(criticalBucklingLoadKN) || 0,
-    });
+    };
+    const result = runRcColumnDesign(input);
     setReport(result);
-
     if (enableBiaxialCheck) {
       const biaxial = checkColumnBiaxialBending({
         widthMm: section.width,
@@ -160,6 +164,15 @@ export function RcColumnDesignPanel() {
       ]);
     }
     setDetailingSent(false);
+    if (projectId) {
+      persistDesignResult(projectId, {
+        elementId: selectedColumn.elementId,
+        elementLabel: selectedColumn.label,
+        elementCategory: "column",
+        status: result.overallStatus === "error" ? "fail" : result.overallStatus,
+        detail: { input, report: result },
+      }).catch((e) => console.error("Failed to persist column design result:", e));
+    }
   }
 
   const [detailingSent, setDetailingSent] = useState(false);
@@ -193,6 +206,11 @@ export function RcColumnDesignPanel() {
     });
     setDetailingResult(detailing);
     setDetailingSent(true);
+    if (projectId) {
+      persistDetailingResult(projectId, detailing).catch((e) =>
+        console.error("Failed to persist column detailing result:", e)
+      );
+    }
   }
 
   return (

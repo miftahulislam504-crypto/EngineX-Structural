@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { runRetainingWallDesign, type RetainingWallDesignReport } from "@/lib/design/retainingWallDesign";
+import { persistDesignResult } from "@/lib/design/firestore";
+import { useProjectIdStore } from "@/lib/project/useProjectIdStore";
 
 function fmt(v: number, decimals = 1): string {
   return Number.isFinite(v) ? v.toFixed(decimals) : "—";
@@ -17,6 +19,7 @@ function fmt(v: number, decimals = 1): string {
  * geotechnical report থেকে ইঞ্জিনিয়ার সরবরাহ করেন।
  */
 export function RetainingWallDesignPanel() {
+  const projectId = useProjectIdStore((s) => s.projectId);
   const [stemHeightM, setStemHeightM] = useState("4.5");
   const [stemTopThicknessMm, setStemTopThicknessMm] = useState("300");
   const [stemBottomThicknessMm, setStemBottomThicknessMm] = useState("400");
@@ -39,7 +42,7 @@ export function RetainingWallDesignPanel() {
   const [report, setReport] = useState<RetainingWallDesignReport | null>(null);
 
   function handleRunDesign() {
-    const result = runRetainingWallDesign({
+    const input = {
       elementLabel: "Retaining Wall",
       geometry: {
         stemHeightM: Number(stemHeightM) || 0,
@@ -61,8 +64,22 @@ export function RetainingWallDesignPanel() {
       effectiveCoverMm: Number(effectiveCoverMm) || 60,
       fcMPa: Number(fcMPa) || 21,
       fyMPa: Number(fyMPa) || 414,
-    });
+    };
+    const result = runRetainingWallDesign(input);
     setReport(result);
+    if (projectId) {
+      // model element এর সাথে bound না (standalone calculator, দেখুন ফাইলের
+      // docblock) — তাই একটা fixed synthetic elementId, যাতে upsert
+      // ধারাবাহিকভাবে একই doc আপডেট করে (একাধিক "Retaining Wall" entry
+      // তৈরি না হয়ে যায় প্রতিবার Run চাপলে)।
+      persistDesignResult(projectId, {
+        elementId: "standalone-retaining-wall",
+        elementLabel: "Retaining Wall",
+        elementCategory: "retaining-wall",
+        status: result.overallStatus === "error" ? "fail" : result.overallStatus,
+        detail: { input, report: result },
+      }).catch((e) => console.error("Failed to persist retaining wall design result:", e));
+    }
   }
 
   return (

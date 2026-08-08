@@ -11,6 +11,9 @@ import type { RectangularSection } from "@/lib/types/section";
 import { generateBeamDetailing } from "@/lib/detailing/generateBeamDetailing";
 import { useDetailingStore } from "@/lib/detailing/useDetailingStore";
 import { useDcrStore } from "@/lib/design/useDcrStore";
+import { persistDesignResult } from "@/lib/design/firestore";
+import { persistDetailingResult } from "@/lib/detailing/firestore";
+import { useProjectIdStore } from "@/lib/project/useProjectIdStore";
 
 const SUPPORT_CONDITIONS: { value: BeamSupportCondition; label: string }[] = [
   { value: "simply-supported", label: "Simply Supported" },
@@ -42,6 +45,7 @@ export function RcBeamDesignPanel() {
   const sourceAnalysisType = useAnalysisResultStore((s) => s.sourceAnalysisType);
   const setDetailingResult = useDetailingStore((s) => s.setResult);
   const setDcrChecks = useDcrStore((s) => s.setChecks);
+  const projectId = useProjectIdStore((s) => s.projectId);
 
   const beams = useMemo(() => elements.filter((e): e is BeamElement => e.category === "beam"), [elements]);
 
@@ -95,7 +99,7 @@ export function RcBeamDesignPanel() {
     const fy = beamMaterial.type === "concrete" ? beamMaterial.rebarFy ?? 414 : 414;
     const fc = beamMaterial.type === "concrete" ? beamMaterial.fc : 28;
 
-    const result = runRcBeamDesign({
+    const input = {
       elementLabel: selectedBeam.label,
       spanMm: elementLength(selectedBeam) * 1000,
       widthMm: section.width,
@@ -110,13 +114,23 @@ export function RcBeamDesignPanel() {
       factoredShearKN: Number(factoredShearKN) || 0,
       providedAsMm2: providedAsMm2.trim() !== "" ? Number(providedAsMm2) : undefined,
       providedBarSpacingMm: providedBarSpacingMm.trim() !== "" ? Number(providedBarSpacingMm) : undefined,
-    });
+    };
+    const result = runRcBeamDesign(input);
     setReport(result);
     setDetailingSent(false);
     if (result.flexuralAdequacy) {
       setDcrChecks(selectedBeam.elementId, selectedBeam.label, [
         { label: "Flexure", ratio: result.flexuralAdequacy.utilizationRatio },
       ]);
+    }
+    if (projectId) {
+      persistDesignResult(projectId, {
+        elementId: selectedBeam.elementId,
+        elementLabel: selectedBeam.label,
+        elementCategory: "beam",
+        status: result.overallStatus === "error" ? "fail" : result.overallStatus,
+        detail: { input, report: result },
+      }).catch((e) => console.error("Failed to persist beam design result:", e));
     }
   }
 
@@ -137,6 +151,11 @@ export function RcBeamDesignPanel() {
     });
     setDetailingResult(detailing);
     setDetailingSent(true);
+    if (projectId) {
+      persistDetailingResult(projectId, detailing).catch((e) =>
+        console.error("Failed to persist beam detailing result:", e)
+      );
+    }
   }
 
   return (

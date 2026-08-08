@@ -8,6 +8,8 @@ import { runSteelColumnDesign, type SteelColumnDesignReport } from "@/lib/design
 import type { ColumnElement } from "@/lib/types/element";
 import type { WShapeSection } from "@/lib/types/section";
 import { useDcrStore } from "@/lib/design/useDcrStore";
+import { persistDesignResult } from "@/lib/design/firestore";
+import { useProjectIdStore } from "@/lib/project/useProjectIdStore";
 
 function fmt(v: number, decimals = 1): string {
   return Number.isFinite(v) ? v.toFixed(decimals) : "—";
@@ -72,6 +74,7 @@ export function SteelColumnDesignPanel() {
 
   const [report, setReport] = useState<SteelColumnDesignReport | null>(null);
   const setDcrChecks = useDcrStore((s) => s.setChecks);
+  const projectId = useProjectIdStore((s) => s.projectId);
 
   function handleUseAutoValues() {
     if (governingForces) {
@@ -90,7 +93,7 @@ export function SteelColumnDesignPanel() {
     const fy = columnMaterial.type === "steel" ? columnMaterial.fy : 345;
     const es = columnMaterial.type === "steel" ? columnMaterial.es : 200000;
 
-    const result = runSteelColumnDesign({
+    const input = {
       elementLabel: selectedColumn.label,
       section,
       fyMPa: fy,
@@ -99,11 +102,21 @@ export function SteelColumnDesignPanel() {
       cb: Number(cb) || 1.0,
       factoredAxialLoadKN: Number(factoredAxialLoadKN) || 0,
       factoredMomentKNm: Number(factoredMomentKNm) || 0,
-    });
+    };
+    const result = runSteelColumnDesign(input);
     setReport(result);
     setDcrChecks(selectedColumn.elementId, selectedColumn.label, [
       { label: "Axial-Flexure Interaction", ratio: result.interaction.interactionValue },
     ]);
+    if (projectId) {
+      persistDesignResult(projectId, {
+        elementId: selectedColumn.elementId,
+        elementLabel: selectedColumn.label,
+        elementCategory: "column",
+        status: result.overallStatus === "error" ? "fail" : result.overallStatus,
+        detail: { input, report: result },
+      }).catch((e) => console.error("Failed to persist steel column design result:", e));
+    }
   }
 
   return (

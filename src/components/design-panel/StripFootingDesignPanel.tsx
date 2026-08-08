@@ -6,6 +6,8 @@ import { useLibraryStore } from "@/lib/library/useLibraryStore";
 import { sizeStripFootingForBearing, type StripFootingSizingResult } from "@/lib/design/stripFootingSizing";
 import { runStripFootingDesign, type StripFootingDesignReport } from "@/lib/design/stripFootingDesign";
 import type { StripFootingElement } from "@/lib/types/element";
+import { persistDesignResult } from "@/lib/design/firestore";
+import { useProjectIdStore } from "@/lib/project/useProjectIdStore";
 
 function fmt(v: number, decimals = 1): string {
   return Number.isFinite(v) ? v.toFixed(decimals) : "—";
@@ -21,6 +23,7 @@ function fmt(v: number, decimals = 1): string {
 export function StripFootingDesignPanel() {
   const elements = useElementsStore((s) => s.elements);
   const materials = useLibraryStore((s) => s.materialLibrary.materials);
+  const projectId = useProjectIdStore((s) => s.projectId);
 
   const stripFootings = useMemo(
     () => elements.filter((e): e is StripFootingElement => e.category === "strip-footing"),
@@ -57,7 +60,7 @@ export function StripFootingDesignPanel() {
       return;
     }
 
-    const designResult = runStripFootingDesign({
+    const designInput = {
       elementLabel: selected.label,
       footingWidthMm: sizingResult.requiredWidthMm,
       supportWidthMm: Number(supportWidthMm) || 230,
@@ -67,8 +70,26 @@ export function StripFootingDesignPanel() {
       factoredLinearLoadKNPerM: Number(factoredLinearLoadKNPerM) || 0,
       fcMPa: fc,
       fyMPa: fy,
-    });
+    };
+    const designResult = runStripFootingDesign(designInput);
     setReport(designResult);
+    if (projectId) {
+      persistDesignResult(projectId, {
+        elementId: selected.elementId,
+        elementLabel: selected.label,
+        elementCategory: "strip-footing",
+        status: designResult.overallStatus === "error" ? "fail" : designResult.overallStatus,
+        detail: {
+          input: {
+            ...designInput,
+            serviceLinearLoadKNPerM: Number(serviceLinearLoadKNPerM) || 0,
+            allowableBearingPressureKPa: Number(allowableBearingPressureKPa) || 0,
+          },
+          sizing: sizingResult,
+          report: designResult,
+        },
+      }).catch((e) => console.error("Failed to persist strip-footing design result:", e));
+    }
   }
 
   return (

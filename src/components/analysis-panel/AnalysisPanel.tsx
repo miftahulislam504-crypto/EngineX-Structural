@@ -25,6 +25,7 @@ import {
 import type { SeismicZone, SiteClass } from "@/lib/loads/seismicLoad";
 import { useAnalysisResultStore } from "@/lib/analysis/useAnalysisResultStore";
 import { useAnalysisVisualizationStore } from "@/lib/analysis/useAnalysisVisualizationStore";
+import { persistAnalysisResult } from "@/lib/analysis/firestore";
 import { HingeEditor } from "./HingeEditor";
 import { StoryDriftCheckPanel } from "./StoryDriftCheckPanel";
 import { IrregularityCheckPanel } from "./IrregularityCheckPanel";
@@ -170,19 +171,39 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
         setLinearStaticResult(r);
         if (r.success) setVizLinearStatic(r);
         if (r.success && r.elementEndForces) setSharedElementEndForces(r.elementEndForces, "Linear Static");
+        if (r.success) {
+          persistAnalysisResult(projectId, "linear-static", r).catch((e) =>
+            console.error("Failed to persist linear-static result:", e)
+          );
+        }
       } else if (analysisType === "modal") {
         const r = await runModalAnalysis(projectId, elements, materials, sections, loadCases, numModes);
         setModalResult(r);
         if (r.success) setVizModal(r);
+        if (r.success) {
+          persistAnalysisResult(projectId, "modal", r).catch((e) =>
+            console.error("Failed to persist modal result:", e)
+          );
+        }
       } else if (analysisType === "buckling") {
         const r = await runBucklingAnalysis(projectId, elements, materials, sections, loadCases, numModes);
         setBucklingResult(r);
         if (r.success) setVizBuckling(r);
+        if (r.success) {
+          persistAnalysisResult(projectId, "buckling", r).catch((e) =>
+            console.error("Failed to persist buckling result:", e)
+          );
+        }
       } else if (analysisType === "pdelta") {
         const r = await runPDeltaAnalysis(projectId, elements, materials, sections, loadCases);
         setPdeltaResult(r);
         if (r.success) setVizPdelta(r);
         if (r.success && r.elementEndForces) setSharedElementEndForces(r.elementEndForces, "P-Delta");
+        if (r.success) {
+          persistAnalysisResult(projectId, "pdelta", r).catch((e) =>
+            console.error("Failed to persist pdelta result:", e)
+          );
+        }
       } else if (analysisType === "response-spectrum") {
         const r = await runResponseSpectrumAnalysis(projectId, elements, materials, sections, loadCases, {
           seismicZone,
@@ -193,6 +214,11 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
         setRsaResult(r);
         if (r.success) setVizResponseSpectrum(r);
         if (r.success && r.elementEndForces) setSharedElementEndForces(r.elementEndForces, "Response Spectrum");
+        if (r.success) {
+          persistAnalysisResult(projectId, "response-spectrum", r).catch((e) =>
+            console.error("Failed to persist response-spectrum result:", e)
+          );
+        }
       } else if (analysisType === "nonlinear-static") {
         const r = await runNonlinearStaticAnalysis(projectId, elements, materials, sections, loadCases, {
           numLoadSteps,
@@ -200,6 +226,11 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
         setNonlinearResult(r);
         if (r.success) setVizNonlinearStatic(r);
         if (r.success && r.elementEndForces) setSharedElementEndForces(r.elementEndForces, "Nonlinear Static");
+        if (r.success) {
+          persistAnalysisResult(projectId, "nonlinear-static", r).catch((e) =>
+            console.error("Failed to persist nonlinear-static result:", e)
+          );
+        }
       } else {
         const controlPoint = uniqueNodePoints.find(([key]) => key === controlPointKey)?.[1];
         if (!controlPoint) {
@@ -213,6 +244,11 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
         });
         setPushoverResult(r);
         if (r.success) setVizPushover(r);
+        if (r.success) {
+          persistAnalysisResult(projectId, "pushover", r).catch((e) =>
+            console.error("Failed to persist pushover result:", e)
+          );
+        }
       }
     } finally {
       setIsRunning(false);

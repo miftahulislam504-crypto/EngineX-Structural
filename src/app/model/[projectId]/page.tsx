@@ -27,6 +27,7 @@ import { LoadCombinationPanel } from "@/components/load-panel/LoadCombinationPan
 import { AnalysisPanel } from "@/components/analysis-panel/AnalysisPanel";
 import { ValidationPanel } from "@/components/validation-panel/ValidationPanel";
 import { RcBeamDesignPanel } from "@/components/design-panel/RcBeamDesignPanel";
+import { useProjectIdStore } from "@/lib/project/useProjectIdStore";
 import { RcColumnDesignPanel } from "@/components/design-panel/RcColumnDesignPanel";
 import { SteelBeamDesignPanel } from "@/components/design-panel/SteelBeamDesignPanel";
 import { SteelColumnDesignPanel } from "@/components/design-panel/SteelColumnDesignPanel";
@@ -52,6 +53,7 @@ import { BarBendingSchedulePanel } from "@/components/design-panel/BarBendingSch
 import { SectionDetailPanel } from "@/components/design-panel/SectionDetailPanel";
 import { ConnectionDetailPanel } from "@/components/design-panel/ConnectionDetailPanel";
 import { GeneralNotesPanel } from "@/components/design-panel/GeneralNotesPanel";
+import { DocumentationPanel } from "@/components/documentation-panel/DocumentationPanel";
 import { DrawingSyncPanel } from "@/components/design-panel/DrawingSyncPanel";
 import { PileDesignPanel } from "@/components/design-panel/PileDesignPanel";
 import { SteelConnectionDesignPanel } from "@/components/design-panel/SteelConnectionDesignPanel";
@@ -180,6 +182,11 @@ interface PageProps {
 export default function StructuralModelPage({ params }: PageProps) {
   const { projectId } = use(params);
   const router = useRouter();
+  const setProjectId = useProjectIdStore((s) => s.setProjectId);
+
+  useEffect(() => {
+    setProjectId(projectId);
+  }, [projectId, setProjectId]);
 
   // --- Route Guard (Phase 0.2) ---
   // useEnsureAuth এখানে সরাসরি কল করা হচ্ছে (নিচের useGeometryCore/
@@ -442,6 +449,9 @@ export default function StructuralModelPage({ params }: PageProps) {
         )}
         {activeTab === "documentation" && activeDocumentationSubTab === "drawing-sync" && (
           <DrawingSyncPanel />
+        )}
+        {activeTab === "documentation" && activeDocumentationSubTab === "reports-export" && (
+          <DocumentationPanel projectId={projectId} />
         )}
       </>
     );

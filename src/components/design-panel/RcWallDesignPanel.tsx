@@ -9,6 +9,9 @@ import { computePolygonPlanArea } from "@/lib/types/element";
 import { generateWallDetailing } from "@/lib/detailing/generateWallDetailing";
 import { useDetailingStore } from "@/lib/detailing/useDetailingStore";
 import { useDcrStore } from "@/lib/design/useDcrStore";
+import { persistDesignResult } from "@/lib/design/firestore";
+import { persistDetailingResult } from "@/lib/detailing/firestore";
+import { useProjectIdStore } from "@/lib/project/useProjectIdStore";
 
 function fmt(v: number, decimals = 1): string {
   return Number.isFinite(v) ? v.toFixed(decimals) : "—";
@@ -42,6 +45,7 @@ export function RcWallDesignPanel() {
   const materials = useLibraryStore((s) => s.materialLibrary.materials);
   const setDetailingResult = useDetailingStore((s) => s.setResult);
   const setDcrChecks = useDcrStore((s) => s.setChecks);
+  const projectId = useProjectIdStore((s) => s.projectId);
 
   const walls = useMemo(
     () =>
@@ -72,7 +76,7 @@ export function RcWallDesignPanel() {
     const length = estimateHorizontalLength(selectedWall);
     const height = estimateHeight(selectedWall);
 
-    const result = runRcWallDesign({
+    const input = {
       elementLabel: selectedWall.label,
       isShearWall: isShearWallCategory,
       thicknessMm: selectedWall.thickness,
@@ -84,7 +88,8 @@ export function RcWallDesignPanel() {
       barDiameterMm: Number(barDiameterMm) || 12,
       factoredAxialLoadKN: Number(factoredAxialLoadKN) || 0,
       factoredInPlaneShearKN: isShearWallCategory ? Number(factoredInPlaneShearKN) || 0 : undefined,
-    });
+    };
+    const result = runRcWallDesign(input);
     setReport(result);
     setDetailingSent(false);
     const wallChecks = [{ label: "Axial Capacity", ratio: result.axialCapacity.utilizationRatio }];
@@ -92,6 +97,15 @@ export function RcWallDesignPanel() {
       wallChecks.push({ label: "In-Plane Shear", ratio: result.shearCapacity.utilizationRatio });
     }
     setDcrChecks(selectedWall.elementId, selectedWall.label, wallChecks);
+    if (projectId) {
+      persistDesignResult(projectId, {
+        elementId: selectedWall.elementId,
+        elementLabel: selectedWall.label,
+        elementCategory: selectedWall.category,
+        status: result.overallStatus === "error" ? "fail" : result.overallStatus,
+        detail: { input, report: result },
+      }).catch((e) => console.error("Failed to persist wall design result:", e));
+    }
   }
 
   const [detailingSent, setDetailingSent] = useState(false);
@@ -111,6 +125,11 @@ export function RcWallDesignPanel() {
     });
     setDetailingResult(detailing);
     setDetailingSent(true);
+    if (projectId) {
+      persistDetailingResult(projectId, detailing).catch((e) =>
+        console.error("Failed to persist wall detailing result:", e)
+      );
+    }
   }
 
   return (

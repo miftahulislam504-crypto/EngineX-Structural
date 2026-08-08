@@ -7,6 +7,9 @@ import { runFootingDesign, type FootingDesignReport } from "@/lib/design/footing
 import type { FootingElement } from "@/lib/types/element";
 import { generateFootingDetailing } from "@/lib/detailing/generateFootingDetailing";
 import { useDetailingStore } from "@/lib/detailing/useDetailingStore";
+import { persistDesignResult } from "@/lib/design/firestore";
+import { persistDetailingResult } from "@/lib/detailing/firestore";
+import { useProjectIdStore } from "@/lib/project/useProjectIdStore";
 
 function fmt(v: number, decimals = 1): string {
   return Number.isFinite(v) ? v.toFixed(decimals) : "—";
@@ -26,6 +29,7 @@ export function FootingDesignPanel() {
   const elements = useElementsStore((s) => s.elements);
   const materials = useLibraryStore((s) => s.materialLibrary.materials);
   const setDetailingResult = useDetailingStore((s) => s.setResult);
+  const projectId = useProjectIdStore((s) => s.projectId);
 
   const footings = useMemo(
     () => elements.filter((e): e is FootingElement => e.category === "footing"),
@@ -54,7 +58,7 @@ export function FootingDesignPanel() {
     const fy = footingMaterial.rebarFy ?? 414;
     const fc = footingMaterial.fc;
 
-    const result = runFootingDesign({
+    const input = {
       elementLabel: selectedFooting.label,
       servicePointLoadKN: Number(servicePointLoadKN) || 0,
       factoredPointLoadKN: Number(factoredPointLoadKN) || 0,
@@ -66,9 +70,19 @@ export function FootingDesignPanel() {
       effectiveCoverMm: Number(effectiveCoverMm) || 75,
       fcMPa: fc,
       fyMPa: fy,
-    });
+    };
+    const result = runFootingDesign(input);
     setReport(result);
     setDetailingSent(false);
+    if (projectId) {
+      persistDesignResult(projectId, {
+        elementId: selectedFooting.elementId,
+        elementLabel: selectedFooting.label,
+        elementCategory: "footing",
+        status: result.overallStatus === "error" ? "fail" : result.overallStatus,
+        detail: { input, report: result },
+      }).catch((e) => console.error("Failed to persist footing design result:", e));
+    }
   }
 
   const [detailingBarDiameterMm, setDetailingBarDiameterMm] = useState("16");
@@ -85,6 +99,11 @@ export function FootingDesignPanel() {
     });
     setDetailingResult(detailing);
     setDetailingSent(true);
+    if (projectId) {
+      persistDetailingResult(projectId, detailing).catch((e) =>
+        console.error("Failed to persist footing detailing result:", e)
+      );
+    }
   }
 
   return (

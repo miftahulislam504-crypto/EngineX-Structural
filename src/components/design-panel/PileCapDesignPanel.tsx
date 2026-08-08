@@ -6,6 +6,8 @@ import { useLibraryStore } from "@/lib/library/useLibraryStore";
 import { runPileCapDesign, type PileCapDesignReport } from "@/lib/design/pileCapGroupDesign";
 import type { ColumnPosition } from "@/lib/design/rcSlabPunchingShear";
 import type { PileCapElement, PileGroupElement } from "@/lib/types/element";
+import { persistDesignResult } from "@/lib/design/firestore";
+import { useProjectIdStore } from "@/lib/project/useProjectIdStore";
 
 function fmt(v: number, decimals = 1): string {
   return Number.isFinite(v) ? v.toFixed(decimals) : "—";
@@ -21,6 +23,7 @@ function fmt(v: number, decimals = 1): string {
 export function PileCapDesignPanel() {
   const elements = useElementsStore((s) => s.elements);
   const materials = useLibraryStore((s) => s.materialLibrary.materials);
+  const projectId = useProjectIdStore((s) => s.projectId);
 
   const pileCaps = useMemo(
     () => elements.filter((e): e is PileCapElement => e.category === "pile-cap"),
@@ -56,7 +59,7 @@ export function PileCapDesignPanel() {
     const fy = material.rebarFy ?? 414;
     const fc = material.fc;
 
-    const result = runPileCapDesign({
+    const input = {
       elementLabel: selectedCap.label,
       pileGroup: {
         pileShape: linkedGroup.pileShape,
@@ -86,8 +89,18 @@ export function PileCapDesignPanel() {
       },
       fcMPa: fc,
       fyMPa: fy,
-    });
+    };
+    const result = runPileCapDesign(input);
     setReport(result);
+    if (projectId) {
+      persistDesignResult(projectId, {
+        elementId: selectedCap.elementId,
+        elementLabel: selectedCap.label,
+        elementCategory: "pile-cap",
+        status: result.overallStatus === "error" ? "fail" : result.overallStatus,
+        detail: { input, report: result },
+      }).catch((e) => console.error("Failed to persist pile-cap design result:", e));
+    }
   }
 
   return (

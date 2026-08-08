@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { assembleGeneralNotes, type GeneralNotesData } from "@/lib/design/generalNotes";
+import { saveGeneralNotesInput, fetchGeneralNotesInput } from "@/lib/design/generalNotesFirestore";
+import { useProjectIdStore } from "@/lib/project/useProjectIdStore";
 
 function fmt(v: number, decimals = 0): string {
   return Number.isFinite(v) ? v.toFixed(decimals) : "—";
@@ -41,6 +43,7 @@ function Field({
  */
 export function GeneralNotesPanel() {
   const [data, setData] = useState<GeneralNotesData | null>(null);
+  const projectId = useProjectIdStore((s) => s.projectId);
 
   const [projectLabel, setProjectLabel] = useState("Six Storied Residential Building");
   const [codeBasis, setCodeBasis] = useState("BNBC 2020, ACI 318-19");
@@ -52,32 +55,64 @@ export function GeneralNotesPanel() {
   const [exposedCoverMm, setExposedCoverMm] = useState("38");
   const [maxSlumpMm, setMaxSlumpMm] = useState("50");
 
-  function handleRun() {
-    setData(
-      assembleGeneralNotes({
-        projectLabel,
-        designCriteria: {
-          codeBasis: codeBasis.split(",").map((s) => s.trim()).filter(Boolean),
-          windSpeedKmh: Number(windSpeedKmh) || undefined,
-          seismicZone: seismicZone || undefined,
-        },
-        materials: [
-          { elementCategory: "Column, Grade Beam, Footing", concreteFcMPa: Number(concreteFcMPa) || 21, reinforcementFyMPa: Number(reinforcementFyMPa) || 414 },
-        ],
-        coverRequirements: [
-          { condition: "Earth / Earth & Water", coverMm: Number(earthCoverMm) || 63 },
-          { condition: "Exposed (Top/Side)", coverMm: Number(exposedCoverMm) || 38 },
-        ],
-        concreteRequirement: {
-          maxSlumpMm: Number(maxSlumpMm) || 50,
-          curingMethod: "Moist jute fabric + water sprinkling",
-          minCuringDays: 28,
-        },
-        fyMPa: Number(reinforcementFyMPa) || 414,
-        fcMPa: Number(concreteFcMPa) || 21,
-        clearCoverOrHalfSpacingMm: Number(exposedCoverMm) || 38,
+  // পেজ রিলোড হলে আগে "Generate" চাপা ফর্ম-ইনপুট ফিরিয়ে আনে (persist না
+  // থাকলে আগে এই সবকিছু হারিয়ে যেত — দেখুন generalNotesFirestore.ts)।
+  // শুধু ফর্ম-ইনপুট restore করা হয়, ডেরাইভড GeneralNotesData (development
+  // length টেবিল ইত্যাদি) না — সেটা "Generate" চাপলে আবার হিসাব হয়।
+  useEffect(() => {
+    if (!projectId) return;
+    let cancelled = false;
+    fetchGeneralNotesInput(projectId)
+      .then((saved) => {
+        if (cancelled || !saved) return;
+        setProjectLabel(saved.projectLabel);
+        setCodeBasis(saved.designCriteria.codeBasis.join(", "));
+        setWindSpeedKmh(saved.designCriteria.windSpeedKmh?.toString() ?? "");
+        setSeismicZone(saved.designCriteria.seismicZone ?? "");
+        setConcreteFcMPa(saved.fcMPa.toString());
+        setReinforcementFyMPa(saved.fyMPa.toString());
+        const earth = saved.coverRequirements.find((c) => c.condition === "Earth / Earth & Water");
+        const exposed = saved.coverRequirements.find((c) => c.condition === "Exposed (Top/Side)");
+        if (earth) setEarthCoverMm(earth.coverMm.toString());
+        if (exposed) setExposedCoverMm(exposed.coverMm.toString());
+        setMaxSlumpMm(saved.concreteRequirement.maxSlumpMm.toString());
       })
-    );
+      .catch((e) => console.error("Failed to load saved general notes input:", e));
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId]);
+
+  function handleRun() {
+    const input = {
+      projectLabel,
+      designCriteria: {
+        codeBasis: codeBasis.split(",").map((s) => s.trim()).filter(Boolean),
+        windSpeedKmh: Number(windSpeedKmh) || undefined,
+        seismicZone: seismicZone || undefined,
+      },
+      materials: [
+        { elementCategory: "Column, Grade Beam, Footing", concreteFcMPa: Number(concreteFcMPa) || 21, reinforcementFyMPa: Number(reinforcementFyMPa) || 414 },
+      ],
+      coverRequirements: [
+        { condition: "Earth / Earth & Water", coverMm: Number(earthCoverMm) || 63 },
+        { condition: "Exposed (Top/Side)", coverMm: Number(exposedCoverMm) || 38 },
+      ],
+      concreteRequirement: {
+        maxSlumpMm: Number(maxSlumpMm) || 50,
+        curingMethod: "Moist jute fabric + water sprinkling",
+        minCuringDays: 28,
+      },
+      fyMPa: Number(reinforcementFyMPa) || 414,
+      fcMPa: Number(concreteFcMPa) || 21,
+      clearCoverOrHalfSpacingMm: Number(exposedCoverMm) || 38,
+    };
+    setData(assembleGeneralNotes(input));
+    if (projectId) {
+      saveGeneralNotesInput(projectId, input).catch((e) =>
+        console.error("Failed to save general notes input:", e)
+      );
+    }
   }
 
   return (

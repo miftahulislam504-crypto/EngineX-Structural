@@ -8,6 +8,8 @@ import { runSteelBeamDesign, type SteelBeamDesignReport } from "@/lib/design/ste
 import type { BeamElement } from "@/lib/types/element";
 import type { WShapeSection } from "@/lib/types/section";
 import { useDcrStore } from "@/lib/design/useDcrStore";
+import { persistDesignResult } from "@/lib/design/firestore";
+import { useProjectIdStore } from "@/lib/project/useProjectIdStore";
 
 /** Infinity/NaN হলে "—" দেখায়, নাহলে fixed-decimal — UI তে "Infinity" string এড়াতে। */
 function fmt(v: number, decimals = 1): string {
@@ -65,6 +67,7 @@ export function SteelBeamDesignPanel() {
 
   const [report, setReport] = useState<SteelBeamDesignReport | null>(null);
   const setDcrChecks = useDcrStore((s) => s.setChecks);
+  const projectId = useProjectIdStore((s) => s.projectId);
 
   function handleUseAutoValues() {
     if (governingForces) {
@@ -83,7 +86,7 @@ export function SteelBeamDesignPanel() {
     const fy = beamMaterial.type === "steel" ? beamMaterial.fy : 345;
     const es = beamMaterial.type === "steel" ? beamMaterial.es : 200000;
 
-    const result = runSteelBeamDesign({
+    const input = {
       elementLabel: selectedBeam.label,
       section,
       fyMPa: fy,
@@ -92,12 +95,22 @@ export function SteelBeamDesignPanel() {
       cb: Number(cb) || 1.0,
       factoredMomentKNm: Number(factoredMomentKNm) || 0,
       factoredShearKN: Number(factoredShearKN) || 0,
-    });
+    };
+    const result = runSteelBeamDesign(input);
     setReport(result);
     setDcrChecks(selectedBeam.elementId, selectedBeam.label, [
       { label: "Flexure", ratio: result.flexuralAdequacy.utilizationRatio },
       { label: "Shear", ratio: result.shearAdequacy.utilizationRatio },
     ]);
+    if (projectId) {
+      persistDesignResult(projectId, {
+        elementId: selectedBeam.elementId,
+        elementLabel: selectedBeam.label,
+        elementCategory: "beam",
+        status: result.overallStatus === "error" ? "fail" : result.overallStatus,
+        detail: { input, report: result },
+      }).catch((e) => console.error("Failed to persist steel beam design result:", e));
+    }
   }
 
   return (

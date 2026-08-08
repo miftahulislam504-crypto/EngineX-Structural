@@ -10,6 +10,8 @@ import {
 } from "@/lib/design/matFoundationDesign";
 import type { ColumnPosition } from "@/lib/design/rcSlabPunchingShear";
 import type { MatFoundationElement } from "@/lib/types/element";
+import { persistDesignResult } from "@/lib/design/firestore";
+import { useProjectIdStore } from "@/lib/project/useProjectIdStore";
 
 function fmt(v: number, decimals = 1): string {
   return Number.isFinite(v) ? v.toFixed(decimals) : "—";
@@ -54,6 +56,7 @@ function makeEmptyRow(index: number): ColumnRow {
 export function MatFoundationDesignPanel() {
   const elements = useElementsStore((s) => s.elements);
   const materials = useLibraryStore((s) => s.materialLibrary.materials);
+  const projectId = useProjectIdStore((s) => s.projectId);
 
   const mats = useMemo(
     () => elements.filter((e): e is MatFoundationElement => e.category === "mat-foundation"),
@@ -102,7 +105,7 @@ export function MatFoundationDesignPanel() {
       tributaryCantileverMm: Number(c.tributaryCantileverMm) || 1000,
     }));
 
-    const result = runMatFoundationDesign({
+    const input = {
       elementLabel: selected.label,
       vertices,
       columns: columnInputs,
@@ -111,8 +114,18 @@ export function MatFoundationDesignPanel() {
       effectiveCoverMm: Number(effectiveCoverMm) || 75,
       fcMPa: fc,
       fyMPa: fy,
-    });
+    };
+    const result = runMatFoundationDesign(input);
     setReport(result);
+    if (projectId) {
+      persistDesignResult(projectId, {
+        elementId: selected.elementId,
+        elementLabel: selected.label,
+        elementCategory: "mat-foundation",
+        status: result.overallStatus === "error" ? "fail" : result.overallStatus,
+        detail: { input, report: result },
+      }).catch((e) => console.error("Failed to persist mat-foundation design result:", e));
+    }
   }
 
   return (

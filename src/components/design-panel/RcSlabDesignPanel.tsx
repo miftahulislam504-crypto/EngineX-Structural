@@ -10,6 +10,9 @@ import type { SlabElement } from "@/lib/types/element";
 import { generateSlabDetailing } from "@/lib/detailing/generateSlabDetailing";
 import { useDetailingStore } from "@/lib/detailing/useDetailingStore";
 import { useDcrStore } from "@/lib/design/useDcrStore";
+import { persistDesignResult } from "@/lib/design/firestore";
+import { persistDetailingResult } from "@/lib/detailing/firestore";
+import { useProjectIdStore } from "@/lib/project/useProjectIdStore";
 
 const PANEL_TYPES: { value: SlabPanelType; label: string }[] = [
   { value: "one-way", label: "One-Way" },
@@ -40,6 +43,7 @@ export function RcSlabDesignPanel() {
   const materials = useLibraryStore((s) => s.materialLibrary.materials);
   const setDetailingResult = useDetailingStore((s) => s.setResult);
   const setDcrChecks = useDcrStore((s) => s.setChecks);
+  const projectId = useProjectIdStore((s) => s.projectId);
 
   const slabs = useMemo(() => elements.filter((e): e is SlabElement => e.category === "slab"), [elements]);
 
@@ -68,7 +72,7 @@ export function RcSlabDesignPanel() {
     const fy = slabMaterial.rebarFy ?? 414;
     const fc = slabMaterial.fc;
 
-    const result = runRcSlabDesign({
+    const input = {
       elementLabel: selectedSlab.label,
       panelType,
       shortSpanMm: Number(shortSpanMm) || 0,
@@ -88,13 +92,23 @@ export function RcSlabDesignPanel() {
             factoredColumnShearKN: Number(factoredColumnShearKN) || 0,
           }
         : undefined,
-    });
+    };
+    const result = runRcSlabDesign(input);
     setReport(result);
     setDetailingSent(false);
     if (result.punchingShear) {
       setDcrChecks(selectedSlab.elementId, selectedSlab.label, [
         { label: "Punching Shear", ratio: result.punchingShear.utilizationRatio },
       ]);
+    }
+    if (projectId) {
+      persistDesignResult(projectId, {
+        elementId: selectedSlab.elementId,
+        elementLabel: selectedSlab.label,
+        elementCategory: "slab",
+        status: result.overallStatus === "error" ? "fail" : result.overallStatus,
+        detail: { input, report: result },
+      }).catch((e) => console.error("Failed to persist slab design result:", e));
     }
   }
 
@@ -114,6 +128,11 @@ export function RcSlabDesignPanel() {
     });
     setDetailingResult(detailing);
     setDetailingSent(true);
+    if (projectId) {
+      persistDetailingResult(projectId, detailing).catch((e) =>
+        console.error("Failed to persist slab detailing result:", e)
+      );
+    }
   }
 
   return (

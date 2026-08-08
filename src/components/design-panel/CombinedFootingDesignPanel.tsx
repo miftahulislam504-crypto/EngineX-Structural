@@ -5,6 +5,8 @@ import { useElementsStore } from "@/lib/elements/useElementsStore";
 import { useLibraryStore } from "@/lib/library/useLibraryStore";
 import { runCombinedFootingDesign, type CombinedFootingDesignReport } from "@/lib/design/combinedFootingDesign";
 import type { CombinedFootingElement } from "@/lib/types/element";
+import { persistDesignResult } from "@/lib/design/firestore";
+import { useProjectIdStore } from "@/lib/project/useProjectIdStore";
 
 function fmt(v: number, decimals = 1): string {
   return Number.isFinite(v) ? v.toFixed(decimals) : "—";
@@ -20,6 +22,7 @@ function fmt(v: number, decimals = 1): string {
 export function CombinedFootingDesignPanel() {
   const elements = useElementsStore((s) => s.elements);
   const materials = useLibraryStore((s) => s.materialLibrary.materials);
+  const projectId = useProjectIdStore((s) => s.projectId);
 
   const combinedFootings = useMemo(
     () => elements.filter((e): e is CombinedFootingElement => e.category === "combined-footing"),
@@ -57,7 +60,7 @@ export function CombinedFootingDesignPanel() {
     const fy = material.rebarFy ?? 414;
     const fc = material.fc;
 
-    const result = runCombinedFootingDesign({
+    const input = {
       elementLabel: selected.label,
       servicePointLoadAKN: Number(servicePointLoadAKN) || 0,
       servicePointLoadBKN: Number(servicePointLoadBKN) || 0,
@@ -74,8 +77,18 @@ export function CombinedFootingDesignPanel() {
       effectiveCoverMm: Number(effectiveCoverMm) || 75,
       fcMPa: fc,
       fyMPa: fy,
-    });
+    };
+    const result = runCombinedFootingDesign(input);
     setReport(result);
+    if (projectId) {
+      persistDesignResult(projectId, {
+        elementId: selected.elementId,
+        elementLabel: selected.label,
+        elementCategory: "combined-footing",
+        status: result.overallStatus === "error" ? "fail" : result.overallStatus,
+        detail: { input, report: result },
+      }).catch((e) => console.error("Failed to persist combined-footing design result:", e));
+    }
   }
 
   return (
