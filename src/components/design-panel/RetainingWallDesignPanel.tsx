@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { runRetainingWallDesign, type RetainingWallDesignReport } from "@/lib/design/retainingWallDesign";
 import { persistDesignResult } from "@/lib/design/firestore";
-import { useProjectIdStore } from "@/lib/project/useProjectIdStore";
+import { useProjectIdStore } from "@/lib/projects/useProjectIdStore";
 
 function fmt(v: number, decimals = 1): string {
   return Number.isFinite(v) ? v.toFixed(decimals) : "—";

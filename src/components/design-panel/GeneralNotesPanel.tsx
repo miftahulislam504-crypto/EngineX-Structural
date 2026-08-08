@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { assembleGeneralNotes, type GeneralNotesData } from "@/lib/design/generalNotes";
 import { saveGeneralNotesInput, fetchGeneralNotesInput } from "@/lib/design/generalNotesFirestore";
-import { useProjectIdStore } from "@/lib/project/useProjectIdStore";
+import { useProjectIdStore } from "@/lib/projects/useProjectIdStore";
 
 function fmt(v: number, decimals = 0): string {
   return Number.isFinite(v) ? v.toFixed(decimals) : "—";

@@ -27,7 +27,7 @@ import { LoadCombinationPanel } from "@/components/load-panel/LoadCombinationPan
 import { AnalysisPanel } from "@/components/analysis-panel/AnalysisPanel";
 import { ValidationPanel } from "@/components/validation-panel/ValidationPanel";
 import { RcBeamDesignPanel } from "@/components/design-panel/RcBeamDesignPanel";
-import { useProjectIdStore } from "@/lib/project/useProjectIdStore";
+import { useProjectIdStore } from "@/lib/projects/useProjectIdStore";
 import { RcColumnDesignPanel } from "@/components/design-panel/RcColumnDesignPanel";
 import { SteelBeamDesignPanel } from "@/components/design-panel/SteelBeamDesignPanel";
 import { SteelColumnDesignPanel } from "@/components/design-panel/SteelColumnDesignPanel";

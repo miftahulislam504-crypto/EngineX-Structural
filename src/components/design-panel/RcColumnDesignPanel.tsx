@@ -14,7 +14,7 @@ import { useDetailingStore } from "@/lib/detailing/useDetailingStore";
 import { useDcrStore } from "@/lib/design/useDcrStore";
 import { persistDesignResult } from "@/lib/design/firestore";
 import { persistDetailingResult } from "@/lib/detailing/firestore";
-import { useProjectIdStore } from "@/lib/project/useProjectIdStore";
+import { useProjectIdStore } from "@/lib/projects/useProjectIdStore";
 
 function elementLength(e: ColumnElement): number {
   const dx = e.endPoint.x - e.startPoint.x;

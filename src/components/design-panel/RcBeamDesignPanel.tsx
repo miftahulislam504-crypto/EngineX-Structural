@@ -13,7 +13,7 @@ import { useDetailingStore } from "@/lib/detailing/useDetailingStore";
 import { useDcrStore } from "@/lib/design/useDcrStore";
 import { persistDesignResult } from "@/lib/design/firestore";
 import { persistDetailingResult } from "@/lib/detailing/firestore";
-import { useProjectIdStore } from "@/lib/project/useProjectIdStore";
+import { useProjectIdStore } from "@/lib/projects/useProjectIdStore";
 
 const SUPPORT_CONDITIONS: { value: BeamSupportCondition; label: string }[] = [
   { value: "simply-supported", label: "Simply Supported" },

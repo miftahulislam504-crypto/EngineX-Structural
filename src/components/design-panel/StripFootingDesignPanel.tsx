@@ -7,7 +7,7 @@ import { sizeStripFootingForBearing, type StripFootingSizingResult } from "@/lib
 import { runStripFootingDesign, type StripFootingDesignReport } from "@/lib/design/stripFootingDesign";
 import type { StripFootingElement } from "@/lib/types/element";
 import { persistDesignResult } from "@/lib/design/firestore";
-import { useProjectIdStore } from "@/lib/project/useProjectIdStore";
+import { useProjectIdStore } from "@/lib/projects/useProjectIdStore";
 
 function fmt(v: number, decimals = 1): string {
   return Number.isFinite(v) ? v.toFixed(decimals) : "—";

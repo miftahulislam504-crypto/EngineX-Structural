@@ -12,7 +12,7 @@ import { useDetailingStore } from "@/lib/detailing/useDetailingStore";
 import { useDcrStore } from "@/lib/design/useDcrStore";
 import { persistDesignResult } from "@/lib/design/firestore";
 import { persistDetailingResult } from "@/lib/detailing/firestore";
-import { useProjectIdStore } from "@/lib/project/useProjectIdStore";
+import { useProjectIdStore } from "@/lib/projects/useProjectIdStore";
 
 const PANEL_TYPES: { value: SlabPanelType; label: string }[] = [
   { value: "one-way", label: "One-Way" },

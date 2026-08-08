@@ -11,7 +11,7 @@ import { useDetailingStore } from "@/lib/detailing/useDetailingStore";
 import { useDcrStore } from "@/lib/design/useDcrStore";
 import { persistDesignResult } from "@/lib/design/firestore";
 import { persistDetailingResult } from "@/lib/detailing/firestore";
-import { useProjectIdStore } from "@/lib/project/useProjectIdStore";
+import { useProjectIdStore } from "@/lib/projects/useProjectIdStore";
 
 function fmt(v: number, decimals = 1): string {
   return Number.isFinite(v) ? v.toFixed(decimals) : "—";
