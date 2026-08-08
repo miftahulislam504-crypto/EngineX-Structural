@@ -51,6 +51,21 @@ export interface DesignResult {
   /** সবসময় { input: <RcXDesignInput>, report: <RcXDesignReport> } শেপ — দেখুন ফাইলের docblock। */
   detail: Record<string, unknown>;
   updatedAt: string; // ISO timestamp
+
+  /**
+   * নিচের তিনটা ফিল্ড ইচ্ছাকৃতভাবে optional — কোনো design panel
+   * (RcBeamDesignPanel ইত্যাদির handleRunDesign()) বর্তমানে এগুলো
+   * persistDesignResult() এ পাঠায় না (এই তিনটার জন্য কোনো compute
+   * logic ই design engine এ নেই)। Documentation Engine এর calc-sheets/
+   * design-report লেয়ার এগুলো আশা করে লেখা হয়েছিল বলে টাইপে যোগ করা
+   * হলো (আগে সেই লেয়ার শুধু DesignResult টাইপ না মেনেই এক্সেস করছিল,
+   * যা build এ ধরা পড়ে) — কিন্তু বাস্তবে যতক্ষণ persist call এ এই
+   * ফিল্ড না যোগ হয়, ততক্ষণ এগুলো সবসময় undefined থাকবে, আর UI
+   * সেই অনুযায়ী "Not specified"/"—" ফলব্যাক দেখাবে।
+   */
+  governingLoadCombinationId?: string;
+  finalReinforcementSummary?: string;
+  utilizationRatio?: number;
 }
 
 /**

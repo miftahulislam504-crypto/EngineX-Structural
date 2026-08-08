@@ -32,10 +32,10 @@ export function GradeBeamLayoutPlanSheetContent({ context, revisionNumber }: Gra
   const { baseStoryId } = classifyStories(context.geometry);
   const allBeams = context.elements.filter((e) => e.category === "beam" || e.category === "steel-beam");
   const gradeBeams = allBeams.filter(
-    (e) => baseStoryId !== null && resolveElementStoryId(context.designResults, e.elementId) === baseStoryId
+    (e) => baseStoryId !== null && resolveElementStoryId(context.elements, e.elementId) === baseStoryId
   );
   const unclassifiedCount = allBeams.filter(
-    (e) => resolveElementStoryId(context.designResults, e.elementId) === null
+    (e) => resolveElementStoryId(context.elements, e.elementId) === null
   ).length;
 
   const planElements: PlanLineElement[] = gradeBeams.map((e) => ({

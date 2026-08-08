@@ -6,15 +6,14 @@
  * StructuralStory এ isBaseLevel/order/elevation কনফার্ম
  * (SectionC_GeneralInformation.tsx থেকে)।
  *
- * গুরুত্বপূর্ণ সংশোধন — storyId সরাসরি StructuralElement এ কনফার্ম
- * হয়নি; CalcSheetHeader.tsx থেকে কনফার্ম যে storyId আসলে DesignResult
- * এ থাকে (`result.storyId`), element এ না। তাই একটা beam element কে
- * grade/typical/roof এ classify করতে হলে সেই element এর elementId
- * দিয়ে matching DesignResult খুঁজে তার storyId ব্যবহার করতে হবে —
- * element নিজে থেকে না। যে beam এর কোনো DesignResult নেই (storyId
- * resolve করা যায় না), সেটাকে কোনো story bucket এ রাখা সম্ভব না —
- * caller কে সেই case honest ভাবে handle করতে হবে (চুপচাপ কোনো একটা
- * bucket এ ফেলে দেওয়া ভুল হবে)।
+ * সংশোধন (build error থেকে ধরা পড়েছে, আগের ফেজের ভুল অনুমান বাতিল) —
+ * storyId আসলে StructuralElement এ সরাসরি কনফার্ম (element.ts, optional
+ * ফিল্ড — foundation elements এর storyId থাকে না, ওরা base level এ)।
+ * DesignResult এ storyId নেই — persistDesignResult() কল কখনো এই ফিল্ড
+ * পাঠায় না। তাই grade/typical/roof classify করতে সরাসরি element.storyId
+ * পড়াই সঠিক পথ, কোনো DesignResult lookup লাগে না। যে element এর
+ * storyId undefined (foundation), সেটাকে কোনো story bucket এ রাখা
+ * সম্ভব না — caller কে সেই case honest ভাবে handle করতে হবে।
  *
  * কোনো story.type/story.role ফিল্ড কোথাও কনফার্ম হয়নি — তাই
  * classification geometry থেকে reasonable inference:
@@ -42,10 +41,10 @@ export function classifyStories(geometry: GeometryCore) {
   };
 }
 
-/** element এর elementId দিয়ে matching DesignResult খুঁজে তার storyId ফেরত দেয় — element নিজে থেকে storyId পড়ে না (উপরের docblock দেখুন)। DesignResult না পেলে null। */
+/** elementId দিয়ে matching StructuralElement খুঁজে তার storyId ফেরত দেয় (উপরের docblock দেখুন)। Element না পেলে, বা element এর storyId undefined হলে (foundation) null। */
 export function resolveElementStoryId(
-  designResults: import("@/lib/design/firestore").DesignResult[],
+  elements: import("@/lib/types/element").StructuralElement[],
   elementId: string
 ): string | null {
-  return designResults.find((r) => r.elementId === elementId)?.storyId ?? null;
+  return elements.find((e) => e.elementId === elementId)?.storyId ?? null;
 }

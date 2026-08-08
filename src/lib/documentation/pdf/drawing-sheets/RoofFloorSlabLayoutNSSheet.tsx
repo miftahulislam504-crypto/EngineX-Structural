@@ -33,7 +33,7 @@ export function RoofFloorSlabLayoutNSSheetContent({ context, revisionNumber }: R
     (e) =>
       e.category === "slab" &&
       roofStoryId !== null &&
-      resolveElementStoryId(context.designResults, e.elementId) === roofStoryId
+      resolveElementStoryId(context.elements, e.elementId) === roofStoryId
   );
 
   const slabPolygons: SlabPolygon[] = roofSlabs

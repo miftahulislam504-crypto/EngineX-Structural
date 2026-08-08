@@ -50,7 +50,7 @@ interface SummaryRow {
 
 function buildRows(context: ReportContext, categories: DesignElementCategory[]): SummaryRow[] {
   return context.designResults
-    .filter((r) => categories.includes(r.category))
+    .filter((r) => categories.includes(r.elementCategory))
     .map((result) => ({
       result,
       element: context.elements.find((e) => e.elementId === result.elementId),
@@ -131,7 +131,7 @@ function DesignSummarySection({
       header: "Utilization",
       flex: 1,
       align: "right",
-      render: (row) => <Text>{row.result.utilizationRatio.toFixed(2)}</Text>,
+      render: (row) => <Text>{row.result.utilizationRatio?.toFixed(2) ?? "—"}</Text>,
     },
     {
       key: "status",

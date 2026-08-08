@@ -32,7 +32,7 @@ export function RoofFloorBeamDetailsSheetContent({ context, revisionNumber }: Ro
     (e) =>
       (e.category === "beam" || e.category === "steel-beam") &&
       roofStoryId !== null &&
-      resolveElementStoryId(context.designResults, e.elementId) === roofStoryId
+      resolveElementStoryId(context.elements, e.elementId) === roofStoryId
   );
 
   if (roofBeams.length === 0) {

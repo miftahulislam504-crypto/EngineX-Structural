@@ -33,7 +33,7 @@ export function TypicalFloorSlabLayoutNSSheetContent({ context, revisionNumber }
   const typicalSlabs = context.elements.filter(
     (e) =>
       e.category === "slab" &&
-      typicalStoryIds.includes(resolveElementStoryId(context.designResults, e.elementId) ?? "")
+      typicalStoryIds.includes(resolveElementStoryId(context.elements, e.elementId) ?? "")
   );
 
   const slabPolygons: SlabPolygon[] = typicalSlabs

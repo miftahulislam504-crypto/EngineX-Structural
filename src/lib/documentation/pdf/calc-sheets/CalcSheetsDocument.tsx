@@ -62,7 +62,7 @@ function UnsupportedCategoryPage({ elementLabel, category }: { elementLabel: str
 
 export function CalcSheetsDocument({ context, filterCategories }: CalcSheetsDocumentProps) {
   const results = filterCategories
-    ? context.designResults.filter((r) => filterCategories.includes(r.category))
+    ? context.designResults.filter((r) => filterCategories.includes(r.elementCategory))
     : context.designResults;
   const project = context.hub?.projectInfo ?? null;
 
@@ -91,23 +91,23 @@ export function CalcSheetsDocument({ context, filterCategories }: CalcSheetsDocu
       creator="CivilOS Structural — Documentation Engine"
     >
       {results.map((result) => {
-        if (result.category === "beam") {
-          return <BeamCalcSheet key={result.designId} context={context} result={result} />;
+        if (result.elementCategory === "beam") {
+          return <BeamCalcSheet key={result.elementId} context={context} result={result} />;
         }
-        if (result.category === "column") {
-          return <ColumnCalcSheet key={result.designId} context={context} result={result} />;
+        if (result.elementCategory === "column") {
+          return <ColumnCalcSheet key={result.elementId} context={context} result={result} />;
         }
-        if (result.category === "slab") {
-          return <SlabCalcSheet key={result.designId} context={context} result={result} />;
+        if (result.elementCategory === "slab") {
+          return <SlabCalcSheet key={result.elementId} context={context} result={result} />;
         }
-        if (FOUNDATION_CATEGORIES.includes(result.category)) {
-          return <FootingCalcSheet key={result.designId} context={context} result={result} />;
+        if (FOUNDATION_CATEGORIES.includes(result.elementCategory)) {
+          return <FootingCalcSheet key={result.elementId} context={context} result={result} />;
         }
         return (
           <UnsupportedCategoryPage
-            key={result.designId}
+            key={result.elementId}
             elementLabel={result.elementLabel}
-            category={result.category}
+            category={result.elementCategory}
           />
         );
       })}

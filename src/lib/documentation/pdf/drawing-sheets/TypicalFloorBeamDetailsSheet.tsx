@@ -31,7 +31,7 @@ export function TypicalFloorBeamDetailsSheetContent({ context, revisionNumber }:
   const typicalBeams = context.elements.filter(
     (e) =>
       (e.category === "beam" || e.category === "steel-beam") &&
-      typicalStoryIds.includes(resolveElementStoryId(context.designResults, e.elementId) ?? "")
+      typicalStoryIds.includes(resolveElementStoryId(context.elements, e.elementId) ?? "")
   );
 
   if (typicalBeams.length === 0) {

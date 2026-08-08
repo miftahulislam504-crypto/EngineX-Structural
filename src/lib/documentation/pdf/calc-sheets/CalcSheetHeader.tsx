@@ -72,7 +72,12 @@ export function CalcSheetHeader({
   elementTypeLabel,
   codeReference,
 }: CalcSheetHeaderProps) {
-  const story = context.geometry.stories.find((s) => s.storyId === result.storyId);
+  // storyId DesignResult এ নেই (persist call এ পাঠানো হয় না) — আসল
+  // সোর্স হলো matching StructuralElement.storyId (element.ts এ
+  // সংজ্ঞায়িত, optional — foundation elements এর কোনো storyId
+  // থাকে না, ওরা base level এ)।
+  const element = context.elements.find((e) => e.elementId === result.elementId);
+  const story = context.geometry.stories.find((s) => s.storyId === element?.storyId);
   const designCode = context.hub?.projectInfo.designCode;
   const defaultCodeRef = designCode ? `${designCode.concrete} / ${designCode.seismic}` : "Not specified";
 

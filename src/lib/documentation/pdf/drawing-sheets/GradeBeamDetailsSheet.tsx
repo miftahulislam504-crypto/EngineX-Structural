@@ -36,7 +36,7 @@ export function GradeBeamDetailsSheetContent({ context, revisionNumber }: GradeB
     (e) =>
       (e.category === "beam" || e.category === "steel-beam") &&
       baseStoryId !== null &&
-      resolveElementStoryId(context.designResults, e.elementId) === baseStoryId
+      resolveElementStoryId(context.elements, e.elementId) === baseStoryId
   );
 
   if (gradeBeams.length === 0) {

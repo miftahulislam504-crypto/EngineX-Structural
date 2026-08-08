@@ -32,10 +32,10 @@ export function TypicalFloorBeamLayoutPlanSheetContent({ context, revisionNumber
   const { typicalStoryIds } = classifyStories(context.geometry);
   const allBeams = context.elements.filter((e) => e.category === "beam" || e.category === "steel-beam");
   const typicalBeams = allBeams.filter((e) =>
-    typicalStoryIds.includes(resolveElementStoryId(context.designResults, e.elementId) ?? "")
+    typicalStoryIds.includes(resolveElementStoryId(context.elements, e.elementId) ?? "")
   );
   const unclassifiedCount = allBeams.filter(
-    (e) => resolveElementStoryId(context.designResults, e.elementId) === null
+    (e) => resolveElementStoryId(context.elements, e.elementId) === null
   ).length;
 
   const planElements: PlanLineElement[] = typicalBeams.map((e) => ({
