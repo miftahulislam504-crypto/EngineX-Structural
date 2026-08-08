@@ -43,7 +43,7 @@ export function ColumnScheduleSheetContent({ context, revisionNumber }: ColumnSc
     year: "numeric",
   });
 
-  const columnElements = context.elements.filter((e) => e.category === "column" || e.category === "steel-column");
+  const columnElements = context.elements.filter((e) => e.category === "column");
 
   const rows: ScheduleRow[] = columnElements.map((e) => {
     const result = context.designResults.find((r) => r.elementId === e.elementId);

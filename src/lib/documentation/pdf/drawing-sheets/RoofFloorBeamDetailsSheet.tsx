@@ -30,7 +30,7 @@ export function RoofFloorBeamDetailsSheetContent({ context, revisionNumber }: Ro
   const { roofStoryId } = classifyStories(context.geometry);
   const roofBeams = context.elements.filter(
     (e) =>
-      (e.category === "beam" || e.category === "steel-beam") &&
+      e.category === "beam" &&
       roofStoryId !== null &&
       resolveElementStoryId(context.elements, e.elementId) === roofStoryId
   );

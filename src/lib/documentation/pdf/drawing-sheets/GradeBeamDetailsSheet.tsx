@@ -34,7 +34,7 @@ export function GradeBeamDetailsSheetContent({ context, revisionNumber }: GradeB
   const { baseStoryId } = classifyStories(context.geometry);
   const gradeBeams = context.elements.filter(
     (e) =>
-      (e.category === "beam" || e.category === "steel-beam") &&
+      e.category === "beam" &&
       baseStoryId !== null &&
       resolveElementStoryId(context.elements, e.elementId) === baseStoryId
   );

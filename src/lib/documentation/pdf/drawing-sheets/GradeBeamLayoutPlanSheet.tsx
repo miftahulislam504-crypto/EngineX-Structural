@@ -30,7 +30,7 @@ export function GradeBeamLayoutPlanSheetContent({ context, revisionNumber }: Gra
   });
 
   const { baseStoryId } = classifyStories(context.geometry);
-  const allBeams = context.elements.filter((e) => e.category === "beam" || e.category === "steel-beam");
+  const allBeams = context.elements.filter((e) => e.category === "beam");
   const gradeBeams = allBeams.filter(
     (e) => baseStoryId !== null && resolveElementStoryId(context.elements, e.elementId) === baseStoryId
   );

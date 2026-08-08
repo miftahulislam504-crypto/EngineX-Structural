@@ -159,23 +159,32 @@ function DesignSummarySection({
 }
 
 export function BeamDesignSummary({ context }: { context: ReportContext }) {
+  // "steel-beam" এখানে ছিল, কিন্তু StructuralElement এর category union এ
+  // "steel-beam" নামে কোনো ভ্যারিয়েন্ট নেই — RC আর steel beam দুটোই
+  // category: "beam" (element.ts, SteelBeamDesignPanel.tsx এর
+  // persistDesignResult() কলও elementCategory: "beam" পাঠায়, দেখুন
+  // সেই প্যানেলের কোড)। ডিজাইন মেথড (RC vs AISC) ভিন্ন হলেও
+  // elementCategory দিয়ে সেই পার্থক্য filter করা এই স্কিমায় সম্ভব না,
+  // তাই এখানে শুধু আসল category রাখা হলো।
   return (
     <DesignSummarySection
       context={context}
       code="G1"
       title="Beam Design Summary"
-      categories={["beam", "steel-beam"]}
+      categories={["beam"]}
     />
   );
 }
 
 export function ColumnDesignSummary({ context }: { context: ReportContext }) {
+  // উপরের BeamDesignSummary এর কমেন্ট দেখুন — একই কারণে "steel-column"
+  // এখানে বাদ দেওয়া হলো।
   return (
     <DesignSummarySection
       context={context}
       code="G2"
       title="Column Design Summary"
-      categories={["column", "steel-column"]}
+      categories={["column"]}
     />
   );
 }

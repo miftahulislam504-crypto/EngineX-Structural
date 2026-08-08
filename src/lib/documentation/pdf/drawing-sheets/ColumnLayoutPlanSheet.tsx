@@ -2,8 +2,10 @@
  * ColumnLayoutPlanSheet — Phase 11h (S-02)
  *
  * GridLayoutSketch.tsx ব্যবহার করে — context.geometry.grids (real
- * coordinate) আর context.elements এর category==="column"/"steel-column"
- * subset (startPoint/endPoint দিয়ে, honest gap নোট SectionCutSketch.tsx/
+ * coordinate) আর context.elements এর category==="column" subset
+ * (StructuralElement এ "steel-column" নামে কোনো category নেই — RC ও
+ * steel column দুটোই category: "column", দেখুন build error ফিক্স নোট)
+ * (startPoint/endPoint দিয়ে, honest gap নোট SectionCutSketch.tsx/
  * GridLayoutSketch.tsx এ) প্লট করে।
  *
  * গঠন — CalcSheetsDocument.tsx (Phase 11e) এর প্যাটার্ন অনুসরণ করে:
@@ -36,7 +38,7 @@ export function ColumnLayoutPlanSheetContent({ context, revisionNumber }: Column
   });
 
   const columnElements: PlanLineElement[] = context.elements
-    .filter((e) => e.category === "column" || e.category === "steel-column")
+    .filter((e) => e.category === "column")
     .map((e) => ({ element: e, label: resolveElementLabel(context, e.elementId), isColumn: true }));
 
   return (

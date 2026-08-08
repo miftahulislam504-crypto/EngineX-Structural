@@ -30,7 +30,7 @@ export function TypicalFloorBeamDetailsSheetContent({ context, revisionNumber }:
   const { typicalStoryIds } = classifyStories(context.geometry);
   const typicalBeams = context.elements.filter(
     (e) =>
-      (e.category === "beam" || e.category === "steel-beam") &&
+      e.category === "beam" &&
       typicalStoryIds.includes(resolveElementStoryId(context.elements, e.elementId) ?? "")
   );
 

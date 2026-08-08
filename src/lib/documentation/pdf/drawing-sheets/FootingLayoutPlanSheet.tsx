@@ -31,7 +31,7 @@ export function FootingLayoutPlanSheetContent({ context, revisionNumber }: Footi
   const entry = SHEET_INDEX.find((s) => s.sheetNumber === "S-04");
 
   const columnElements: PlanLineElement[] = context.elements
-    .filter((e) => e.category === "column" || e.category === "steel-column")
+    .filter((e) => e.category === "column")
     .map((e) => ({ element: e, label: resolveElementLabel(context, e.elementId), isColumn: true }));
 
   return (

@@ -27,7 +27,7 @@ export function RoofFloorBeamLayoutPlanSheetContent({ context, revisionNumber }:
   });
 
   const { roofStoryId } = classifyStories(context.geometry);
-  const allBeams = context.elements.filter((e) => e.category === "beam" || e.category === "steel-beam");
+  const allBeams = context.elements.filter((e) => e.category === "beam");
   const roofBeams = allBeams.filter(
     (e) => roofStoryId !== null && resolveElementStoryId(context.elements, e.elementId) === roofStoryId
   );
