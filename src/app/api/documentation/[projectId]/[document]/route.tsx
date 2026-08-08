@@ -118,9 +118,15 @@ export async function GET(
   // দিচ্ছে তা কোড রিভিউ থেকে নিশ্চিত হয়েই।
   const buffer = await renderToBuffer(element as ReactElement<DocumentProps>);
 
-  // Node Buffer, Uint8Array-এর subclass — Fetch স্ট্যান্ডার্ড অনুযায়ী
-  // সরাসরি valid BodyInit, তাই কোনো conversion লাগে না।
-  return new NextResponse(buffer, {
+  // buffer আসলে Node Buffer (Uint8Array<ArrayBufferLike>-এর subclass),
+  // কিন্তু lib.dom.d.ts এর BodyInit ইউনিয়নে থাকা Uint8Array টাইপ
+  // Uint8Array<ArrayBuffer> (নির্দিষ্ট ArrayBuffer backing) আশা করে,
+  // ফলে structurally মেলে না। রানটাইমে কোনো সমস্যা নেই (Response এর
+  // ভেতরে দুটোই bytes হিসেবে identical আচরণ করে) — তাই একটা প্লেইন
+  // Uint8Array-এ কপি করে TypeScript কে সন্তুষ্ট করা হলো।
+  const body = new Uint8Array(buffer);
+
+  return new NextResponse(body, {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
