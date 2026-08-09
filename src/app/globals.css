@@ -1,19 +1,37 @@
 @import "tailwindcss";
 
 /*
- * CivilOS Design System — "Light Clean" (grayscale brand, Hub_com এর
- * সাথে token-for-token মেলানো)।
+ * CivilOS Structural Design System — Phase 5 (রং) + Phase 6 (Typography)।
  *
- * সংশোধনের ইতিহাস (Phase 0.3): Phase 0.1-এ এখানে ভুলবশত pure নীল রং
- * বসানো হয়েছিল, যেটা Hub_com এর *পুরনো, এখন অব্যবহৃত* tailwind.config.ts
- * থেকে কপি করা হয়েছিল। কিন্তু Hub_com Tailwind v4-এ migrate হওয়ার সময়
- * (postcss.config.mjs দেখুন) সেই config file বাতিল হয়ে গেছে — Hub-এর
- * প্রকৃত/সক্রিয় রং এখন app/globals.css এর @theme ব্লকে, এবং সেটা নীল
- * থেকে grayscale-এ পরিবর্তিত হয়েছে (Hub এর কমেন্ট: "brand color scale
- * changed from blue to grayscale to match the PM app")। এই ফাইল এখন
- * সেই সঠিক, বর্তমান grayscale মান ব্যবহার করছে — oklch() একই মান,
- * একই ভেরিয়েবল নাম, যাতে ভবিষ্যতে Hub আবার বদলালে এখানেও মিলিয়ে
- * আপডেট করা সহজ হয় (শুধু diff করে দেখলেই চলবে)।
+ * ইতিহাস: Phase 0.1 এ ভুলবশত blue বসেছিল, Phase 0.3 এ grayscale-এ
+ * সরানো হয়েছিল (Hub/PM app এর সাথে token-for-token sync রাখতে)।
+ * এই সিদ্ধান্ত এখন সজ্ঞানে উল্টানো হলো — EngineXDraw এর "blueprint"
+ * accent (`packages/shared-ui/tailwind-preset.js` এর `accent.DEFAULT:
+ * '#2D6CDF'`, কমেন্টে "blueprint cyan" লেখা থাকলেও hex value আসলে
+ * blue) এ switch করা হলো, Hub/PM এর সাথে sync ভেঙে জেনেশুনে।
+ *
+ * Token নাম অপরিবর্তিত রাখা হয়েছে (--brand-*, --surface*, --text-*)
+ * যাতে আগে থেকে token ব্যবহারকারী ফাইলগুলো (bg-brand-600 ইত্যাদি)
+ * কোনো JSX পরিবর্তন ছাড়াই স্বয়ংক্রিয়ভাবে নতুন রং পায় — শুধু মান
+ * বদলানো হয়েছে, Draw এর hex থেকে oklch() এ রূপান্তর করে (sRGB→OKLab
+ * IEC 61966-2-1 standard conversion দিয়ে হিসাব করা, Draw এর hex এর
+ * সাথে হুবহু মেলে এমন lightness/chroma/hue)।
+ *
+ * ⚠️ এই migration শুধু token-ব্যবহারকারী ফাইলগুলোতেই কাজ করবে (এই
+ * migration এর সময় মাত্র ~১০টা ফাইল) — বাকি ~৬২টা ফাইল এখনো raw
+ * slate-/sky- Tailwind class সরাসরি ব্যবহার করে (COLOR_MIGRATION_
+ * TRACKING.md এর হিসাব অনুযায়ী, ২,৬০০+ occurrence), যেগুলো এই token
+ * বদলে কোনো প্রভাব পড়বে না — সেগুলো ধূসরই থাকবে যতক্ষণ না নিজেরা
+ * token-based এ migrate হয়। অ্যাপ সাময়িকভাবে visually অসামঞ্জস্যপূর্ণ
+ * (কিছু অংশ নীল, বেশিরভাগ ধূসর) দেখাবে — এটা ইচ্ছাকৃত ট্রেড-অফ,
+ * ভবিষ্যতে ফাইল-ধরে-ধরে সেই ৬২টা migrate হওয়ার সময় স্বয়ংক্রিয়ভাবে
+ * ঠিক হয়ে যাবে (token নিজে থেকেই সঠিক থাকবে)।
+ *
+ * status color (--status-active/hold/done*) ইচ্ছাকৃতভাবে অপরিবর্তিত —
+ * এগুলো workflow-status semantics (সবুজ=active, amber=hold, ধূসর=done),
+ * brand identity থেকে আলাদা axis। Draw নিজেও এই একই বিভাজন রাখে
+ * (success/signal/danger, brand accent থেকে আলাদা), তাই brand switch
+ * এর সাথে এগুলো বদলানোর কোনো কারণ নেই।
  */
 
 @custom-variant dark (&:is(.dark *));
@@ -21,22 +39,32 @@
 :root {
   --radius: 0.625rem;
 
-  --brand-50: oklch(0.985 0 0);
-  --brand-100: oklch(0.97 0 0);
-  --brand-200: oklch(0.922 0 0);
-  --brand-500: oklch(0.556 0 0);
-  --brand-600: oklch(0.435 0 0);
-  --brand-700: oklch(0.32 0 0);
-  --brand-800: oklch(0.205 0 0);
-  --brand-900: oklch(0.145 0 0);
+  /* --brand-600 = Draw এর accent.DEFAULT (#2D6CDF) এর হুবহু oklch()
+     রূপান্তর — বাকি ধাপগুলো এই anchor ঘিরে একটা স্বাভাবিক light→dark
+     ramp (Tailwind এর নিজস্ব scale-তৈরির কনভেনশনের কাছাকাছি), আগের
+     grayscale scale এর lightness curve থেকে না (সেটা করলে Draw এর
+     আসল accent এর চেয়ে গাঢ় একটা নীল হতো)। */
+  --brand-50: oklch(0.975 0.015 261.2);
+  --brand-100: oklch(0.94 0.03 261.2);
+  --brand-200: oklch(0.88 0.06 261.2);
+  --brand-500: oklch(0.63 0.16 261.2);
+  --brand-600: oklch(0.557 0.187 261.2);
+  --brand-700: oklch(0.47 0.17 261.2);
+  --brand-800: oklch(0.34 0.13 261.2);
+  --brand-900: oklch(0.24 0.09 261.2);
 
-  --surface: oklch(0.985 0 0);
+  /* Draw এর paper/ink/line থেকে সরাসরি রূপান্তরিত */
+  --surface: oklch(0.976 0.003 264.5);
   --surface-card: oklch(1 0 0);
-  --surface-hover: oklch(0.97 0 0);
-  --surface-border: oklch(0.922 0 0);
-  --text-primary: oklch(0.145 0 0);
-  --text-secondary: oklch(0.32 0 0);
-  --text-muted: oklch(0.556 0 0);
+  /* --surface-hover: Draw এর নিজস্ব কনভেনশন অনুযায়ী paper এর মানই
+     (Draw এর Button.tsx: hover:bg-paper, আলাদা কোনো darker hover shade
+     সংজ্ঞায়িত নেই) — তাই এখানে আলাদা shade না বানিয়ে paper এর মানই
+     পুনরায় ব্যবহার করা হলো। */
+  --surface-hover: oklch(0.976 0.003 264.5);
+  --surface-border: oklch(0.899 0.016 262.7);
+  --text-primary: oklch(0.225 0.039 266.0);
+  --text-secondary: oklch(0.503 0.034 266.1);
+  --text-muted: oklch(0.663 0.031 268.2);
 
   --status-activeText: oklch(0.45 0.13 145);
   --status-activeBg: oklch(0.96 0.03 145);
@@ -49,7 +77,7 @@
   --status-doneBorder: oklch(0.8 0 0);
 
   --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --foreground: oklch(0.225 0.039 266.0);
 
   /* raw shadow value — নিচে @theme এ --shadow-* namespace এ map করা
      হয়েছে (Tailwind v4 তে --shadow-card: var(--shadow-card) লিখলে
@@ -96,8 +124,21 @@
 
   --shadow-card: var(--raw-shadow-card);
 
-  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  /* Phase 6 — layout.tsx এর next/font/google variable (--font-inter/
+     --font-jetbrains-mono/--font-bengali) থেকে composite stack বানানো
+     হলো। Bengali fallback চেইনে যোগ করা হয়েছে (Draw এর নিজস্ব
+     fontFamily.body প্যাটার্ন অনুসরণ করে) — Inter/JetBrains Mono বাংলা
+     glyph কভার করে না বলে, mixed বাংলা+ইংরেজি টেক্সট এলে silent
+     generic-font fallback না হয়ে Noto Sans Bengali তে যায়। --font-sans/
+     --font-mono নাম অপরিবর্তিত (৫টা ফাইল এই utility class ব্যবহার করে)। */
+  --font-sans: var(--font-inter), var(--font-bengali), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), var(--font-bengali), ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  /* নতুন — Draw এর "geometric/technical" display পরিচয় (Space Grotesk)।
+     font-display utility class হিসেবে ব্যবহারযোগ্য (Tailwind v4 তে
+     @theme এর --font-* namespace থেকে স্বয়ংক্রিয়ভাবে utility জেনারেট
+     হয়) — কিন্তু এখনো কোনো component এ প্রয়োগ করা হয়নি, দেখুন
+     layout.tsx এর মন্তব্য। */
+  --font-display: var(--font-space-grotesk), var(--font-bengali), sans-serif;
 }
 
 body {

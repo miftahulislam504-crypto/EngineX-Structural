@@ -25,13 +25,17 @@ import { DOCUMENT_KEYS, DOCUMENT_REGISTRY, type DocumentKey } from "@/lib/docume
  * check না থাকলে সব category (route এর filterCategories=undefined
  * behavior এর সাথে মিলিয়ে)।
  *
- * wiring — এই panel component টা self-contained এবং standalone
- * ব্যবহারযোগ্য, কিন্তু page.tsx (App shell) এ এখনো যুক্ত করা হয়নি —
- * page.tsx/stageTabs.ts/workflow/types.ts এই আপলোডে সম্পূর্ণ নেই বলে
- * (শুধু আংশিক দেখা গেছে) নিরাপদে blind edit করা ঠিক হবে না। ঠিক কী
- * কী edit লাগবে তার বিস্তারিত এই ফোল্ডারের README.md এ লেখা আছে —
- * একজন পূর্ণ repo access থাকা developer/সেশন সেই instructions অনুসরণ
- * করে দুই মিনিটে wire করতে পারবেন।
+ * wiring — এই panel component টা self-contained, page.tsx এর
+ * activeTab === "documentation" && activeDocumentationSubTab ===
+ * "reports-export" ব্লকে <DocumentationPanel projectId={projectId} />
+ * হিসেবে wired (দেখুন app/model/[projectId]/documentation/page.tsx,
+ * Phase 4 এর Panel Migration এ যেখানে সরানো হয়েছে) — উপরের অনুচ্ছেদ
+ * আগে বলত এই wiring বাকি আছে (তখন page.tsx/stageTabs.ts আংশিক দেখা
+ * যাচ্ছিল বলে blind edit এড়ানো হয়েছিল), কিন্তু সেই wiring ইতিমধ্যে
+ * সম্পন্ন হয়ে গেছে — এই paragraph টা এখন শুধু সেই ইতিহাস হিসেবে
+ * রাখা হলো, বর্তমান আচরণ বোঝাতে না (নিচের route.tsx এর সাথে
+ * DOCUMENT_REGISTRY শেয়ার করাটাই এখন single source of truth, আলাদা
+ * README আর নেই)।
  */
 
 const CALC_SHEET_CATEGORIES: { value: string; label: string }[] = [

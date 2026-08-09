@@ -1,32 +1,261 @@
+"use client";
+
+import { Suspense, use, useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { useEnsureAuth } from "@/lib/firebase/useEnsureAuth";
+import { useProjectIdStore } from "@/lib/projects/useProjectIdStore";
+import { WorkflowSidebar } from "@/components/workflow/WorkflowSidebar";
+import { Sidebar } from "@/components/workflow/Sidebar";
+import { ListTree } from "lucide-react";
+import { useWorkflowUiStore } from "@/lib/workflow/useWorkflowUiStore";
+import { useShellUiStore } from "@/lib/workflow/useShellUiStore";
+import { STAGES, type SidebarTab } from "@/lib/workflow/stageTabs";
+import type { StageId } from "@/lib/workflow/types";
+
 /**
- * Phase 1 (Routing Skeleton) — এই layout.tsx আগে ছিল না; পুরো model
- * workspace একটাই page.tsx ছিল (activeTab state দিয়ে panel সুইচ
- * করত, URL অপরিবর্তিত থাকত)। এখন প্রতিটা SidebarTab-এর জন্য একটা
- * route segment বানানো হয়েছে (geometry/, elements/, loads/, ... —
- * lib/workflow/stageTabs.ts এর SidebarTab union-এর সাথে নাম হুবহু
- * মিলিয়ে, যাতে tab id ↔ route segment এক থাকে, কোনো mapping layer
- * না লাগে)।
+ * Phase 4 (Panel Migration) — persistent shell।
  *
- * ⚠️ ইচ্ছাকৃতভাবে pure pass-through — এখনই EngineXDraw এর
- * ProjectShell-এর মতো persistent nav shell বসানো হয়নি। কারণ:
- * existing app/model/[projectId]/page.tsx নিজেই এখনো তার নিজস্ব
- * পূর্ণ shell render করে (`<main className="h-screen w-screen ...">`
- * এর ভেতরে desktop <Sidebar> + mobile drawer <Sidebar>, দেখুন
- * page.tsx লাইন ~476-484)। এই মুহূর্তে এখানে আরেকটা shell বসালে
- * দুটো সমস্যা হতো: (১) Sidebar দুইবার দেখাবে, (২) page.tsx এর
- * h-screen একটা বাইরের container-এর ভেতরে বসবে যেটাও হয়তো নিজস্ব
- * height নেয়, layout ভেঙে যাওয়ার ঝুঁকি।
+ * Phase 1 এ এই layout.tsx ইচ্ছাকৃতভাবে pure pass-through রাখা হয়েছিল।
+ * এখন Sidebar/WorkflowSidebar এখানে (layout-level) তুলে আনা হলো —
+ * নাহলে tab পাল্টানো মানেই পুরো shell (Sidebar সহ) remount।
  *
- * Persistent shell (route-aware Sidebar, active-state highlighting,
- * mobile drawer) Phase 2-এর কাজ — সেই phase-এই page.tsx থেকে পুরনো
- * <Sidebar>/<WorkflowSidebar> render একসাথে সরানো হবে, যাতে কোনো
- * মুহূর্তেই duplicate বা broken অবস্থা না থাকে।
+ * ⚠️ গুরুত্বপূর্ণ ডিজাইন সিদ্ধান্ত (একটা ভুল ধারণা সংশোধন করে): এই
+ * layout geometry/library/elements/loads এর ৪টা orchestration hook
+ * (useGeometryCore ইত্যাদি) নিজে কল করে না। প্রথমে মনে হয়েছিল এগুলো
+ * এখানে move করা দরকার (Firestore subscription tab পাল্টানোয় যেন না
+ * ভাঙে) — কিন্তু useGeometryCore.ts পড়ে দেখা গেল এই hook দুটো ভিন্ন
+ * জিনিস bundle করে রাখে যেগুলোর multi-call safety আলাদা:
  *
- * এখন এই layout.tsx এর একমাত্র কাজ: route tree-টা বৈধ রাখা (Next.js
- * এ layout.tsx আবশ্যক না, কিন্তু dynamic segment-এর নিচে children
- * route-গুলো (geometry/page.tsx ইত্যাদি) বসানোর আগে এই ফাইলটা রাখা
- * হলো যাতে Phase 2-তে এখানেই shell বসানো যায়, নতুন ফাইল না বানিয়ে)।
+ *   (ক) Firestore subscription (useEffect, setLoading/setGeometry
+ *       Zustand-এ write করে) — এটা একাধিকবার কল করা unsafe, দুটো
+ *       independent onSnapshot listener একই store-এ race করে লিখবে।
+ *   (খ) mutation action closures (addGrid/updateGrid/... —
+ *       useCallback দিয়ে বানানো, geometry/persist এর উপর নির্ভরশীল)
+ *       — এগুলো hook call থেকে আলাদা করা যায় না (hook বডির ভেতরেই
+ *       তৈরি), তাই যে page এর panel এই action গুলো দরকার, তাকেই hook
+ *       call করতে হবে।
+ *
+ * এই দুটো একসাথে bundled থাকায় "hook layout এ move করি" মানে
+ * subscription ও layout এ যাবে ঠিকই, কিন্তু action closures childProps
+ * হিসেবে children এ pass করা সম্ভব না (Next.js layout তার children কে
+ * prop pass করতে পারে না — children আগে থেকেই render করা একটা element,
+ * function না)। তাই আসল সমাধান: প্রতিটা hook ঠিক একজায়গায়, তার নিজের
+ * domain route page এ (geometry/page.tsx → useGeometryCore,
+ * library/page.tsx → useMaterialSectionLibrary, elements/page.tsx →
+ * useElementsCore, loads/page.tsx → useLoadCore) — subscription ওখানেই
+ * একবার চলে। বাকি সব page (design/analysis/ইত্যাদি, যারা এই ৪ domain এর
+ * read-only state পড়ে কিন্তু mutate করে না) সরাসরি Zustand store থেকে
+ * পড়ে (useElementsStore((s) => s.elements) ইত্যাদি) — prop-drilling
+ * লাগে না, ঠিক design-panel এর ১৭টা ফাইল এখনই যেভাবে করে।
+ *
+ * এই layout নিজে geometry/library/elements/loads এর isLoading/isSaving/
+ * loadError কিছুই পড়ে না — সেই aggregation (isAnyLoading এর মতো)
+ * যেখানে ব্যবহার হয় (renderPanelContent এর "লোড হচ্ছে..." গেট, বা
+ * viewport-area এর isSaving/loadError status chip), সেটা এখন সবই
+ * page-level জিনিস, layout-level chrome না — তাই প্রতিটা relevant
+ * child page (geometry/library/elements/loads নিজে, ও design/analysis
+ * এর মতো যারা এই state cross-cutting ভাবে পড়ে) নিজের ভেতরে সরাসরি
+ * এই Zustand selector গুলো পড়বে, prop drilling ছাড়াই — pure selector
+ * read একাধিক জায়গা থেকে করা সম্পূর্ণ নিরাপদ (write না, শুধু read)।
+ *
+ * useEnsureAuth এই layout এ থাকে (ভিন্ন কারণে — এটা top-level route
+ * guard, cross-cutting UI aggregation না) এবং এটা এখানে নিরাপদ — এটা Firebase এর নিজস্ব
+ * onAuthStateChanged wrap করে, যেটা একাধিক independent listener
+ * সমর্থন করার জন্যই বানানো (প্রতিটা কলের নিজের local useState, কোনো
+ * shared Zustand write নেই) — useEnsureAuth.ts এর নিজের comment এটা
+ * নিশ্চিত করে।
  */
-export default function ModelLayout({ children }: LayoutProps<"/model/[projectId]">) {
-  return children;
+
+const VALID_SIDEBAR_TABS: readonly SidebarTab[] = [
+  "geometry",
+  "library",
+  "elements",
+  "loads",
+  "analysis",
+  "validation",
+  "design",
+  "optimization",
+  "visualization",
+  "detailing",
+  "documentation",
+];
+
+/**
+ * বর্তমান pathname থেকে active SidebarTab বের করে — Sidebar এর
+ * active-state highlighting এর জন্য দরকার। geometry route এর pathname
+ * /model/[projectId] দিয়েই শেষ হয় (কোনো /geometry suffix নেই — geometry
+ * কে root/default tab হিসেবে রাখা হয়েছে, migration এ geometry/page.tsx
+ * root path এ বসবে, বাকি ১০টার নিজস্ব path segment থাকবে)।
+ */
+function tabFromPathname(pathname: string): SidebarTab {
+  const segments = pathname.split("/").filter(Boolean); // ["model", projectId, tab?]
+  const maybeTab = segments[2];
+  return maybeTab && (VALID_SIDEBAR_TABS as readonly string[]).includes(maybeTab)
+    ? (maybeTab as SidebarTab)
+    : "geometry";
+}
+
+function ModelLayoutInner({ children, params }: LayoutProps<"/model/[projectId]">) {
+  const { projectId } = use(params);
+  const router = useRouter();
+  const pathname = usePathname();
+  const setProjectId = useProjectIdStore((s) => s.setProjectId);
+
+  useEffect(() => {
+    setProjectId(projectId);
+  }, [projectId, setProjectId]);
+
+  // --- Route Guard (Phase 0.2, Phase 4-এ page.tsx থেকে এখানে সরানো) ---
+  const { user, isReady: isAuthReady } = useEnsureAuth();
+
+  useEffect(() => {
+    if (isAuthReady && !user) {
+      router.replace("/login");
+    }
+  }, [isAuthReady, user, router]);
+
+  const mobileSidebarOpen = useShellUiStore((s) => s.mobileSidebarOpen);
+  const setMobileSidebarOpen = useShellUiStore((s) => s.setMobileSidebarOpen);
+  const setMobilePanelOpen = useShellUiStore((s) => s.setMobilePanelOpen);
+
+  const workflowPanelOpen = useWorkflowUiStore((s) => s.workflowPanelOpen);
+  const setWorkflowPanelOpen = useWorkflowUiStore((s) => s.setWorkflowPanelOpen);
+  const setActiveStage = useWorkflowUiStore((s) => s.setActiveStage);
+
+  const activeTab = tabFromPathname(pathname);
+
+  /**
+   * router.replace ব্যবহার করা হয়েছে (push না) — Phase 2 এর সিদ্ধান্তের
+   * ধারাবাহিকতায়: প্রতিটা tab switch আলাদা history entry হয়ে গেলে
+   * ব্যাক বাটনে tab-by-tab পিছাতে হবে, যা খারাপ UX। এটা এখন সত্যিকারের
+   * route navigation হলেও ব্যবহারকারীর কাছে এখনো "কোন panel দেখছি"
+   * পাল্টানো, তাই history আচরণ আগের মতোই।
+   */
+  function navigateToTab(tab: SidebarTab) {
+    const path = tab === "geometry" ? `/model/${projectId}` : `/model/${projectId}/${tab}`;
+    router.replace(path);
+  }
+
+  function handleSelectTab(tab: SidebarTab) {
+    navigateToTab(tab);
+  }
+
+  function handleMobileSelectTab(tab: SidebarTab) {
+    navigateToTab(tab);
+    setMobileSidebarOpen(false);
+    setMobilePanelOpen(true);
+  }
+
+  /**
+   * Loads stage এ যাওয়ার সময় sub-tab "patterns" এ রিসেট করার পুরনো
+   * আচরণ (আগে setActiveLoadSubTab সরাসরি কল করত) এখন ?subtab= query
+   * param দিয়ে হয় — loads/page.tsx নিজে এটা useInitialFromSearchParams
+   * দিয়ে পড়ে initial sub-tab ঠিক করবে।
+   */
+  function handleStageNavigate(stageId: StageId) {
+    setActiveStage(stageId);
+    const stage = STAGES.find((s) => s.id === stageId);
+    if (!stage) return;
+
+    const path =
+      stage.targetTab === "geometry" ? `/model/${projectId}` : `/model/${projectId}/${stage.targetTab}`;
+    const query = stageId === "loads" ? "?subtab=patterns" : "";
+    router.replace(`${path}${query}`);
+
+    setWorkflowPanelOpen(false);
+    setMobilePanelOpen(true);
+  }
+
+  if (!isAuthReady || !user) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-surface">
+        <span className="spinner" aria-label="লোড হচ্ছে" />
+      </div>
+    );
+  }
+
+  return (
+    <main className="h-screen w-screen flex bg-surface text-text-primary overflow-hidden">
+      <div className="hidden lg:block">
+        <Sidebar
+          activeTab={activeTab}
+          onSelectTab={handleSelectTab}
+          onOpenWorkflow={() => setWorkflowPanelOpen(true)}
+        />
+      </div>
+      {mobileSidebarOpen && (
+        <div className="lg:hidden fixed inset-0 z-40 flex">
+          <div className="w-[80vw] max-w-xs h-full shadow-2xl">
+            <Sidebar
+              activeTab={activeTab}
+              onSelectTab={handleMobileSelectTab}
+              onOpenWorkflow={() => {
+                setMobileSidebarOpen(false);
+                setWorkflowPanelOpen(true);
+              }}
+              onClose={() => setMobileSidebarOpen(false)}
+            />
+          </div>
+          <button
+            type="button"
+            aria-label="বন্ধ করুন"
+            onClick={() => setMobileSidebarOpen(false)}
+            className="flex-1 bg-black/60 backdrop-blur-sm"
+          />
+        </div>
+      )}
+
+      {workflowPanelOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          <div className="w-full max-w-xs h-full shadow-2xl [&>aside]:w-full [&>aside]:h-full">
+            <WorkflowSidebar onNavigate={handleStageNavigate} />
+          </div>
+          <button
+            type="button"
+            aria-label="বন্ধ করুন"
+            onClick={() => setWorkflowPanelOpen(false)}
+            className="flex-1 bg-black/60 backdrop-blur-sm"
+          />
+        </div>
+      )}
+
+      <div className="flex-1 flex flex-col min-w-0">
+        <div className="lg:hidden flex items-center justify-between border-b border-surface-border bg-surface-card px-3 py-2 flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => setMobileSidebarOpen(true)}
+            className="text-text-secondary hover:text-text-primary px-1"
+            aria-label="মেনু খুলুন"
+          >
+            ☰
+          </button>
+          <span className="text-xs text-text-muted truncate">{projectId}</span>
+          <button
+            type="button"
+            onClick={() => setWorkflowPanelOpen(true)}
+            className="text-text-secondary hover:text-text-primary px-1"
+            aria-label="Workflow খুলুন"
+          >
+            <ListTree size={18} />
+          </button>
+        </div>
+
+        {children}
+      </div>
+    </main>
+  );
+}
+
+export default function ModelLayout(props: LayoutProps<"/model/[projectId]">) {
+  return (
+    <Suspense
+      fallback={
+        <div className="h-screen w-screen flex items-center justify-center bg-surface">
+          <span className="spinner" aria-label="লোড হচ্ছে" />
+        </div>
+      }
+    >
+      <ModelLayoutInner {...props} />
+    </Suspense>
+  );
 }

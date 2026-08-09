@@ -1,0 +1,54 @@
+"use client";
+
+import { useGeometryStore } from "@/lib/geometry/useGeometryStore";
+import { useLibraryStore } from "@/lib/library/useLibraryStore";
+import { useElementsStore } from "@/lib/elements/useElementsStore";
+import { useLoadStore } from "@/lib/loads/useLoadStore";
+
+/**
+ * Phase 4 (Panel Migration) — মূল page.tsx এ isSaving/loadError ৪টা
+ * store থেকে aggregate হয়ে একটাই status chip এ দেখানো হতো, যেটা
+ * showDualPanel/showSinglePanel — অর্থাৎ elements/analysis/
+ * visualization/detailing — এই ৪ tab এই দেখা যেত (dual-panel ও
+ * single-panel উভয়ই, শুধু dual-panel না)। এখন এই ৪টা আলাদা route
+ * page, প্রতিটাতেই এই একই chip দরকার — তাই আলাদা component হিসেবে
+ * বের করা হলো (DualPanelViewportShell এর ভেতরে বেঁধে রাখলে
+ * visualization/detailing, যারা DualPanelViewportShell ব্যবহার করে
+ * না, আবার নতুন করে এই aggregation লজিক লিখতে হতো)।
+ *
+ * isGeometrySaving/isLibrarySaving/ইত্যাদি — প্রতিটা pure Zustand
+ * selector, কোনো subscription side-effect নেই, তাই layout.tsx এর
+ * নিজস্ব (এই একই store থেকে ভিন্ন slice পড়া) সাথে conflict করে না —
+ * layout.tsx এর মন্তব্যে বিস্তারিত।
+ */
+export function ViewportStatusChip({ projectId }: { projectId: string }) {
+  const isGeometrySaving = useGeometryStore((s) => s.isSaving);
+  const isLibrarySaving = useLibraryStore((s) => s.isSaving);
+  const isElementsSaving = useElementsStore((s) => s.isSaving);
+  const isLoadsSaving = useLoadStore((s) => s.isSaving);
+  const isSaving = isGeometrySaving || isLibrarySaving || isElementsSaving || isLoadsSaving;
+
+  const geometryLoadError = useGeometryStore((s) => s.loadError);
+  const libraryLoadError = useLibraryStore((s) => s.loadError);
+  const elementsLoadError = useElementsStore((s) => s.loadError);
+  const loadsLoadError = useLoadStore((s) => s.loadError);
+  const loadError = geometryLoadError ?? libraryLoadError ?? elementsLoadError ?? loadsLoadError;
+
+  return (
+    <div className="absolute bottom-3 left-3 flex items-center gap-2 flex-wrap">
+      <span className="hidden sm:inline text-xs text-text-muted bg-surface-card/90 backdrop-blur rounded-md px-2.5 py-1 border border-surface-border">
+        Project: {projectId}
+      </span>
+      {isSaving && (
+        <span className="text-xs text-status-holdText bg-surface-card/90 backdrop-blur rounded-md px-2.5 py-1 border border-surface-border">
+          সেভ হচ্ছে...
+        </span>
+      )}
+      {loadError && (
+        <span className="text-xs text-red-600 bg-surface-card/90 backdrop-blur rounded-md px-2.5 py-1 border border-red-200">
+          লোড এরর: {loadError}
+        </span>
+      )}
+    </div>
+  );
+}

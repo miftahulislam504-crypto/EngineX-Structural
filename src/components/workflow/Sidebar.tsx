@@ -18,32 +18,34 @@ import {
 import type { SidebarTab } from "@/lib/workflow/stageTabs";
 
 /**
- * Main Navigation Sidebar (Phase 0.5; Phase 2-তে URL-sync যোগ হয়েছে)।
+ * Main Navigation Sidebar (Phase 0.5; Phase 2-তে URL-sync; Phase 4-এ
+ * layout.tsx এ move + সত্যিকারের route navigation)।
  *
  * EngineXDraw এর components/ProjectShell.tsx এর visual pattern অনুসরণ
  * করা হয়েছে (বাম পাশে fixed-width vertical column, header/nav/footer
- * তিন অংশ, active item এর জন্য soft-accent background) — কিন্তু এখনো
- * সরাসরি Link/usePathname-based route-navigation করে না, plain button
- * + onSelectTab callback-ই রাখা হয়েছে (Phase 2-এর সিদ্ধান্ত, page.tsx
- * এর কমেন্টে বিস্তারিত)।
+ * তিন অংশ, active item এর জন্য soft-accent background)।
  *
- * ⚠️ কেন এখনো Link না: এই মুহূর্তে সব ১১টা tab content আসলে একটাই
- * page.tsx এর ভেতরে activeTab state দিয়ে সুইচ হয় (Phase 4-এর আগ
- * পর্যন্ত, যখন প্রতিটা route নিজস্ব real content পাবে)। যদি এখানে
- * সরাসরি <Link href="/model/[id]/design"> বসানো হতো, প্রতি ক্লিকে
- * Phase 1-এর placeholder route hit হয়ে redirect() দিয়ে ফিরে আসত —
- * অর্থাৎ দুইবার navigation, পুরো page.tsx remount, ফর্মের মাঝপথের
- * ইনপুট হারানোর ঝুঁকি। তাই onSelectTab এখনো activeTab state সরাসরি
- * বদলায় (কোনো remount না) — কিন্তু page.tsx-এর নতুন useEffect
- * (activeTab বদলালেই router.replace) URL-টাও পিছন থেকে মিলিয়ে রাখে,
- * তাই ব্যবহারকারীর কাছে এখন সঠিক URL (?tab=design ইত্যাদি) দেখা যায়,
- * shareable ও refresh-safe — আগে (Phase 1-এর আগে) যা ছিল না।
+ * এখনো plain button + onSelectTab callback (সরাসরি <Link> না) —
+ * কিন্তু এখন কারণটা ভিন্ন Phase 2-এর সময়ের চেয়ে। Phase 4-এ প্রতিটা
+ * tab সত্যিকারের route পেয়েছে আর এই Sidebar নিজেই layout.tsx-এ
+ * (persistent shell) সরে গেছে — onSelectTab এখন model/[projectId]/
+ * layout.tsx-এর handleSelectTab/handleMobileSelectTab কল করে, যেটা
+ * router.replace() দিয়ে প্রকৃত navigation করে (আগের মতো local state
+ * বদল না)। তাও callback pattern রাখা হয়েছে (সরাসরি <Link
+ * href={`/model/${id}/${tab}`}> না) কারণ: (১) mobile variant এ
+ * navigation-এর সাথে drawer বন্ধ করা + panel sheet খোলা (দুটো
+ * অতিরিক্ত state update) একসাথে দরকার — callback এ সেটা এক জায়গায়
+ * bundle করা যায়, Link এ আলাদা onClick handler লাগত যেটা কার্যত একই
+ * জিনিস আরেকভাবে লেখা; (২) geometry tab-এর route path বাকি ১০টার
+ * থেকে আলাদা (কোনো suffix নেই, /model/[id] নিজেই) — এই সামান্য
+ * asymmetry callback-এর ভেতরে (navigateToTab) এক জায়গায় লুকানো, Link
+ * href বসাতে গেলে এই সিদ্ধান্ত এখানেও ডুপ্লিকেট করতে হতো।
  *
  * সব tab একই level এ ফ্ল্যাট (কোনো group/nest/dropdown নেই) —
  * ব্যবহারকারীর স্পষ্ট নির্দেশ অনুযায়ী। Design/Loads/Optimization/
  * Documentation এর নিজস্ব sub-tab আছে, কিন্তু সেটা এই sidebar-এ না
  * — content area এর উপরে আলাদা horizontal SubTabBar এ (দেখুন
- * components/workflow/SubTabBar.tsx)।
+ * components/workflow/SubTabBar.tsx), প্রতিটা নিজের route page-এ।
  */
 
 interface SidebarItem {
@@ -71,11 +73,11 @@ interface SidebarProps {
   onSelectTab: (tab: SidebarTab) => void;
   onOpenWorkflow: () => void;
   /**
-   * ঐচ্ছিক — শুধু mobile drawer variant এ পাস করা হয় (page.tsx এর
-   * mobileSidebarOpen ব্লক)। দেওয়া হলে header এ একটা visible ✕ বাটন
-   * দেখায় (EngineXDraw এর ProjectShell এর headerAction slot এর মতো)।
-   * Desktop permanent rail এ undefined থাকে — বন্ধ করার কোনো concept
-   * নেই সেখানে, তাই বাটনও দেখায় না।
+   * ঐচ্ছিক — শুধু mobile drawer variant এ পাস করা হয় (layout.tsx এর
+   * mobileSidebarOpen ব্লক, useShellUiStore থেকে)। দেওয়া হলে header এ
+   * একটা visible ✕ বাটন দেখায় (EngineXDraw এর ProjectShell এর
+   * headerAction slot এর মতো)। Desktop permanent rail এ undefined
+   * থাকে — বন্ধ করার কোনো concept নেই সেখানে, তাই বাটনও দেখায় না।
    */
   onClose?: () => void;
 }
