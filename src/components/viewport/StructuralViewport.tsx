@@ -1,8 +1,9 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useMemo, useRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, GizmoHelper, GizmoViewport } from "@react-three/drei";
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { GridLines } from "./GridLines";
 import { StoryPlanes } from "./StoryPlanes";
 import { OriginMarker } from "./OriginMarker";
@@ -15,6 +16,7 @@ import { useElementsStore } from "@/lib/elements/useElementsStore";
 import { useSelectionStore } from "@/lib/viewport/useSelectionStore";
 import { useDrawModeStore } from "@/lib/viewport/useDrawModeStore";
 import { useDetailingStore } from "@/lib/detailing/useDetailingStore";
+import { useStructuralCameraStore } from "@/lib/viewport/useStructuralCameraStore";
 import { snapToNearestGrid } from "@/lib/viewport/gridSnap";
 import type { Point3D } from "@/lib/types/element";
 
@@ -52,8 +54,31 @@ import type { Point3D } from "@/lib/types/element";
  * সেটা ভবিষ্যতের stress contour/DCR/mode-shape কাজের জন্য সংরক্ষিত,
  * নিজস্ব read-only viewport হিসেবে।)
  *
- * ক্যামেরা একটা isometric-এর কাছাকাছি default angle এ শুরু হয়,
- * যেটা CAD সফটওয়্যারে পরিচিত কনভেনশন।
+ * Phase 3 (camera persistence) — ক্যামেরা প্রথমবার (কোনো saved state
+ * না থাকলে) isometric-এর কাছাকাছি default angle এ শুরু হয় (CAD
+ * সফটওয়্যারে পরিচিত কনভেনশন), কিন্তু তারপর useStructuralCameraStore
+ * এ থাকা শেষ position/target থেকে শুরু হয়। এটা জরুরি কারণ page.tsx এ
+ * এই component দুইটা আলাদা JSX position এ বসানো আছে (dual-panel block
+ * — Elements/Analysis, আর single-panel block — Detailing) — React
+ * তাই Elements/Analysis ↔ Detailing এর মধ্যে সুইচ করলে <Canvas>
+ * unmount+remount করে, camera prop শুধু initial construction-এই কাজ
+ * করে (@react-three/fiber এর নিজস্ব কমেন্ট, নিচে দেখুন) — এই store
+ * ছাড়া প্রতিবার hardcoded default এ রিসেট হতো।
+ *
+ * initialCamera একটা useMemo দিয়ে mount-এ একবারই store থেকে পড়া হয়
+ * (getState(), reactive subscription না) — ইচ্ছাকৃতভাবে, কারণ
+ * @react-three/fiber এর camera prop handling shallow-equality চেক করে
+ * (dist/events-*.esm.js এর "Create default camera, don't overwrite
+ * any user-set state" ব্লক) — যদি এখানে reactive store subscription
+ * ব্যবহার করে প্রতি render এ নতুন camera prop object পাস করা হতো,
+ * store আপডেট হওয়ার সাথে সাথেই সেই shallow-equality চেক ব্যর্থ হয়ে
+ * applyProps() আবার চলত, যা OrbitControls এর live mutation এর সাথে
+ * conflict করত (প্রতি drag-end এ camera জোর করে reset হয়ে যেত)। তাই
+ * mount-time snapshot ব্যবহার করা হয়েছে — শুধু remount এর সময় সাহায্য
+ * করবে, চলমান render এ কখনো camera prop বদলাবে না।
+ *
+ * OrbitControls এর 'end' event এ (drag/gesture শেষ হলে — 'change' এর
+ * চেয়ে অনেক কম ঘন ঘন, প্রতি frame এ না) store আপডেট হয়।
  */
 interface StructuralViewportProps {
   showDetailing?: boolean;
@@ -93,10 +118,38 @@ export function StructuralViewport({
     addDrawPoint(snapped);
   }
 
+  // --- Phase 3: camera persistence (উপরের doc-comment দেখুন) ---
+  const orbitControlsRef = useRef<OrbitControlsImpl>(null);
+  const setStructuralCamera = useStructuralCameraStore((s) => s.setCamera);
+  // getState() ইচ্ছাকৃতভাবে — reactive subscription না, mount-time
+  // snapshot। useMemo([]) এম্পটি dep array মানে এই কম্পোনেন্টের
+  // জীবনকালে (mount থেকে unmount পর্যন্ত) একবারই হিসাব হয়।
+  const initialCamera = useMemo(() => {
+    const stored = useStructuralCameraStore.getState();
+    return {
+      position: [stored.position.x, stored.position.y, stored.position.z] as [
+        number,
+        number,
+        number,
+      ],
+      target: [stored.target.x, stored.target.y, stored.target.z] as [number, number, number],
+    };
+  }, []);
+
+  function handleOrbitEnd() {
+    const controls = orbitControlsRef.current;
+    if (!controls) return;
+    const cam = controls.object;
+    setStructuralCamera(
+      { x: cam.position.x, y: cam.position.y, z: cam.position.z },
+      { x: controls.target.x, y: controls.target.y, z: controls.target.z },
+    );
+  }
+
   return (
     <div className="relative w-full h-full bg-surface">
       <Canvas
-        camera={{ position: [14, 10, 14], fov: 45 }}
+        camera={{ position: initialCamera.position, fov: 45 }}
         onPointerMissed={() => {
           // draw mode এ background ক্লিক করলে selection পরিবর্তনের
           // দরকার নেই (এবং করা উচিতও না, কারণ draw session এ কোনো
@@ -152,7 +205,14 @@ export function StructuralViewport({
             </>
           )}
 
-          <OrbitControls makeDefault enableDamping dampingFactor={0.1} />
+          <OrbitControls
+            ref={orbitControlsRef}
+            makeDefault
+            enableDamping
+            dampingFactor={0.1}
+            target={initialCamera.target}
+            onEnd={handleOrbitEnd}
+          />
 
           <GizmoHelper alignment="bottom-right" margin={[70, 70]}>
             <GizmoViewport

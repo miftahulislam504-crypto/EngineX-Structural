@@ -1,8 +1,9 @@
 "use client";
 
-import { Suspense, useMemo } from "react";
+import { Suspense, useMemo, useRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, GizmoHelper, GizmoViewport } from "@react-three/drei";
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { GridLines } from "./GridLines";
 import { StoryPlanes } from "./StoryPlanes";
 import { OriginMarker } from "./OriginMarker";
@@ -14,6 +15,7 @@ import { useGeometryStore } from "@/lib/geometry/useGeometryStore";
 import { useElementsStore } from "@/lib/elements/useElementsStore";
 import { useSelectionStore } from "@/lib/viewport/useSelectionStore";
 import { useVisualizationViewStore } from "@/lib/viewport/useVisualizationViewStore";
+import { useVisualizationCameraStore } from "@/lib/viewport/useVisualizationCameraStore";
 import { useAnalysisVisualizationStore } from "@/lib/analysis/useAnalysisVisualizationStore";
 import { useAnalysisResultStore } from "@/lib/analysis/useAnalysisResultStore";
 import { useDcrStore } from "@/lib/design/useDcrStore";
@@ -47,6 +49,19 @@ import { DeformationAnimator } from "./DeformationAnimator";
  * থাকলে ইঞ্জিনিয়ার একটা element কে Elements tab এ সিলেক্ট করে
  * Visualization tab এ গিয়ে সরাসরি সেটার rebar/result দেখতে পারবেন
  * (এবং উল্টোটাও), যা workflow-friendly।
+ *
+ * Phase 3 (camera persistence) — কিন্তু ক্যামেরা position/target এই
+ * একই যুক্তিতে shared না, ইচ্ছাকৃতভাবে নিজস্ব useVisualizationCamera
+ * Store ব্যবহার করে (useStructuralCameraStore.ts এর doc-comment এ
+ * পুরো রেশনাল — সংক্ষেপে: এখানে "কোন element সিলেক্ট করেছি" শেয়ার
+ * করা কার্যকর, কিন্তু "কোন কোণা থেকে তাকিয়ে আছি" শেয়ার করা কার্যকর
+ * না, কারণ Elements এ এক কোণা zoom করে edit করার পর Visualization এ
+ * সম্পূর্ণ ভিন্ন অংশ দেখতে চাওয়া স্বাভাবিক)। এই component এর নিজস্ব
+ * <Canvas> ও, তাই এমনিতেও camera state আলাদা রাখতেই হতো — StructuralViewport
+ * এর মতোই একই সমস্যা (camera prop শুধু initial construction-এ কাজ
+ * করে, remount এ hardcoded default এ ফিরে যেত) এখানেও প্রযোজ্য, তাই
+ * একই সমাধান (mount-time snapshot + OrbitControls 'end' event এ
+ * store আপডেট) এখানেও প্রয়োগ করা হলো।
  */
 export function VisualizationViewport() {
   const geometry = useGeometryStore((s) => s.geometry);
@@ -240,10 +255,37 @@ export function VisualizationViewport() {
     return null;
   })();
 
+  // --- Phase 3: camera persistence (উপরের doc-comment ও
+  // StructuralViewport.tsx এর detailed rationale দেখুন — একই প্যাটার্ন,
+  // এখানে useVisualizationCameraStore এর বিরুদ্ধে) ---
+  const orbitControlsRef = useRef<OrbitControlsImpl>(null);
+  const setVisualizationCamera = useVisualizationCameraStore((s) => s.setCamera);
+  const initialCamera = useMemo(() => {
+    const stored = useVisualizationCameraStore.getState();
+    return {
+      position: [stored.position.x, stored.position.y, stored.position.z] as [
+        number,
+        number,
+        number,
+      ],
+      target: [stored.target.x, stored.target.y, stored.target.z] as [number, number, number],
+    };
+  }, []);
+
+  function handleOrbitEnd() {
+    const controls = orbitControlsRef.current;
+    if (!controls) return;
+    const cam = controls.object;
+    setVisualizationCamera(
+      { x: cam.position.x, y: cam.position.y, z: cam.position.z },
+      { x: controls.target.x, y: controls.target.y, z: controls.target.z },
+    );
+  }
+
   return (
     <div className="relative w-full h-full bg-surface">
       <Canvas
-        camera={{ position: [14, 10, 14], fov: 45 }}
+        camera={{ position: initialCamera.position, fov: 45 }}
         onPointerMissed={() => setSelection({ type: "none" })}
       >
         <Suspense fallback={null}>
@@ -316,7 +358,14 @@ export function VisualizationViewport() {
             />
           )}
 
-          <OrbitControls makeDefault enableDamping dampingFactor={0.1} />
+          <OrbitControls
+            ref={orbitControlsRef}
+            makeDefault
+            enableDamping
+            dampingFactor={0.1}
+            target={initialCamera.target}
+            onEnd={handleOrbitEnd}
+          />
 
           <GizmoHelper alignment="bottom-right" margin={[70, 70]}>
             <GizmoViewport

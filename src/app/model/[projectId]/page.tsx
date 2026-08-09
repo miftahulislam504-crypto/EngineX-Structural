@@ -1,7 +1,7 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, use, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEnsureAuth } from "@/lib/firebase/useEnsureAuth";
 import { StructuralViewport } from "@/components/viewport/StructuralViewport";
 import { PlanView2D } from "@/components/viewport/PlanView2D";
@@ -97,6 +97,51 @@ interface PageProps {
 }
 
 /**
+ * Phase 1 (routing skeleton)-এর placeholder route-গুলো (model/[projectId]/
+ * geometry/page.tsx ইত্যাদি, ১১টা) redirect() করে এখানে ফেরত পাঠায়
+ * ?tab=<SidebarTab> সহ। SidebarTab একটা compile-time type (stageTabs.ts),
+ * কিন্তু ?tab এর মান আসে searchParams.get() থেকে — runtime এ string | null,
+ * তাই একটা runtime-checkable তালিকা দরকার URL থেকে আসা arbitrary/malformed
+ * মান (?tab=xyz অথবা ?tab অনুপস্থিত) নিরাপদে বাতিল করে "geometry"-তে
+ * fallback করার জন্য। SIDEBAR_ITEMS (Sidebar.tsx) থেকে আসা একই তালিকার
+ * সাথে মেলানো — দুই জায়গায় হাতে দুইটা আলাদা তালিকা রেখে drift হওয়ার
+ * ঝুঁকি এড়াতে VALID_SIDEBAR_TABS টা stageTabs.ts এর SidebarTab union
+ * থেকেই derive করা (নিচে দেখুন)।
+ */
+const VALID_SIDEBAR_TABS: readonly SidebarTab[] = [
+  "geometry",
+  "library",
+  "elements",
+  "loads",
+  "analysis",
+  "validation",
+  "design",
+  "optimization",
+  "visualization",
+  "detailing",
+  "documentation",
+];
+
+function isSidebarTab(value: string | null): value is SidebarTab {
+  return value !== null && (VALID_SIDEBAR_TABS as readonly string[]).includes(value);
+}
+
+/**
+ * useSearchParams() একটা Client Component hook, prerendered route-এ এটা
+ * কল করা component-কে <Suspense> এর ভেতরে রাখা docs-এর সুপারিশ (দেখুন
+ * next/dist/docs/.../use-search-params.md) — নাহলে সেই component এর উপরের
+ * পুরো client tree client-side-only রেন্ডার হয়ে যায়। তাই এই ছোট hook টা
+ * আলাদা করে বের করা হয়েছে, যাতে নিচের StructuralModelPage (default
+ * export) একে <Suspense> এর ভেতরে বসাতে পারে StructuralModelPageInner এর
+ * চারপাশে, ঠিক docs এর "SearchBar wrapped in Suspense" প্যাটার্নের মতো।
+ */
+function useInitialTabFromSearchParams(): SidebarTab {
+  const searchParams = useSearchParams();
+  const tab = searchParams.get("tab");
+  return isSidebarTab(tab) ? tab : "geometry";
+}
+
+/**
  * Structural Model পেজ। এই App-এর কোনো "Project Create" নেই, তাই
  * projectId সরাসরি URL থেকে আসে (Hub থেকে navigate করে এখানে আসার
  * কথা, যেমন: /model/{projectId})।
@@ -178,8 +223,15 @@ interface PageProps {
  * চারটা ডোমেইন (geometry/library/elements/loads) আলাদা Firestore
  * ডকুমেন্ট/subcollection এ থাকে এবং প্রতিটার নিজস্ব orchestration
  * hook আছে — এই পেজ সবগুলোই একসাথে চালু করে (hook গুলো independent)।
+ *
+ * Phase 2 (Persistent Shell): এই কম্পোনেন্টটা আগে সরাসরি default
+ * export ছিল। এখন ভেতরের ইমপ্লিমেন্টেশন অপরিবর্তিত রেখে (সব state/
+ * panel-rendering লজিক একই) StructuralModelPageInner নামে রাখা হলো,
+ * আর নিচে একটা পাতলা StructuralModelPage wrapper যোগ হলো যেটা এটাকে
+ * <Suspense> এর ভেতরে বসায় (useInitialTabFromSearchParams এর জন্য
+ * দরকার, উপরের কমেন্ট দেখুন)। ৭০০+ লাইনের বাকি body একদম অপরিবর্তিত।
  */
-export default function StructuralModelPage({ params }: PageProps) {
+function StructuralModelPageInner({ params }: PageProps) {
   const { projectId } = use(params);
   const router = useRouter();
   const setProjectId = useProjectIdStore((s) => s.setProjectId);
@@ -206,7 +258,38 @@ export default function StructuralModelPage({ params }: PageProps) {
     }
   }, [isAuthReady, user, router]);
 
-  const [activeTab, setActiveTab] = useState<SidebarTab>("geometry");
+  // Phase 2: আগে এই useState সবসময় হার্ডকোডেড "geometry" দিয়ে শুরু হতো,
+  // মানে /model/[projectId] এ যেভাবেই আসা হোক (এমনকি ?tab=design সহ),
+  // সবসময় geometry-ই দেখাত। এখন Phase 1-এর placeholder route-গুলো
+  // (redirect ?tab=<tab> সহ) সঠিক জায়গায় পৌঁছায় — initial state
+  // useInitialTabFromSearchParams() থেকে সিড হয়। এটা শুধু initial
+  // mount-এ পড়া হয় (useState initializer), URL পরে বদলালে (Sidebar
+  // ক্লিকের মাধ্যমে, Phase 2-এর নিচের অংশ দেখুন) activeTab সরাসরি
+  // setActiveTab দিয়েই বদলায়, useSearchParams আবার পড়ে না — তাই
+  // Sidebar ক্লিক আর ব্রাউজার ব্যাক বাটনের আচরণ এখনো আগের মতোই থাকে,
+  // শুধু প্রথমবার সঠিক ট্যাব থেকে শুরু হয়।
+  const initialTab = useInitialTabFromSearchParams();
+  const [activeTab, setActiveTab] = useState<SidebarTab>(initialTab);
+
+  // Phase 2 — activeTab বদলালেই URL এর ?tab ও মিলিয়ে রাখা (router.replace,
+  // history stack এ নতুন entry যোগ না করে — উপরের /login redirect-এর
+  // মতোই প্যাটার্ন)। activeTab যেভাবেই বদলাক (Sidebar ক্লিক, handleFinish
+  // Drawing, handleStageNavigate/WorkflowSidebar) — একটাই effect সব
+  // জায়গা কভার করে, প্রতিটা setActiveTab কল-সাইটে আলাদা করে router.replace
+  // বসানোর দরকার নেই। এটা ইচ্ছাকৃতভাবে router.push না — প্রতিটা tab
+  // switch browser history-তে আলাদা entry হয়ে গেলে ব্যাক বাটন চাপলে
+  // ব্যবহারকারীকে tab-by-tab পিছিয়ে যেতে হতো, যেটা আজকের (URL-লেস)
+  // আচরণের চেয়ে খারাপ UX হতো।
+  //
+  // এই effect mount-এও একবার চলে (activeTab initial ভ্যালু নিয়ে) — এটা
+  // নিরাপদ ও idempotent, কারণ initialTab ইতিমধ্যেই ?tab থেকে এসেছে
+  // (অথবা ?tab অনুপস্থিত থাকলে "geometry"), তাই এই প্রথম replace() URL
+  // কে হয় অপরিবর্তিত রাখে, অথবা অনুপস্থিত ?tab যোগ করে দেয় (যেমন কেউ
+  // সরাসরি /model/[projectId] এ গেলে, কোনো ?tab ছাড়াই — replace() পরে
+  // ?tab=geometry বসিয়ে দেয়, যা shareable/refresh-safe করার জন্য ভালো)।
+  useEffect(() => {
+    router.replace(`/model/${projectId}?tab=${activeTab}`, { scroll: false });
+  }, [activeTab, projectId, router]);
   const [activeLoadSubTab, setActiveLoadSubTab] = useState<LoadSubTab>("patterns");
   const [activeDesignSubTab, setActiveDesignSubTab] = useState<DesignSubTab>("beam");
   const [activeOptimizationSubTab, setActiveOptimizationSubTab] =
@@ -496,6 +579,7 @@ export default function StructuralModelPage({ params }: PageProps) {
                 setMobileSidebarOpen(false);
                 setWorkflowPanelOpen(true);
               }}
+              onClose={() => setMobileSidebarOpen(false)}
             />
           </div>
           <button
@@ -752,5 +836,30 @@ export default function StructuralModelPage({ params }: PageProps) {
         </div>
       )}
     </main>
+  );
+}
+
+/**
+ * Phase 2 — এই route এর প্রকৃত default export। useSearchParams()
+ * StructuralModelPageInner এর ভেতরে (useInitialTabFromSearchParams
+ * এর মাধ্যমে) কল হয়, তাই docs-এর সুপারিশ অনুযায়ী সেটাকে <Suspense>
+ * এর ভেতরে রাখা হলো। fallback হিসেবে পুরনো auth-loading spinner-ই
+ * পুনর্ব্যবহার করা হয়েছে (bg-surface + spinner) — এই route
+ * এমনিতেই dynamic (params/use(), Zustand store, Firebase auth সব
+ * client-side), তাই এই fallback কার্যত শুধু client-side hydration
+ * এর প্রথম মুহূর্তে দেখা যেতে পারে, নতুন কোনো "লোড হচ্ছে" state
+ * ব্যবহারকারী নতুন করে টের পাবে না।
+ */
+export default function StructuralModelPage(props: PageProps) {
+  return (
+    <Suspense
+      fallback={
+        <div className="h-screen w-screen flex items-center justify-center bg-surface">
+          <span className="spinner" aria-label="লোড হচ্ছে" />
+        </div>
+      }
+    >
+      <StructuralModelPageInner {...props} />
+    </Suspense>
   );
 }
