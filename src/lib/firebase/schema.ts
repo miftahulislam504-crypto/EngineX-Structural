@@ -19,8 +19,23 @@
  *   projects/{projectId}/analysisRuns/{runId}/results/{resultId}
  *   projects/{projectId}/designResults/{designId}
  *   projects/{projectId}/structuralModel/generalNotes      ← General Notes panel input (Phase 11 merge, single doc — একটা project এ একটাই সেট criteria/cover/material)
- *   projects/{projectId}/hubSync/outgoing                ← this app writes, Hub reads
- *   projects/{projectId}/hubSync/incoming                 ← Hub writes, this app reads
+ *
+ *   --- DEPRECATED (Hub-Structural Integration Phase 0) ---
+ *   projects/{projectId}/hubSync/outgoing                 ← @deprecated dead path — nothing reads this
+ *   projects/{projectId}/hubSync/incoming                 ← @deprecated dead path — Hub never writes here
+ *
+ *   --- Shared ecosystem contract (Hub-Structural Integration Phase 0) ---
+ *   এই কয়টা path এই App-এর নিজস্ব না — Hub-এর canonical schema
+ *   (lib/types/*.types.ts, lib/firestore/*.firestore.ts), যা প্রথমে
+ *   EngineXDraw এবং এখন এই App byte-for-byte compatible রেখে ব্যবহার
+ *   করছে। src/lib/hub/{contract,dependency,event,approval}.types.ts এবং
+ *   {dependency,event,approval,module-data}.firestore.ts দেখুন।
+ *   projects/{projectId}/versions/{moduleId}                       ← per-module version counter
+ *   projects/{projectId}/dependencies/{dependencyId}                ← which module depends on which, at what version
+ *   projects/{projectId}/events/{eventId}                           ← ecosystem-wide event log
+ *   projects/{projectId}/approvals/{moduleId}                       ← current approval status per module
+ *   projects/{projectId}/approvals/{moduleId}/history/{historyId}   ← approval audit trail
+ *   projects/{projectId}/moduleMetadata/{moduleId}                  ← heavy file metadata (Storage-backed module data, e.g. BBS xlsx/pdf)
  */
 
 export const firestorePaths = {
@@ -65,9 +80,46 @@ export const firestorePaths = {
   generalNotes: (projectId: string) =>
     `projects/${projectId}/structuralModel/generalNotes`,
 
-  // Hub sync — Section 20 এর Integration Layer
+  /** @deprecated Dead path — nothing reads projects/{id}/hubSync/outgoing. Kept only so src/lib/hub/sync.ts still compiles until its callers migrate (see that file's header). Use the hubModule* paths below for new code. */
   hubSyncOutgoing: (projectId: string) =>
     `projects/${projectId}/hubSync/outgoing`,
+  /** @deprecated Dead path — Hub never writes to projects/{id}/hubSync/incoming. Kept only so src/lib/hub/sync.ts still compiles until its callers migrate (see that file's header). Use the hubModule* paths below for new code. */
   hubSyncIncoming: (projectId: string) =>
     `projects/${projectId}/hubSync/incoming`,
+
+  // ─── Shared ecosystem contract (Hub-Structural Integration Phase 0) ───
+  // Byte-for-byte compatible with Hub's and EngineXDraw's copies of these
+  // same paths — see src/lib/hub/dependency.types.ts.
+  hubModuleVersion: (projectId: string, moduleId: string) =>
+    `projects/${projectId}/versions/${moduleId}`,
+  hubModuleVersions: (projectId: string) =>
+    `projects/${projectId}/versions`,
+
+  hubModuleDependency: (projectId: string, dependencyId: string) =>
+    `projects/${projectId}/dependencies/${dependencyId}`,
+  hubModuleDependencies: (projectId: string) =>
+    `projects/${projectId}/dependencies`,
+
+  hubModuleEvent: (projectId: string, eventId: string) =>
+    `projects/${projectId}/events/${eventId}`,
+  hubModuleEvents: (projectId: string) =>
+    `projects/${projectId}/events`,
+
+  hubModuleApproval: (projectId: string, moduleId: string) =>
+    `projects/${projectId}/approvals/${moduleId}`,
+  hubModuleApprovalHistory: (projectId: string, moduleId: string) =>
+    `projects/${projectId}/approvals/${moduleId}/history`,
+  hubModuleApprovalHistoryEntry: (projectId: string, moduleId: string, historyId: string) =>
+    `projects/${projectId}/approvals/${moduleId}/history/${historyId}`,
+
+  hubModuleDataMetadata: (projectId: string, moduleId: string) =>
+    `projects/${projectId}/moduleMetadata/${moduleId}`,
+
+  // Structured field-data sync (BOQ/schedules/quantities as a JSON blob,
+  // NOT a Storage-file reference — see the header comment on
+  // module-data.types.ts for how this differs from hubModuleDataMetadata
+  // above). This is the mechanism EngineXEstimate's proven push edge
+  // actually uses.
+  hubModuleData: (projectId: string, moduleId: string) =>
+    `projects/${projectId}/moduleData/${moduleId}`,
 } as const;

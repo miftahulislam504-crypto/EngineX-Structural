@@ -4,6 +4,15 @@
  * এই টাইপগুলা এখন স্কেলেটন — পরের Phase-গুলায় (Analysis Engine, Design Engine)
  * প্রতিটার ভিতরের ডেটা পূর্ণাঙ্গ হবে। এখন খালি/placeholder শেপ দিয়ে
  * Hub sync pipeline টেস্ট করা যাবে।
+ *
+ * @deprecated (Hub-Structural Integration Phase 0) — pushHubOutgoingPackage()
+ * in src/lib/hub/sync.ts, the only function that writes an
+ * OutgoingHubPackage, writes to projects/{id}/hubSync/outgoing, which
+ * nothing downstream reads. The real outgoing path (Phase 6) is
+ * uploadModuleData() in src/lib/hub/module-data.firestore.ts, writing
+ * quantities/BBS/results as StructuralModuleData through the same
+ * moduleMetadata + Storage pattern EngineXEstimate already uses
+ * successfully. See the deprecation note at the top of sync.ts.
  */
 
 export type SyncStatus = "not-started" | "in-progress" | "synced" | "failed";

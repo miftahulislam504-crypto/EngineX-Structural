@@ -3,6 +3,22 @@
  *
  * এই ফাইলে Hub → Structural App ডেটা কনট্রাক্ট ডিফাইন করা আছে (Section 20)।
  * এই App কখনো Project Create/Edit করবে না — সব ডেটা Hub থেকে আসে।
+ *
+ * @deprecated (Hub-Structural Integration Phase 0) — This shape was
+ * designed before Hub's real Firestore schema was known and doesn't match
+ * it (Hub's actual project doc looks nothing like HubIncomingPackage
+ * below). src/lib/hub/sync.ts's fetchHubIncomingPackage() — the only
+ * function that produces a HubIncomingPackage — reads a path Hub never
+ * writes to, so in production this type is always populated with null,
+ * never real data. See the deprecation note at the top of sync.ts.
+ *
+ * Kept in place (not deleted) because src/lib/hub/permissions.ts,
+ * src/lib/documentation/reportContext.ts, and
+ * src/lib/documentation/pdf/components/Titleblock.tsx still import
+ * HubProjectInfo/UserRole/HubIncomingPackage from here. Migrating those
+ * three to the real contract shapes (src/lib/hub/contract.types.ts and
+ * friends) is Phase 1+ work, once the field mapper exists to actually
+ * populate them from Hub's real data.
  */
 
 export type UserRole = "owner" | "editor" | "viewer";

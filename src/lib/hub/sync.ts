@@ -1,5 +1,29 @@
 "use client";
 
+/**
+ * @deprecated (Hub-Structural Integration Phase 0)
+ *
+ * This file reads/writes projects/{projectId}/hubSync/{incoming,outgoing}
+ * — a path Hub never writes to (fetchHubIncomingPackage() always resolves
+ * null in production) and that nothing else reads (pushHubOutgoingPackage()
+ * writes into a void). It was built before Hub's real Firestore schema was
+ * known; src/lib/types/hub.ts's own header even calls itself the
+ * "Section 20" contract, which never matched what Hub actually exposes.
+ *
+ * The real contract layer now lives in src/lib/hub/{contract,dependency,
+ * event,approval,module-data}.{types,firestore}.ts, ported from
+ * EngineXDraw's proven copy of the same files. New code should use that,
+ * not this.
+ *
+ * This file is NOT deleted yet because src/lib/documentation/reportContext.ts
+ * still calls fetchHubIncomingPackage() (to populate report titleblocks —
+ * see Titleblock.tsx) and degrades gracefully to null today. Migrating
+ * that call site to real Hub data is Phase 1 (Field Shape Mapper) work,
+ * once there's a mapper that can turn Hub's actual fields into something
+ * shaped like HubIncomingPackage — or once reportContext.ts is updated to
+ * consume the new contract shapes directly.
+ */
+
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { firestorePaths } from "@/lib/firebase/schema";
