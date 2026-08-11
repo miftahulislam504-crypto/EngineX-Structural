@@ -55,6 +55,30 @@ export interface AnalysisJobRequest {
   loadStepIncrement?: number;
   /** analysisType="pushover" এর জন্য — সর্বোচ্চ push step সংখ্যা, ডিফল্ট 200। */
   maxPushSteps?: number;
+  /**
+   * Phase 5 — hardcoded "base = fixed" (Y≈0) heuristic override করার
+   * ঐচ্ছিক input। না দিলে backend এর পুরনো heuristic অপরিবর্তিতভাবে
+   * চলবে (backward compatible)। coordinate-ভিত্তিক ম্যাচিং —
+   * (x,y,z) কোনো element endpoint এর সাথে না মিললে সেই entry backend
+   * এ warning দিয়ে বাদ যায়, silent ignore হয় না।
+   */
+  supportOverrides?: SupportOverride[];
+}
+
+export type SupportType = "fixed" | "pinned" | "free" | "custom";
+
+export interface SupportOverride {
+  x: number;
+  y: number;
+  z: number;
+  supportType: SupportType;
+  /** শুধু supportType="custom" হলে পড়া হয় — নাহলে ignore, fixed/pinned/free এর DOF মান backend নিজেই নির্ধারণ করে। */
+  restrainX?: boolean;
+  restrainY?: boolean;
+  restrainZ?: boolean;
+  restrainRx?: boolean;
+  restrainRy?: boolean;
+  restrainRz?: boolean;
 }
 
 export interface AnalysisJobResponse {
@@ -116,6 +140,7 @@ export async function submitAnalysisJob(
       }),
       ...(request.loadStepIncrement !== undefined && { load_step_increment: request.loadStepIncrement }),
       ...(request.maxPushSteps !== undefined && { max_push_steps: request.maxPushSteps }),
+      ...(request.supportOverrides !== undefined && { support_overrides: request.supportOverrides }),
     }),
   });
 

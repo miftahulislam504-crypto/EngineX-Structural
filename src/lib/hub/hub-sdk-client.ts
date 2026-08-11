@@ -56,7 +56,7 @@ import type { ContractStatus, SourceApp } from "./contract.types";
 import type { HubEvent, HubEventType } from "./event.types";
 import type { ModuleDataRecord } from "./module-data.types";
 
-const OUR_APP: "structural" = "structural";
+const OUR_APP = "structural" as const;
 
 function toISO(v: unknown): string {
   if (v instanceof Timestamp) return v.toDate().toISOString();
@@ -336,12 +336,53 @@ export function subscribeToModuleData(
 }
 
 /**
+ * data (ও তার nested object গুলো) থেকে সব `undefined`-valued key
+ * বাদ দেয়। Firestore Web SDK ডিফল্টভাবে (ignoreUndefinedProperties
+ * সেট না থাকলে, এই app-এর firebase/client.ts এ নেই) `setDoc()`/
+ * `updateDoc()` এ top-level বা nested যেকোনো `undefined` field পেলে
+ * পুরো write ব্যর্থ করে (FirebaseError: invalid-argument) — সরাসরি
+ * SDK দিয়ে যাচাই করা হয়েছে (node দিয়ে সত্যিকার setDoc() কল করে)।
+ *
+ * hub-module-export.ts এর মতো ফাইল ইচ্ছাকৃতভাবে খালি field-কে
+ * `undefined` দিয়ে চিহ্নিত করে (Estimate app এর hub-module-export.ts
+ * এও একই `?? undefined` প্যাটার্ন) — সেই object সরাসরি এখানে এলে
+ * পুরো Hub sync silently ব্যর্থ হয়ে যেত (প্রথম undefined field পেলেই
+ * পুরো setDoc() throw করে, শুধু সেই একটা field skip হয় না)। তাই
+ * saveOwnModuleData() নিজেই defensively strip করে — প্রতিটা caller কে
+ * আলাদাভাবে মনে রাখতে হবে না।
+ *
+ * null বনাম undefined: `null` ইচ্ছাকৃতভাবে রাখা হয় (Firestore null
+ * সমর্থন করে, এবং কিছু ফিল্ড সত্যিই "নেই" বোঝাতে null ব্যবহার করে —
+ * যেমন module-data.types.ts এর moduleId র বাইরের কিছু ক্ষেত্রে)।
+ * শুধু `undefined` strip হয়, `null` অপরিবর্তিত থাকে।
+ */
+function stripUndefinedDeep<T>(value: T): T {
+  if (Array.isArray(value)) {
+    // Object key এর মতোই array element এও raw `undefined` বাদ দেওয়া
+    // হয় (শুধু .map() করলে [1, undefined, 2] এর মাঝের undefined
+    // element রয়ে যেত — Firestore সেটাও reject করে, নিচের নোট দেখুন)।
+    return value.filter((item) => item !== undefined).map((item) => stripUndefinedDeep(item)) as T;
+  }
+  if (value !== null && typeof value === "object" && !(value instanceof Date)) {
+    const result: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
+      if (val === undefined) continue;
+      result[key] = stripUndefinedDeep(val);
+    }
+    return result as T;
+  }
+  return value;
+}
+
+/**
  * এই app নিজের produce করা module data (concreteQuantities, bbs,
  * castingSequence ইত্যাদি — Phase 6 outgoing sync) Hub-এ প্রকাশ করে।
  * merge:true — আংশিক আপডেটে বাকি field মুছে যায় না। version নিজে বসিয়ে
  * দেওয়া হয় (caller প্রথমে bumpOwnModuleVersion() কল করে newVersion এখানে
  * পাস করবে), যাতে moduleData.version সবসময় versions/structural.currentVersion
- * এর সাথে হুবহু sync থাকে।
+ * এর সাথে হুবহু sync থাকে। data এর undefined field গুলো write এর আগে
+ * strip করা হয় (stripUndefinedDeep() এর ডকুমেন্টেশন দেখুন — নাহলে
+ * Firestore পুরো write reject করে)।
  */
 export async function saveOwnModuleData(
   projectId: string,
@@ -350,7 +391,7 @@ export async function saveOwnModuleData(
 ): Promise<void> {
   await setDoc(
     doc(db(), firestorePaths.hubModuleData(projectId, OUR_APP)),
-    { moduleId: OUR_APP, sourceApp: OUR_APP, data, version, updatedAt: serverTimestamp() },
+    { moduleId: OUR_APP, sourceApp: OUR_APP, data: stripUndefinedDeep(data), version, updatedAt: serverTimestamp() },
     { merge: true },
   );
 }

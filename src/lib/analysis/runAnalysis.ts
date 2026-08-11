@@ -59,12 +59,28 @@ export function checkAnalysisRunnable(
     };
   }
 
-  const pointLoadCases = loadCases.filter((lc) => lc.applicationType === "point");
-  if (pointLoadCases.length === 0) {
+  // Phase 4 (Load Pipeline সম্প্রসারণ) — আগে শুধু "point" গ্রহণযোগ্য
+  // ছিল, এখন uniform-line ও uniform-area ও গ্রহণযোগ্য। ⚠️ এই তিনটার
+  // মধ্যে backend (civilos-structural-solver, আলাদা repo, এই কোডবেসের
+  // অংশ না) শুধু point load-ই numerically সলভ করে তা আগে যাচাই করা
+  // হয়েছিল (backend README অনুযায়ী) — uniform-line/uniform-area
+  // backend-এ কীভাবে (বা আদৌ) হ্যান্ডল হয় তা এই ফাইল থেকে যাচাই করা
+  // সম্ভব হয়নি (backend repo আপলোড করা হয়নি)। buildAnalysisPayload()
+  // এই তিন ধরনের load case-ই অপরিবর্তিতভাবে backend-এ পাঠায় (কোনো
+  // frontend-side ফিল্টার/ট্রান্সফর্ম নেই, আর্কিটেকচারাল নিয়ম অনুযায়ী
+  // সব ইঞ্জিনিয়ারিং গণনা backend এ) — backend যদি uniform-line/area
+  // সমর্থন না করে, elementEndForces এ 0 বা ভুল ফলাফল আসতে পারে চুপচাপ,
+  // কোনো frontend error ছাড়াই। **backend README/analysis_orchestration.py
+  // যাচাই না করে এই গেট রিলিজ করা উচিত না** — এই কমেন্ট intentionally
+  // এখানে রাখা হলো যাতে পরের কেউ (বা future session) এই না-যাচাই-করা
+  // অংশ miss না করে।
+  const supportedApplicationTypes = new Set(["point", "uniform-line", "uniform-area"]);
+  const runnableLoadCases = loadCases.filter((lc) => supportedApplicationTypes.has(lc.applicationType));
+  if (runnableLoadCases.length === 0) {
     return {
       canRun: false,
       reason:
-        "কোনো Point Load নেই — এই Phase এ শুধু Point Load সমর্থিত (Loads → Apply ট্যাব থেকে যোগ করুন)।",
+        "কোনো Point/Uniform Line/Uniform Area Load নেই — Analysis চালানোর জন্য অন্তত একটা লাগবে (Loads → Apply ট্যাব থেকে যোগ করুন, বা Self-Weight Auto-Generate ব্যবহার করুন)।",
     };
   }
 
