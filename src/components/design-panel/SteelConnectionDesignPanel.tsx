@@ -30,8 +30,8 @@ export function SteelConnectionDesignPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">Steel Connection Design</h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">Steel Connection Design</h3>
+        <p className="text-xs text-text-muted mb-3">
           AISC 360-16 §J — standalone connection checks (not tied to a model element).
         </p>
 
@@ -43,8 +43,8 @@ export function SteelConnectionDesignPanel() {
               onClick={() => setMode(m.id)}
               className={`flex-1 text-xs py-1.5 rounded-md border transition-colors ${
                 mode === m.id
-                  ? "bg-slate-800 border-slate-700 text-slate-200"
-                  : "bg-slate-950 border-slate-800 text-slate-500 hover:text-slate-300"
+                  ? "bg-surface-hover border-surface-border text-text-primary"
+                  : "bg-surface border-surface-border text-text-muted hover:text-text-secondary"
               }`}
             >
               {m.label}
@@ -92,22 +92,22 @@ function BoltedShearForm() {
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Bolt Grade</label>
+          <label className="block text-xs text-text-muted mb-1">Bolt Grade</label>
           <select
             value={boltGrade}
             onChange={(e) => setBoltGrade(e.target.value as BoltGrade)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           >
             <option value="A325">A325</option>
             <option value="A490">A490</option>
           </select>
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Bolt Diameter (mm)</label>
+          <label className="block text-xs text-text-muted mb-1">Bolt Diameter (mm)</label>
           <select
             value={boltDiameterMm}
             onChange={(e) => setBoltDiameterMm(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           >
             {STANDARD_BOLT_DIAMETERS_MM.map((d) => (
               <option key={d} value={d}>
@@ -120,20 +120,20 @@ function BoltedShearForm() {
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Number of Bolts</label>
+          <label className="block text-xs text-text-muted mb-1">Number of Bolts</label>
           <input
             type="number"
             value={numberOfBolts}
             onChange={(e) => setNumberOfBolts(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Shear Planes</label>
+          <label className="block text-xs text-text-muted mb-1">Shear Planes</label>
           <select
             value={numberOfShearPlanes}
             onChange={(e) => setNumberOfShearPlanes(e.target.value as "1" | "2")}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           >
             <option value="1">Single Shear</option>
             <option value="2">Double Shear</option>
@@ -143,65 +143,65 @@ function BoltedShearForm() {
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Plate Thickness (mm)</label>
+          <label className="block text-xs text-text-muted mb-1">Plate Thickness (mm)</label>
           <input
             type="number"
             step="any"
             value={plateThicknessMm}
             onChange={(e) => setPlateThicknessMm(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Plate Fu (MPa)</label>
+          <label className="block text-xs text-text-muted mb-1">Plate Fu (MPa)</label>
           <input
             type="number"
             step="any"
             value={plateFuMPa}
             onChange={(e) => setPlateFuMPa(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Edge Distance (mm)</label>
+          <label className="block text-xs text-text-muted mb-1">Edge Distance (mm)</label>
           <input
             type="number"
             step="any"
             value={edgeDistanceMm}
             onChange={(e) => setEdgeDistanceMm(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Bolt Spacing (mm)</label>
+          <label className="block text-xs text-text-muted mb-1">Bolt Spacing (mm)</label>
           <input
             type="number"
             step="any"
             value={boltSpacingMm}
             onChange={(e) => setBoltSpacingMm(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs text-slate-500 mb-1">Factored Shear Vu (kN)</label>
+        <label className="block text-xs text-text-muted mb-1">Factored Shear Vu (kN)</label>
         <input
           type="number"
           step="any"
           value={factoredShearKN}
           onChange={(e) => setFactoredShearKN(e.target.value)}
-          className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+          className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
         />
       </div>
 
       <button
         type="button"
         onClick={handleRun}
-        className="w-full rounded-md bg-sky-700 hover:bg-sky-600 text-white text-sm font-medium py-2 transition-colors"
+        className="w-full rounded-md bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium py-2 transition-colors"
       >
         ▶ Check Bolted Connection
       </button>
@@ -209,10 +209,10 @@ function BoltedShearForm() {
       {result && (
         <div className="space-y-3">
           <StatusBanner adequate={result.adequate} />
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-            <p className="text-xs text-slate-300">φRn (bolt shear) = {fmt(result.phiRnBoltShearKN)} kN</p>
-            <p className="text-xs text-slate-300">φRn (bearing/tearout) = {fmt(result.phiRnBearingKN)} kN</p>
-            <p className="text-xs text-slate-300">
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+            <p className="text-xs text-text-secondary">φRn (bolt shear) = {fmt(result.phiRnBoltShearKN)} kN</p>
+            <p className="text-xs text-text-secondary">φRn (bearing/tearout) = {fmt(result.phiRnBearingKN)} kN</p>
+            <p className="text-xs text-text-secondary">
               Governing = {fmt(result.governingCapacityKN)} kN — utilization{" "}
               {Number.isFinite(result.utilizationRatio) ? `${(result.utilizationRatio * 100).toFixed(0)}%` : "—"}
             </p>
@@ -246,48 +246,48 @@ function FilletWeldForm() {
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Electrode</label>
+          <label className="block text-xs text-text-muted mb-1">Electrode</label>
           <select
             value={electrode}
             onChange={(e) => setElectrode(e.target.value as WeldElectrode)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           >
             <option value="E70XX">E70XX</option>
             <option value="E80XX">E80XX</option>
           </select>
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Weld Size (mm)</label>
+          <label className="block text-xs text-text-muted mb-1">Weld Size (mm)</label>
           <input
             type="number"
             step="any"
             value={weldSizeMm}
             onChange={(e) => setWeldSizeMm(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Total Effective Length (mm)</label>
+          <label className="block text-xs text-text-muted mb-1">Total Effective Length (mm)</label>
           <input
             type="number"
             step="any"
             value={weldLengthMm}
             onChange={(e) => setWeldLengthMm(e.target.value)}
             placeholder="both sides combined"
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Factored Shear Vu (kN)</label>
+          <label className="block text-xs text-text-muted mb-1">Factored Shear Vu (kN)</label>
           <input
             type="number"
             step="any"
             value={factoredShearKN}
             onChange={(e) => setFactoredShearKN(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
       </div>
@@ -295,7 +295,7 @@ function FilletWeldForm() {
       <button
         type="button"
         onClick={handleRun}
-        className="w-full rounded-md bg-sky-700 hover:bg-sky-600 text-white text-sm font-medium py-2 transition-colors"
+        className="w-full rounded-md bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium py-2 transition-colors"
       >
         ▶ Check Fillet Weld
       </button>
@@ -303,9 +303,9 @@ function FilletWeldForm() {
       {result && (
         <div className="space-y-3">
           <StatusBanner adequate={result.adequate} />
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-            <p className="text-xs text-slate-300">Effective throat = {fmt(result.effectiveThroatMm, 2)} mm</p>
-            <p className="text-xs text-slate-300">
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+            <p className="text-xs text-text-secondary">Effective throat = {fmt(result.effectiveThroatMm, 2)} mm</p>
+            <p className="text-xs text-text-secondary">
               φRn = {fmt(result.phiRnKN)} kN — utilization{" "}
               {Number.isFinite(result.utilizationRatio) ? `${(result.utilizationRatio * 100).toFixed(0)}%` : "—"}
             </p>
@@ -339,83 +339,83 @@ function BasePlateForm() {
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-amber-500 bg-amber-950/30 border border-amber-900 rounded-md px-2.5 py-2">
+      <p className="text-xs text-status-holdText bg-status-holdBg border border-status-holdBorder rounded-md px-2.5 py-2">
         Concentric axial load only — no moment/eccentricity or anchor rod design.
       </p>
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Column Depth d (mm)</label>
+          <label className="block text-xs text-text-muted mb-1">Column Depth d (mm)</label>
           <input
             type="number"
             step="any"
             value={columnDepthMm}
             onChange={(e) => setColumnDepthMm(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Column Flange Width bf (mm)</label>
+          <label className="block text-xs text-text-muted mb-1">Column Flange Width bf (mm)</label>
           <input
             type="number"
             step="any"
             value={columnFlangeWidthMm}
             onChange={(e) => setColumnFlangeWidthMm(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Concrete f&apos;c (MPa)</label>
+          <label className="block text-xs text-text-muted mb-1">Concrete f&apos;c (MPa)</label>
           <input
             type="number"
             step="any"
             value={concreteFcMPa}
             onChange={(e) => setConcreteFcMPa(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Plate Fy (MPa)</label>
+          <label className="block text-xs text-text-muted mb-1">Plate Fy (MPa)</label>
           <input
             type="number"
             step="any"
             value={plateFyMPa}
             onChange={(e) => setPlateFyMPa(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs text-slate-500 mb-1">Factored Axial Load Pu (kN)</label>
+        <label className="block text-xs text-text-muted mb-1">Factored Axial Load Pu (kN)</label>
         <input
           type="number"
           step="any"
           value={factoredAxialLoadKN}
           onChange={(e) => setFactoredAxialLoadKN(e.target.value)}
-          className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+          className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
         />
       </div>
 
       <button
         type="button"
         onClick={handleRun}
-        className="w-full rounded-md bg-sky-700 hover:bg-sky-600 text-white text-sm font-medium py-2 transition-colors"
+        className="w-full rounded-md bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium py-2 transition-colors"
       >
         ▶ Design Base Plate
       </button>
 
       {result && (
         <div className="space-y-3">
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-            <p className="text-xs text-slate-300">
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+            <p className="text-xs text-text-secondary">
               Plate size: {result.plateLengthMm}mm × {result.plateWidthMm}mm
             </p>
-            <p className="text-xs text-slate-300">Required thickness = {fmt(result.requiredThicknessMm)} mm</p>
-            <p className="text-xs text-slate-300">Bearing capacity = {fmt(result.bearingCapacityKPa / 1000, 2)} MPa</p>
+            <p className="text-xs text-text-secondary">Required thickness = {fmt(result.requiredThicknessMm)} mm</p>
+            <p className="text-xs text-text-secondary">Bearing capacity = {fmt(result.bearingCapacityKPa / 1000, 2)} MPa</p>
           </div>
           <WarningsBlock warnings={result.warnings} />
         </div>
@@ -429,8 +429,8 @@ function StatusBanner({ adequate }: { adequate: boolean }) {
     <div
       className={`rounded-md border px-3 py-2.5 ${
         adequate
-          ? "bg-emerald-950/30 border-emerald-900 text-emerald-400"
-          : "bg-red-950/30 border-red-900 text-red-400"
+          ? "bg-status-activeBg border-status-activeBorder text-status-activeText"
+          : "bg-red-50 border-red-200 text-red-600"
       }`}
     >
       <p className="text-xs font-medium">
@@ -443,10 +443,10 @@ function StatusBanner({ adequate }: { adequate: boolean }) {
 function WarningsBlock({ warnings }: { warnings: string[] }) {
   if (warnings.length === 0) return null;
   return (
-    <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1.5">
-      <p className="text-xs text-slate-500 font-medium">Warnings:</p>
+    <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1.5">
+      <p className="text-xs text-text-muted font-medium">Warnings:</p>
       {warnings.map((w, i) => (
-        <p key={i} className="text-xs text-amber-400 leading-relaxed">
+        <p key={i} className="text-xs text-status-holdText leading-relaxed">
           {w}
         </p>
       ))}

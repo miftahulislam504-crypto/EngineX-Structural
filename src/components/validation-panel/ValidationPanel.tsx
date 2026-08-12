@@ -68,8 +68,8 @@ export function ValidationPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">Model Validation & QC</h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">Model Validation & QC</h3>
+        <p className="text-xs text-text-muted mb-3">
           Checks connectivity, duplicates, geometry, load/material references, and preliminary code-compliance
           sanity — before or after running Analysis.
         </p>
@@ -77,7 +77,7 @@ export function ValidationPanel() {
         <button
           type="button"
           onClick={() => setHasRun(true)}
-          className="w-full rounded-md bg-sky-700 hover:bg-sky-600 text-white text-sm font-medium py-2 transition-colors"
+          className="w-full rounded-md bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium py-2 transition-colors"
         >
           ▶ Run Validation
         </button>
@@ -90,7 +90,7 @@ export function ValidationPanel() {
           <SeverityFilterBar active={activeSeverityFilter} onChange={setActiveSeverityFilter} report={report} />
 
           {filteredIssues.length === 0 ? (
-            <p className="text-xs text-slate-500 bg-slate-950 border border-slate-800 rounded-md px-3 py-2.5">
+            <p className="text-xs text-text-muted bg-surface border border-surface-border rounded-md px-3 py-2.5">
               No issues in this filter.
             </p>
           ) : (
@@ -109,27 +109,27 @@ export function ValidationPanel() {
 function HealthScoreCard({ report }: { report: ReturnType<typeof runValidation> }) {
   const scoreColor =
     report.healthScore >= 85
-      ? "text-emerald-400"
+      ? "text-status-activeText"
       : report.healthScore >= 60
-        ? "text-amber-400"
-        : "text-red-400";
+        ? "text-status-holdText"
+        : "text-red-600";
 
   const barColor =
-    report.healthScore >= 85 ? "bg-emerald-600" : report.healthScore >= 60 ? "bg-amber-600" : "bg-red-600";
+    report.healthScore >= 85 ? "bg-status-activeText" : report.healthScore >= 60 ? "bg-status-holdText" : "bg-red-600";
 
   return (
-    <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-3">
+    <div className="rounded-md bg-surface border border-surface-border px-3 py-3">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-xs text-slate-500 font-medium">Model Health Score</p>
+        <p className="text-xs text-text-muted font-medium">Model Health Score</p>
         <p className={`text-lg font-semibold ${scoreColor}`}>{report.healthScore}/100</p>
       </div>
-      <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden mb-2.5">
+      <div className="w-full h-1.5 rounded-full bg-surface-hover overflow-hidden mb-2.5">
         <div className={`h-full ${barColor}`} style={{ width: `${report.healthScore}%` }} />
       </div>
       <div className="flex gap-3 text-xs">
-        <span className="text-red-400">✗ {report.errorCount} error{report.errorCount !== 1 ? "s" : ""}</span>
-        <span className="text-amber-400">⚠ {report.warningCount} warning{report.warningCount !== 1 ? "s" : ""}</span>
-        <span className="text-slate-500">ℹ {report.infoCount} info</span>
+        <span className="text-red-600">✗ {report.errorCount} error{report.errorCount !== 1 ? "s" : ""}</span>
+        <span className="text-status-holdText">⚠ {report.warningCount} warning{report.warningCount !== 1 ? "s" : ""}</span>
+        <span className="text-text-muted">ℹ {report.infoCount} info</span>
       </div>
     </div>
   );
@@ -160,8 +160,8 @@ function SeverityFilterBar({
           onClick={() => onChange(opt.key)}
           className={`flex-1 text-xs py-1.5 rounded-md border transition-colors ${
             active === opt.key
-              ? "bg-slate-800 border-slate-700 text-slate-200"
-              : "bg-slate-950 border-slate-800 text-slate-500 hover:text-slate-300"
+              ? "bg-surface-hover border-surface-border text-text-primary"
+              : "bg-surface border-surface-border text-text-muted hover:text-text-secondary"
           }`}
         >
           {opt.label} ({opt.count})
@@ -177,8 +177,8 @@ function CategoryGroup({ category, issues }: { category: ValidationCategory; iss
   );
 
   return (
-    <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1.5">
-      <p className="text-xs text-slate-500 font-medium">{CATEGORY_LABELS[category]}</p>
+    <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1.5">
+      <p className="text-xs text-text-muted font-medium">{CATEGORY_LABELS[category]}</p>
       {sorted.map((issue) => (
         <IssueRow key={issue.id} issue={issue} />
       ))}
@@ -189,10 +189,10 @@ function CategoryGroup({ category, issues }: { category: ValidationCategory; iss
 function IssueRow({ issue }: { issue: ValidationIssue }) {
   const style =
     issue.severity === "error"
-      ? "text-red-400"
+      ? "text-red-600"
       : issue.severity === "warning"
-        ? "text-amber-400"
-        : "text-slate-400";
+        ? "text-status-holdText"
+        : "text-text-secondary";
   const icon = issue.severity === "error" ? "✗" : issue.severity === "warning" ? "⚠" : "ℹ";
 
   return (

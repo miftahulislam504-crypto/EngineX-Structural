@@ -135,25 +135,25 @@ export function RcWallDesignPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">RC Wall Design</h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">RC Wall Design</h3>
+        <p className="text-xs text-text-muted mb-3">
           ACI 318-19 — empirical axial capacity (§11.5.3), minimum reinforcement (§11.6), in-plane shear for shear
           walls (§11.5.4).
         </p>
-        <p className="text-xs text-amber-500 bg-amber-950/30 border border-amber-900 rounded-md px-2.5 py-2 mb-2">
+        <p className="text-xs text-status-holdText bg-status-holdBg border border-status-holdBorder rounded-md px-2.5 py-2 mb-2">
           Shell analysis results are not yet available — axial/shear loads must be entered directly. This is a
           basic axial-dominant check; significant lateral/eccentric load needs the ACI §11.5.2 P-M method
           (not yet automated).
         </p>
 
-        <label className="block text-xs text-slate-500 mb-1">Wall</label>
+        <label className="block text-xs text-text-muted mb-1">Wall</label>
         <select
           value={selectedWallId}
           onChange={(e) => {
             setSelectedWallId(e.target.value);
             setReport(null);
           }}
-          className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-sm px-2.5 py-2 mb-2"
+          className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-sm px-2.5 py-2 mb-2"
         >
           <option value="">Select a wall...</option>
           {walls.map((w) => (
@@ -164,7 +164,7 @@ export function RcWallDesignPanel() {
         </select>
 
         {selectedWall && !isConcrete && (
-          <p className="text-xs text-amber-500 bg-amber-950/30 border border-amber-900 rounded-md px-2.5 py-2 mb-2">
+          <p className="text-xs text-status-holdText bg-status-holdBg border border-status-holdBorder rounded-md px-2.5 py-2 mb-2">
             This wall&apos;s material is not concrete — RC design does not apply.
           </p>
         )}
@@ -172,37 +172,37 @@ export function RcWallDesignPanel() {
 
       {selectedWall && isConcrete && (
         <>
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-            <p className="text-xs text-slate-500 font-medium">
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+            <p className="text-xs text-text-muted font-medium">
               Thickness: {selectedWall.thickness}mm, Length ≈ {estimateHorizontalLength(selectedWall).toFixed(0)}mm,
               Height ≈ {estimateHeight(selectedWall).toFixed(0)}mm, Plan area ={" "}
               {computePolygonPlanArea(selectedWall.vertices).toFixed(1)}m²
             </p>
             {isShearWallCategory && (
-              <p className="text-xs text-sky-400">Category: {selectedWall.category} — in-plane shear check enabled</p>
+              <p className="text-xs text-brand-700">Category: {selectedWall.category} — in-plane shear check enabled</p>
             )}
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Factored Axial Pu (kN)</label>
+              <label className="block text-xs text-text-muted mb-1">Factored Axial Pu (kN)</label>
               <input
                 type="number"
                 step="any"
                 value={factoredAxialLoadKN}
                 onChange={(e) => setFactoredAxialLoadKN(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
             {isShearWallCategory && (
               <div>
-                <label className="block text-xs text-slate-500 mb-1">Factored In-Plane Shear Vu (kN)</label>
+                <label className="block text-xs text-text-muted mb-1">Factored In-Plane Shear Vu (kN)</label>
                 <input
                   type="number"
                   step="any"
                   value={factoredInPlaneShearKN}
                   onChange={(e) => setFactoredInPlaneShearKN(e.target.value)}
-                  className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                  className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
                 />
               </div>
             )}
@@ -210,23 +210,23 @@ export function RcWallDesignPanel() {
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Effective Length Factor k</label>
+              <label className="block text-xs text-text-muted mb-1">Effective Length Factor k</label>
               <input
                 type="number"
                 step="any"
                 value={effectiveLengthFactor}
                 onChange={(e) => setEffectiveLengthFactor(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Bar Diameter (mm)</label>
+              <label className="block text-xs text-text-muted mb-1">Bar Diameter (mm)</label>
               <input
                 type="number"
                 step="any"
                 value={barDiameterMm}
                 onChange={(e) => setBarDiameterMm(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
           </div>
@@ -234,7 +234,7 @@ export function RcWallDesignPanel() {
           <button
             type="button"
             onClick={handleRunDesign}
-            className="w-full rounded-md bg-sky-700 hover:bg-sky-600 text-white text-sm font-medium py-2 transition-colors"
+            className="w-full rounded-md bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium py-2 transition-colors"
           >
             ▶ Run Wall Design
           </button>
@@ -243,7 +243,7 @@ export function RcWallDesignPanel() {
             <button
               type="button"
               onClick={handleSendToDetailing}
-              className="w-full rounded-md bg-emerald-800 hover:bg-emerald-700 text-white text-sm font-medium py-2 transition-colors"
+              className="w-full rounded-md bg-status-activeText hover:opacity-90 text-white text-sm font-medium py-2 transition-colors"
             >
               {detailingSent ? "✓ Sent to Detailing Model" : "🔩 Send to Detailing Model"}
             </button>
@@ -259,10 +259,10 @@ export function RcWallDesignPanel() {
 function RcWallDesignReportView({ report }: { report: RcWallDesignReport }) {
   const statusStyle =
     report.overallStatus === "ok"
-      ? "bg-emerald-950/30 border-emerald-900 text-emerald-400"
+      ? "bg-status-activeBg border-status-activeBorder text-status-activeText"
       : report.overallStatus === "warning"
-        ? "bg-amber-950/30 border-amber-900 text-amber-400"
-        : "bg-red-950/30 border-red-900 text-red-400";
+        ? "bg-status-holdBg border-status-holdBorder text-status-holdText"
+        : "bg-red-50 border-red-200 text-red-600";
   const statusIcon = report.overallStatus === "ok" ? "✓" : report.overallStatus === "warning" ? "⚠" : "✗";
 
   return (
@@ -273,10 +273,10 @@ function RcWallDesignReportView({ report }: { report: RcWallDesignReport }) {
         </p>
       </div>
 
-      <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-        <p className="text-xs text-slate-500 font-medium mb-1">Axial Capacity (Empirical Method)</p>
-        <p className="text-xs text-slate-300">klc/h = {fmt(report.axialCapacity.slendernessRatio)}</p>
-        <p className="text-xs text-slate-300">
+      <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+        <p className="text-xs text-text-muted font-medium mb-1">Axial Capacity (Empirical Method)</p>
+        <p className="text-xs text-text-secondary">klc/h = {fmt(report.axialCapacity.slendernessRatio)}</p>
+        <p className="text-xs text-text-secondary">
           φPnw = {fmt(report.axialCapacity.phiPnwKN)} kN — utilization{" "}
           {Number.isFinite(report.axialCapacity.utilizationRatio)
             ? `${(report.axialCapacity.utilizationRatio * 100).toFixed(0)}%`
@@ -285,22 +285,22 @@ function RcWallDesignReportView({ report }: { report: RcWallDesignReport }) {
         </p>
       </div>
 
-      <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-        <p className="text-xs text-slate-500 font-medium mb-1">Minimum Reinforcement</p>
-        <p className="text-xs text-slate-300">
+      <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+        <p className="text-xs text-text-muted font-medium mb-1">Minimum Reinforcement</p>
+        <p className="text-xs text-text-secondary">
           Vertical = {fmt(report.minReinforcement.minVerticalAsPerMeterMm2, 0)} mm²/m (ρ=
           {(report.minReinforcement.minVerticalRatio * 100).toFixed(2)}%)
         </p>
-        <p className="text-xs text-slate-300">
+        <p className="text-xs text-text-secondary">
           Horizontal = {fmt(report.minReinforcement.minHorizontalAsPerMeterMm2, 0)} mm²/m (ρ=
           {(report.minReinforcement.minHorizontalRatio * 100).toFixed(2)}%)
         </p>
       </div>
 
       {report.shearCapacity && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-          <p className="text-xs text-slate-500 font-medium mb-1">In-Plane Shear</p>
-          <p className="text-xs text-slate-300">
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+          <p className="text-xs text-text-muted font-medium mb-1">In-Plane Shear</p>
+          <p className="text-xs text-text-secondary">
             φVn = {fmt(report.shearCapacity.phiVnKN)} kN — utilization{" "}
             {Number.isFinite(report.shearCapacity.utilizationRatio)
               ? `${(report.shearCapacity.utilizationRatio * 100).toFixed(0)}%`
@@ -311,10 +311,10 @@ function RcWallDesignReportView({ report }: { report: RcWallDesignReport }) {
       )}
 
       {report.allWarnings.length > 0 && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1.5">
-          <p className="text-xs text-slate-500 font-medium">Warnings:</p>
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1.5">
+          <p className="text-xs text-text-muted font-medium">Warnings:</p>
           {report.allWarnings.map((w, i) => (
-            <p key={i} className="text-xs text-amber-400 leading-relaxed">
+            <p key={i} className="text-xs text-status-holdText leading-relaxed">
               {w}
             </p>
           ))}

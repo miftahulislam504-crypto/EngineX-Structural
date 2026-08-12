@@ -37,14 +37,14 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-[10px] text-slate-500 mb-0.5">
+      <label className="block text-[10px] text-text-muted mb-0.5">
         {label}
         {unit ? ` (${unit})` : ""}
       </label>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+        className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
       />
     </div>
   );
@@ -102,17 +102,17 @@ export function DevelopmentLengthPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">Development / Lap Length / Hook</h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">Development / Lap Length / Hook</h3>
+        <p className="text-xs text-text-muted mb-3">
           ACI 318-19 Chapter 25 — straight bar development length, tension/compression lap splice, standard hook
           embedment ও bend geometry।
         </p>
 
-        <label className="block text-xs text-slate-500 mb-1">Calculation</label>
+        <label className="block text-xs text-text-muted mb-1">Calculation</label>
         <select
           value={mode}
           onChange={(e) => setMode(e.target.value as CalcMode)}
-          className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-sm px-2.5 py-2 mb-3"
+          className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-sm px-2.5 py-2 mb-3"
         >
           {(Object.keys(MODE_LABELS) as CalcMode[]).map((m) => (
             <option key={m} value={m}>
@@ -132,20 +132,20 @@ export function DevelopmentLengthPanel() {
             <>
               <Field label="Clear Cover / Half Spacing (cb)" value={clearCoverMm} onChange={setClearCoverMm} unit="mm" />
               <div className="flex gap-4">
-                <label className="flex items-center gap-2 text-xs text-slate-400">
+                <label className="flex items-center gap-2 text-xs text-text-secondary">
                   <input type="checkbox" checked={isTopBar} onChange={(e) => setIsTopBar(e.target.checked)} />
                   Top bar (ψt=1.3)
                 </label>
-                <label className="flex items-center gap-2 text-xs text-slate-400">
+                <label className="flex items-center gap-2 text-xs text-text-secondary">
                   <input type="checkbox" checked={isEpoxyCoated} onChange={(e) => setIsEpoxyCoated(e.target.checked)} />
                   Epoxy coated
                 </label>
               </div>
-              <label className="block text-[10px] text-slate-500 mb-0.5">Lap Splice Class</label>
+              <label className="block text-[10px] text-text-muted mb-0.5">Lap Splice Class</label>
               <select
                 value={spliceClass}
                 onChange={(e) => setSpliceClass(e.target.value as TensionLapSpliceClass)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               >
                 <option value="B">Class B (1.3×ld — default/most common)</option>
                 <option value="A">Class A (1.0×ld — needs 2× As & ≤50% spliced)</option>
@@ -155,21 +155,21 @@ export function DevelopmentLengthPanel() {
 
           {mode === "hook" && (
             <>
-              <label className="block text-[10px] text-slate-500 mb-0.5">Bend Angle</label>
+              <label className="block text-[10px] text-text-muted mb-0.5">Bend Angle</label>
               <select
                 value={bendAngle}
                 onChange={(e) => setBendAngle(Number(e.target.value) as HookBendAngleDeg)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               >
                 <option value={90}>90°</option>
                 <option value={135}>135° (seismic hook)</option>
                 <option value={180}>180°</option>
               </select>
-              <label className="flex items-center gap-2 text-xs text-slate-400">
+              <label className="flex items-center gap-2 text-xs text-text-secondary">
                 <input type="checkbox" checked={isStirrupOrTie} onChange={(e) => setIsStirrupOrTie(e.target.checked)} />
                 Stirrup / Tie (not main longitudinal bar)
               </label>
-              <label className="flex items-center gap-2 text-xs text-slate-400">
+              <label className="flex items-center gap-2 text-xs text-text-secondary">
                 <input type="checkbox" checked={isEpoxyCoated} onChange={(e) => setIsEpoxyCoated(e.target.checked)} />
                 Epoxy coated
               </label>
@@ -180,7 +180,7 @@ export function DevelopmentLengthPanel() {
         <button
           type="button"
           onClick={handleRun}
-          className="w-full rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium py-2 transition-colors"
+          className="w-full rounded-md bg-surface-hover hover:bg-surface-border text-text-primary text-sm font-medium py-2 transition-colors"
         >
           Calculate
         </button>
@@ -188,24 +188,24 @@ export function DevelopmentLengthPanel() {
 
       {mode === "tension" && tensionResult && (
         <div className="space-y-3">
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-            <p className="text-xs text-slate-500 font-medium mb-1">Development Length (ld)</p>
-            <p className="text-xs text-slate-300">{fmt(tensionResult.developmentLengthMm)}mm</p>
-            <p className="text-[10px] text-slate-600">
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+            <p className="text-xs text-text-muted font-medium mb-1">Development Length (ld)</p>
+            <p className="text-xs text-text-secondary">{fmt(tensionResult.developmentLengthMm)}mm</p>
+            <p className="text-[10px] text-text-muted">
               ψt={tensionResult.psiT} · ψe={tensionResult.psiE} · ψs={tensionResult.psiS} · ψg={tensionResult.psiG} ·
               λ={tensionResult.lambda} · (cb+Ktr)/db={fmt(tensionResult.confinementTerm, 2)}
             </p>
           </div>
           {tensionLapMm !== null && (
-            <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-              <p className="text-xs text-slate-500 font-medium mb-1">Lap Splice Length (Class {spliceClass})</p>
-              <p className="text-xs text-slate-300">{fmt(tensionLapMm)}mm</p>
+            <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+              <p className="text-xs text-text-muted font-medium mb-1">Lap Splice Length (Class {spliceClass})</p>
+              <p className="text-xs text-text-secondary">{fmt(tensionLapMm)}mm</p>
             </div>
           )}
           {tensionResult.warnings.length > 0 && (
-            <div className="rounded-md bg-amber-950/20 border border-amber-900/60 px-3 py-2.5 space-y-1">
+            <div className="rounded-md bg-status-holdBg border border-status-holdBorder/60 px-3 py-2.5 space-y-1">
               {tensionResult.warnings.map((w, i) => (
-                <p key={i} className="text-xs text-amber-500 leading-relaxed">
+                <p key={i} className="text-xs text-status-holdText leading-relaxed">
                   {w}
                 </p>
               ))}
@@ -216,20 +216,20 @@ export function DevelopmentLengthPanel() {
 
       {mode === "compression" && compressionLdcMm !== null && (
         <div className="space-y-3">
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-            <p className="text-xs text-slate-500 font-medium mb-1">Development Length (ldc)</p>
-            <p className="text-xs text-slate-300">{fmt(compressionLdcMm)}mm</p>
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+            <p className="text-xs text-text-muted font-medium mb-1">Development Length (ldc)</p>
+            <p className="text-xs text-text-secondary">{fmt(compressionLdcMm)}mm</p>
           </div>
           {compressionLapMm !== null && (
-            <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-              <p className="text-xs text-slate-500 font-medium mb-1">Lap Splice Length</p>
-              <p className="text-xs text-slate-300">{fmt(compressionLapMm)}mm</p>
+            <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+              <p className="text-xs text-text-muted font-medium mb-1">Lap Splice Length</p>
+              <p className="text-xs text-text-secondary">{fmt(compressionLapMm)}mm</p>
             </div>
           )}
           {compressionLapWarnings.length > 0 && (
-            <div className="rounded-md bg-amber-950/20 border border-amber-900/60 px-3 py-2.5 space-y-1">
+            <div className="rounded-md bg-status-holdBg border border-status-holdBorder/60 px-3 py-2.5 space-y-1">
               {compressionLapWarnings.map((w, i) => (
-                <p key={i} className="text-xs text-amber-500 leading-relaxed">
+                <p key={i} className="text-xs text-status-holdText leading-relaxed">
                   {w}
                 </p>
               ))}
@@ -240,20 +240,20 @@ export function DevelopmentLengthPanel() {
 
       {mode === "hook" && hookLdhMm !== null && hookGeometry && (
         <div className="space-y-3">
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-            <p className="text-xs text-slate-500 font-medium mb-1">Hook Development Length (ldh)</p>
-            <p className="text-xs text-slate-300">{fmt(hookLdhMm)}mm</p>
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+            <p className="text-xs text-text-muted font-medium mb-1">Hook Development Length (ldh)</p>
+            <p className="text-xs text-text-secondary">{fmt(hookLdhMm)}mm</p>
           </div>
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-            <p className="text-xs text-slate-500 font-medium mb-1">Hook Geometry</p>
-            <p className="text-xs text-slate-300">
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+            <p className="text-xs text-text-muted font-medium mb-1">Hook Geometry</p>
+            <p className="text-xs text-text-secondary">
               Bend diameter: {fmt(hookGeometry.bendDiameterMm)}mm · Extension: {fmt(hookGeometry.extensionMm)}mm
             </p>
           </div>
           {hookGeometry.warnings.length > 0 && (
-            <div className="rounded-md bg-amber-950/20 border border-amber-900/60 px-3 py-2.5 space-y-1">
+            <div className="rounded-md bg-status-holdBg border border-status-holdBorder/60 px-3 py-2.5 space-y-1">
               {hookGeometry.warnings.map((w, i) => (
-                <p key={i} className="text-xs text-amber-500 leading-relaxed">
+                <p key={i} className="text-xs text-status-holdText leading-relaxed">
                   {w}
                 </p>
               ))}

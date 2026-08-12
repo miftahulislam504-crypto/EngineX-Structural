@@ -32,31 +32,31 @@ function VariableRangeInputs({
 }) {
   return (
     <div className="space-y-2.5">
-      <p className="text-xs text-slate-500 font-medium">Search Variables</p>
+      <p className="text-xs text-text-muted font-medium">Search Variables</p>
       {variables.map((v) => (
         <div key={v.name} className="grid grid-cols-3 gap-2">
           <div>
-            <label className="block text-[10px] text-slate-500 mb-0.5">{v.name} min (mm)</label>
+            <label className="block text-[10px] text-text-muted mb-0.5">{v.name} min (mm)</label>
             <input
               value={values[v.name]?.min ?? String(v.minValue)}
               onChange={(e) => onChange(v.name, "min", e.target.value)}
-              className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+              className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
             />
           </div>
           <div>
-            <label className="block text-[10px] text-slate-500 mb-0.5">max (mm)</label>
+            <label className="block text-[10px] text-text-muted mb-0.5">max (mm)</label>
             <input
               value={values[v.name]?.max ?? String(v.maxValue)}
               onChange={(e) => onChange(v.name, "max", e.target.value)}
-              className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+              className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
             />
           </div>
           <div>
-            <label className="block text-[10px] text-slate-500 mb-0.5">step (mm)</label>
+            <label className="block text-[10px] text-text-muted mb-0.5">step (mm)</label>
             <input
               value={values[v.name]?.step ?? String(v.stepSize ?? 50)}
               onChange={(e) => onChange(v.name, "step", e.target.value)}
-              className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+              className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
             />
           </div>
         </div>
@@ -78,14 +78,14 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-[10px] text-slate-500 mb-0.5">
+      <label className="block text-[10px] text-text-muted mb-0.5">
         {label}
         {unit ? ` (${unit})` : ""}
       </label>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+        className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
       />
     </div>
   );
@@ -293,13 +293,13 @@ export function FoundationOptimizationPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">Foundation Optimization</h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">Foundation Optimization</h3>
+        <p className="text-xs text-text-muted mb-3">
           প্রতিটা variable range-এর মধ্যে candidate dimension sweep করে, Phase 6e/7a-7d এর design module দিয়ে
           feasibility চেক করে, এবং সর্বনিম্ন concrete volume-এর feasible candidate বেছে নেয়।
         </p>
 
-        <label className="block text-xs text-slate-500 mb-1">Foundation Type</label>
+        <label className="block text-xs text-text-muted mb-1">Foundation Type</label>
         <select
           value={foundationType}
           onChange={(e) => {
@@ -307,7 +307,7 @@ export function FoundationOptimizationPanel() {
             setResult(null);
             setRangeOverrides({});
           }}
-          className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-sm px-2.5 py-2 mb-3"
+          className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-sm px-2.5 py-2 mb-3"
         >
           {(Object.keys(FOUNDATION_TYPE_LABELS) as FoundationType[]).map((type) => (
             <option key={type} value={type}>
@@ -343,7 +343,7 @@ export function FoundationOptimizationPanel() {
               <Field label="Column Width" value={isoColumnWidthMm} onChange={setIsoColumnWidthMm} unit="mm" />
               <Field label="Column Depth" value={isoColumnDepthMm} onChange={setIsoColumnDepthMm} unit="mm" />
             </div>
-            <label className="flex items-center gap-2 text-xs text-slate-400">
+            <label className="flex items-center gap-2 text-xs text-text-secondary">
               <input type="checkbox" checked={isoIsSquare} onChange={(e) => setIsoIsSquare(e.target.checked)} />
               Square footing
             </label>
@@ -386,7 +386,7 @@ export function FoundationOptimizationPanel() {
 
         {foundationType === "mat-foundation" && (
           <div className="space-y-2 mb-3">
-            <p className="text-[10px] text-slate-500">
+            <p className="text-[10px] text-text-muted">
               এই optimizer panel সরলীকৃত rectangular mat plan ব্যবহার করে (একটা প্রতিনিধিত্বমূলক interior কলাম
               সহ) — জটিল polygon plan/multi-column mat-এর জন্য Mat Foundation Design panel-এই ম্যানুয়ালি iterate
               করুন।
@@ -424,11 +424,11 @@ export function FoundationOptimizationPanel() {
               <Field label="Factored Load" value={pcFactoredLoadKN} onChange={setPcFactoredLoadKN} unit="kN" />
             </div>
             <div>
-              <label className="block text-[10px] text-slate-500 mb-0.5">Pile Shape</label>
+              <label className="block text-[10px] text-text-muted mb-0.5">Pile Shape</label>
               <select
                 value={pcPileShape}
                 onChange={(e) => setPcPileShape(e.target.value as "circular" | "square")}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               >
                 <option value="circular">Circular</option>
                 <option value="square">Square</option>
@@ -466,7 +466,7 @@ export function FoundationOptimizationPanel() {
         <button
           type="button"
           onClick={handleRunOptimization}
-          className="w-full rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium py-2 transition-colors"
+          className="w-full rounded-md bg-surface-hover hover:bg-surface-border text-text-primary text-sm font-medium py-2 transition-colors"
         >
           Run Optimization
         </button>
@@ -477,32 +477,32 @@ export function FoundationOptimizationPanel() {
           <div
             className={`rounded-md border px-3 py-2.5 ${
               result.best
-                ? "bg-emerald-950/30 border-emerald-900"
-                : "bg-amber-950/30 border-amber-900"
+                ? "bg-status-activeBg border-status-activeBorder"
+                : "bg-status-holdBg border-status-holdBorder"
             }`}
           >
-            <p className={`text-xs leading-relaxed ${result.best ? "text-emerald-400" : "text-amber-500"}`}>
+            <p className={`text-xs leading-relaxed ${result.best ? "text-status-activeText" : "text-status-holdText"}`}>
               {result.message}
             </p>
           </div>
 
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-            <p className="text-xs text-slate-500">
-              Candidates evaluated: <span className="text-slate-300">{result.candidatesEvaluated}</span> · Feasible:{" "}
-              <span className="text-slate-300">{result.feasibleCandidatesFound}</span>
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+            <p className="text-xs text-text-muted">
+              Candidates evaluated: <span className="text-text-secondary">{result.candidatesEvaluated}</span> · Feasible:{" "}
+              <span className="text-text-secondary">{result.feasibleCandidatesFound}</span>
             </p>
           </div>
 
           {result.best && (
-            <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1.5">
-              <p className="text-xs text-slate-500 font-medium mb-1">Best Candidate</p>
+            <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1.5">
+              <p className="text-xs text-text-muted font-medium mb-1">Best Candidate</p>
               {Object.entries(result.best.variableValues).map(([k, v]) => (
-                <p key={k} className="text-xs text-slate-300">
+                <p key={k} className="text-xs text-text-secondary">
                   {k}: {fmt(v, 1)}
                 </p>
               ))}
-              <p className="text-xs text-slate-300">Concrete volume: {fmt(result.best.concreteVolumeM3, 3)} m³</p>
-              <p className="text-xs text-slate-300">Status: {result.best.overallStatus}</p>
+              <p className="text-xs text-text-secondary">Concrete volume: {fmt(result.best.concreteVolumeM3, 3)} m³</p>
+              <p className="text-xs text-text-secondary">Status: {result.best.overallStatus}</p>
             </div>
           )}
         </div>

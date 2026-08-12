@@ -54,18 +54,18 @@ export function TorsionCheckPanel({ nodes, displacements, storyShears: storyShea
   return (
     <div className="space-y-3">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">Torsion Check — Accidental Eccentricity</h3>
-        <p className="text-xs text-slate-500 mb-2">
+        <h3 className="text-sm font-medium text-text-primary mb-1">Torsion Check — Accidental Eccentricity</h3>
+        <p className="text-xs text-text-muted mb-2">
           Displacement-based (Option 1) পদ্ধতি — mass-shift ছাড়া বর্তমান analysis result থেকে Ax ও
           amplified eccentricity বের করে। চূড়ান্ত ডিজাইনে এই eccentricity ম্যানুয়ালি প্রয়োগ করে
           আরেকটা analysis চালানো উচিত।
         </p>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Lateral Load Direction</label>
+          <label className="block text-xs text-text-muted mb-1">Lateral Load Direction</label>
           <select
             value={direction}
             onChange={(e) => setDirection(e.target.value as TorsionDirection)}
-            className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+            className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
           >
             <option value="X">X দিক</option>
             <option value="Z">Z দিক</option>
@@ -74,21 +74,21 @@ export function TorsionCheckPanel({ nodes, displacements, storyShears: storyShea
       </div>
 
       {!storyShearsProp && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
-          <p className="text-xs text-slate-500 mb-1.5">
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+          <p className="text-xs text-text-muted mb-1.5">
             প্রতিটা story-র cumulative shear দিন (ঐচ্ছিক — Additional Torsional Moment হিসাব করতে,
             kN এককে)
           </p>
           <div className="space-y-1.5">
             {[...nonBaseStories].reverse().map((story) => (
               <div key={story.storyId} className="flex items-center gap-2">
-                <span className="text-xs text-slate-500 w-28 truncate">{story.name}</span>
+                <span className="text-xs text-text-muted w-28 truncate">{story.name}</span>
                 <input
                   type="number"
                   step="any"
                   value={manualShears[story.storyId] ?? ""}
                   onChange={(e) => setManualShears((prev) => ({ ...prev, [story.storyId]: e.target.value }))}
-                  className="flex-1 rounded-md bg-slate-900 border border-slate-700 px-2 py-1 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+                  className="flex-1 rounded-md bg-surface-card border border-surface-border px-2 py-1 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
                   placeholder="kN"
                 />
               </div>
@@ -98,31 +98,31 @@ export function TorsionCheckPanel({ nodes, displacements, storyShears: storyShea
       )}
 
       {result && result.results.length > 0 && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
-          <p className="text-xs text-slate-500 font-medium mb-1.5">Per-Story Torsion</p>
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+          <p className="text-xs text-text-muted font-medium mb-1.5">Per-Story Torsion</p>
           <div className="max-h-64 overflow-y-auto space-y-2">
             {[...result.results].reverse().map((r) => (
-              <div key={r.storyId} className="text-xs border-b border-slate-800 pb-1.5 last:border-0">
+              <div key={r.storyId} className="text-xs border-b border-surface-border pb-1.5 last:border-0">
                 <div className="flex justify-between">
-                  <span className="text-slate-400">{r.storyName}</span>
+                  <span className="text-text-secondary">{r.storyName}</span>
                   <span
                     className={
                       r.isExtremeTorsionallyIrregular
-                        ? "text-red-400 font-medium"
+                        ? "text-red-600 font-medium"
                         : r.isTorsionallyIrregular
-                          ? "text-amber-400 font-medium"
-                          : "text-emerald-400"
+                          ? "text-status-holdText font-medium"
+                          : "text-status-activeText"
                     }
                   >
                     ratio {r.ratio.toFixed(2)}
                   </span>
                 </div>
-                <div className="flex justify-between text-slate-500">
+                <div className="flex justify-between text-text-muted">
                   <span>Ax = {r.amplificationFactorAx.toFixed(2)}</span>
                   <span>e = {(r.amplifiedAccidentalEccentricity * 1000).toFixed(0)}mm</span>
                 </div>
                 {r.additionalTorsionalMomentKNm !== null && (
-                  <div className="text-slate-500">Additional Mt = {r.additionalTorsionalMomentKNm.toFixed(2)} kN·m</div>
+                  <div className="text-text-muted">Additional Mt = {r.additionalTorsionalMomentKNm.toFixed(2)} kN·m</div>
                 )}
               </div>
             ))}
@@ -131,13 +131,13 @@ export function TorsionCheckPanel({ nodes, displacements, storyShears: storyShea
       )}
 
       {result?.warnings.map((warning, i) => (
-        <p key={i} className="text-xs text-amber-400">
+        <p key={i} className="text-xs text-status-holdText">
           {warning}
         </p>
       ))}
 
       {!result && (
-        <p className="text-xs text-slate-500">Torsion Check চালানোর জন্য একটা সফল Analysis result প্রয়োজন।</p>
+        <p className="text-xs text-text-muted">Torsion Check চালানোর জন্য একটা সফল Analysis result প্রয়োজন।</p>
       )}
     </div>
   );

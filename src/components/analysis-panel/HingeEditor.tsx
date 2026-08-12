@@ -84,7 +84,7 @@ export function HingeEditor({ projectId }: HingeEditorProps) {
 
   if (lineElements.length === 0) {
     return (
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-text-muted">
         No moment-connected Beam/Column/Brace/Pile found — add at least one element before assigning hinges.
       </p>
     );
@@ -93,11 +93,11 @@ export function HingeEditor({ projectId }: HingeEditorProps) {
   return (
     <div className="space-y-4">
       <div>
-        <h4 className="text-xs text-slate-500 font-medium mb-2">Section Yield Moment Capacity (Mz)</h4>
+        <h4 className="text-xs text-text-muted font-medium mb-2">Section Yield Moment Capacity (Mz)</h4>
         <div className="space-y-2">
           {sections.map((section) => (
             <div key={section.sectionId} className="flex items-center gap-2">
-              <span className="text-xs text-slate-400 flex-1 truncate">{section.name}</span>
+              <span className="text-xs text-text-secondary flex-1 truncate">{section.name}</span>
               <input
                 type="number"
                 min={0}
@@ -107,26 +107,26 @@ export function HingeEditor({ projectId }: HingeEditorProps) {
                 onChange={(e) =>
                   setYieldMomentDrafts((prev) => ({ ...prev, [section.sectionId]: e.target.value }))
                 }
-                className="w-24 rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1"
+                className="w-24 rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1"
               />
               <button
                 type="button"
                 onClick={() => saveYieldMoment(section.sectionId)}
                 disabled={savingSectionId === section.sectionId}
-                className="text-xs px-2 py-1 rounded-md bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-300"
+                className="text-xs px-2 py-1 rounded-md bg-surface-hover hover:bg-surface-border disabled:opacity-40 text-text-secondary"
               >
                 {savingSectionId === section.sectionId ? "..." : "Save"}
               </button>
             </div>
           ))}
         </div>
-        <p className="text-xs text-slate-600 mt-1.5">
+        <p className="text-xs text-text-muted mt-1.5">
           Leaving this at 0 or blank keeps the section always elastic, even if a hinge is assigned.
         </p>
       </div>
 
       <div>
-        <h4 className="text-xs text-slate-500 font-medium mb-2">Hinge Assignment (per element end)</h4>
+        <h4 className="text-xs text-text-muted font-medium mb-2">Hinge Assignment (per element end)</h4>
         <div className="max-h-56 overflow-y-auto space-y-1.5">
           {lineElements.map((element) => {
             if (!isLineElement(element)) return null;
@@ -134,10 +134,10 @@ export function HingeEditor({ projectId }: HingeEditorProps) {
             return (
               <div
                 key={element.elementId}
-                className="flex items-center gap-2 rounded-md bg-slate-950 border border-slate-800 px-2.5 py-1.5"
+                className="flex items-center gap-2 rounded-md bg-surface border border-surface-border px-2.5 py-1.5"
               >
-                <span className="text-xs text-slate-300 flex-1 truncate">{element.label}</span>
-                <label className="flex items-center gap-1 text-xs text-slate-400">
+                <span className="text-xs text-text-secondary flex-1 truncate">{element.label}</span>
+                <label className="flex items-center gap-1 text-xs text-text-secondary">
                   <input
                     type="checkbox"
                     checked={element.hingeAtStart ?? false}
@@ -146,7 +146,7 @@ export function HingeEditor({ projectId }: HingeEditorProps) {
                   />
                   Start
                 </label>
-                <label className="flex items-center gap-1 text-xs text-slate-400">
+                <label className="flex items-center gap-1 text-xs text-text-secondary">
                   <input
                     type="checkbox"
                     checked={element.hingeAtEnd ?? false}

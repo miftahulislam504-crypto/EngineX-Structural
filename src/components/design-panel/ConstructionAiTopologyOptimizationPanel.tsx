@@ -99,8 +99,8 @@ export function ConstructionAiTopologyOptimizationPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">Construction / AI / Topology Optimization</h3>
-        <p className="text-xs text-amber-500 bg-amber-950/30 border border-amber-900 rounded-md px-2.5 py-2 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">Construction / AI / Topology Optimization</h3>
+        <p className="text-xs text-status-holdText bg-status-holdBg border border-status-holdBorder rounded-md px-2.5 py-2 mb-3">
           Framework placeholders (Phase 9e) — তিনটাই এখনো কোনো বাস্তব অ্যালগরিদম চালায় না। প্রকৃত optimization
           এখন যেটা কাজ করে তা হলো 9a (Foundation) / 9b (Section) / 9c (Weight) / 9d (Cost) — এই ট্যাব শুধু কেন এই
           তিনটা এখনো implement করা যায়নি তার কারণ ব্যাখ্যা করে।
@@ -111,7 +111,7 @@ export function ConstructionAiTopologyOptimizationPanel() {
             type="button"
             onClick={() => setMode("construction")}
             className={`flex-1 rounded-md text-xs font-medium py-1.5 transition-colors ${
-              mode === "construction" ? "bg-sky-700 text-white" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+              mode === "construction" ? "bg-brand-600 text-white" : "bg-surface-hover text-text-secondary hover:bg-surface-border"
             }`}
           >
             Construction
@@ -120,7 +120,7 @@ export function ConstructionAiTopologyOptimizationPanel() {
             type="button"
             onClick={() => setMode("ai")}
             className={`flex-1 rounded-md text-xs font-medium py-1.5 transition-colors ${
-              mode === "ai" ? "bg-sky-700 text-white" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+              mode === "ai" ? "bg-brand-600 text-white" : "bg-surface-hover text-text-secondary hover:bg-surface-border"
             }`}
           >
             AI
@@ -129,7 +129,7 @@ export function ConstructionAiTopologyOptimizationPanel() {
             type="button"
             onClick={() => setMode("topology")}
             className={`flex-1 rounded-md text-xs font-medium py-1.5 transition-colors ${
-              mode === "topology" ? "bg-sky-700 text-white" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+              mode === "topology" ? "bg-brand-600 text-white" : "bg-surface-hover text-text-secondary hover:bg-surface-border"
             }`}
           >
             Topology
@@ -140,11 +140,11 @@ export function ConstructionAiTopologyOptimizationPanel() {
       {mode === "construction" && (
         <div className="space-y-2.5">
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Optimization Goal</label>
+            <label className="block text-xs text-text-muted mb-1">Optimization Goal</label>
             <select
               value={constructionGoal}
               onChange={(e) => setConstructionGoal(e.target.value as ConstructionOptimizationGoal)}
-              className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+              className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
             >
               {(Object.keys(CONSTRUCTION_GOAL_LABELS) as ConstructionOptimizationGoal[]).map((g) => (
                 <option key={g} value={g}>
@@ -154,24 +154,24 @@ export function ConstructionAiTopologyOptimizationPanel() {
             </select>
           </div>
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Number of Stories</label>
+            <label className="block text-xs text-text-muted mb-1">Number of Stories</label>
             <input
               type="number"
               value={numberOfStories}
               onChange={(e) => setNumberOfStories(e.target.value)}
-              className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+              className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
             />
           </div>
           <button
             type="button"
             onClick={handleRunConstruction}
-            className="w-full rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium py-2 transition-colors"
+            className="w-full rounded-md bg-surface-hover hover:bg-surface-border text-text-primary text-sm font-medium py-2 transition-colors"
           >
             Preview Problem Definition
           </button>
           {constructionResult && (
-            <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
-              <p className="text-xs text-slate-400 leading-relaxed">{constructionResult.message}</p>
+            <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+              <p className="text-xs text-text-secondary leading-relaxed">{constructionResult.message}</p>
             </div>
           )}
         </div>
@@ -180,11 +180,11 @@ export function ConstructionAiTopologyOptimizationPanel() {
       {mode === "ai" && (
         <div className="space-y-2.5">
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Optimization Target</label>
+            <label className="block text-xs text-text-muted mb-1">Optimization Target</label>
             <select
               value={aiTarget}
               onChange={(e) => setAiTarget(e.target.value as AiOptimizationTarget)}
-              className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+              className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
             >
               {(Object.keys(AI_TARGET_LABELS) as AiOptimizationTarget[]).map((t) => (
                 <option key={t} value={t}>
@@ -196,13 +196,13 @@ export function ConstructionAiTopologyOptimizationPanel() {
           <button
             type="button"
             onClick={handleRunAi}
-            className="w-full rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium py-2 transition-colors"
+            className="w-full rounded-md bg-surface-hover hover:bg-surface-border text-text-primary text-sm font-medium py-2 transition-colors"
           >
             Preview Problem Definition
           </button>
           {aiResult && (
-            <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
-              <p className="text-xs text-slate-400 leading-relaxed">{aiResult.message}</p>
+            <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+              <p className="text-xs text-text-secondary leading-relaxed">{aiResult.message}</p>
             </div>
           )}
         </div>
@@ -211,11 +211,11 @@ export function ConstructionAiTopologyOptimizationPanel() {
       {mode === "topology" && (
         <div className="space-y-2.5">
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Method</label>
+            <label className="block text-xs text-text-muted mb-1">Method</label>
             <select
               value={topologyMethod}
               onChange={(e) => setTopologyMethod(e.target.value as TopologyOptimizationMethod)}
-              className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+              className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
             >
               {(Object.keys(TOPOLOGY_METHOD_LABELS) as TopologyOptimizationMethod[]).map((m) => (
                 <option key={m} value={m}>
@@ -225,25 +225,25 @@ export function ConstructionAiTopologyOptimizationPanel() {
             </select>
           </div>
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Target Volume Fraction (0-1)</label>
+            <label className="block text-xs text-text-muted mb-1">Target Volume Fraction (0-1)</label>
             <input
               type="number"
               step="any"
               value={targetVolumeFraction}
               onChange={(e) => setTargetVolumeFraction(e.target.value)}
-              className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+              className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
             />
           </div>
           <button
             type="button"
             onClick={handleRunTopology}
-            className="w-full rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium py-2 transition-colors"
+            className="w-full rounded-md bg-surface-hover hover:bg-surface-border text-text-primary text-sm font-medium py-2 transition-colors"
           >
             Preview Problem Definition
           </button>
           {topologyResult && (
-            <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
-              <p className="text-xs text-slate-400 leading-relaxed">{topologyResult.message}</p>
+            <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+              <p className="text-xs text-text-secondary leading-relaxed">{topologyResult.message}</p>
             </div>
           )}
         </div>

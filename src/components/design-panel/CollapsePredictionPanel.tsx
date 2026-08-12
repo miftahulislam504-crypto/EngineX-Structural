@@ -32,8 +32,8 @@ export function CollapsePredictionPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">Collapse Prediction (Progressive Collapse)</h3>
-        <p className="text-xs text-amber-500 bg-amber-950/30 border border-amber-900 rounded-md px-2.5 py-2 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">Collapse Prediction (Progressive Collapse)</h3>
+        <p className="text-xs text-status-holdText bg-status-holdBg border border-status-holdBorder rounded-md px-2.5 py-2 mb-3">
           Not yet implemented. This is a Phase 8h framework placeholder for the GSA 2016 / UFC 4-023-03 Alternate
           Path Method (notional element removal + Dynamic Increase Factor + per-member DCR checks). Full
           implementation is deferred to Phase 11 (Simulation) — this app currently has no element-removal
@@ -44,7 +44,7 @@ export function CollapsePredictionPanel() {
         <button
           type="button"
           onClick={handlePreview}
-          className="w-full rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium py-2 transition-colors"
+          className="w-full rounded-md bg-surface-hover hover:bg-surface-border text-text-primary text-sm font-medium py-2 transition-colors"
         >
           Preview Alternate Path Scenario Set
         </button>
@@ -52,22 +52,22 @@ export function CollapsePredictionPanel() {
 
       {result && (
         <div className="space-y-3">
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
-            <p className="text-xs text-slate-400 leading-relaxed">{result.message}</p>
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+            <p className="text-xs text-text-secondary leading-relaxed">{result.message}</p>
           </div>
 
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-            <p className="text-xs text-slate-500 font-medium mb-1">
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+            <p className="text-xs text-text-muted font-medium mb-1">
               Dynamic Increase Factor (assumption)
             </p>
-            <p className="text-xs text-slate-300">{result.problem.dynamicIncreaseFactorAssumption.toFixed(1)}×</p>
+            <p className="text-xs text-text-secondary">{result.problem.dynamicIncreaseFactorAssumption.toFixed(1)}×</p>
           </div>
 
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-2">
-            <p className="text-xs text-slate-500 font-medium mb-1">Example Scenarios (GSA 2016)</p>
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-2">
+            <p className="text-xs text-text-muted font-medium mb-1">Example Scenarios (GSA 2016)</p>
             {result.problem.scenarios.map((s, i) => (
-              <div key={i} className="text-xs text-slate-300 leading-relaxed">
-                <span className="text-slate-400 font-medium">
+              <div key={i} className="text-xs text-text-secondary leading-relaxed">
+                <span className="text-text-secondary font-medium">
                   {LOCATION_LABELS[s.location] ?? s.location} — {s.storyLevel}:
                 </span>{" "}
                 {s.description}

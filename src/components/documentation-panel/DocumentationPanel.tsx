@@ -7,7 +7,7 @@ import { DOCUMENT_KEYS, DOCUMENT_REGISTRY, type DocumentKey } from "@/lib/docume
  * DocumentationPanel — Phase 11i
  *
  * GeneralNotesPanel.tsx এর প্যাটার্ন অনুসরণ করে (একই ফাইল-নেমিং, একই
- * styling convention — rounded-md bg-slate-900 বাটন, text-xs/text-[10px]
+ * styling convention — rounded-md bg-surface-card বাটন, text-xs/text-[10px]
  * লেবেল)। প্রতিটা document এর জন্য একটা ডাউনলোড বাটন, DOCUMENT_REGISTRY
  * (route.tsx এ, single source of truth — label/description দুই জায়গায়
  * ডুপ্লিকেট না করতে) থেকে বানানো।
@@ -99,12 +99,12 @@ function DownloadAction({ documentKey, projectId, extraQuery }: { documentKey: D
         type="button"
         onClick={handleDownload}
         disabled={status === "loading"}
-        className="w-full rounded-md bg-slate-800 hover:bg-slate-700 disabled:opacity-60 text-slate-200 text-xs font-medium py-1.5 transition-colors"
+        className="w-full rounded-md bg-surface-hover hover:bg-surface-border disabled:opacity-60 text-text-primary text-xs font-medium py-1.5 transition-colors"
       >
         {status === "loading" ? "Generating…" : "Download PDF"}
       </button>
       {status === "error" && errorMessage && (
-        <p className="text-[10px] text-red-400 mt-1.5">{errorMessage}</p>
+        <p className="text-[10px] text-red-600 mt-1.5">{errorMessage}</p>
       )}
     </>
   );
@@ -114,9 +114,9 @@ function DownloadAction({ documentKey, projectId, extraQuery }: { documentKey: D
 function DownloadButton({ documentKey, projectId }: { documentKey: DocumentKey; projectId: string }) {
   const entry = DOCUMENT_REGISTRY[documentKey];
   return (
-    <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
-      <p className="text-sm font-medium text-slate-200">{entry.label}</p>
-      <p className="text-xs text-slate-500 mt-0.5 mb-2">{entry.description}</p>
+    <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+      <p className="text-sm font-medium text-text-primary">{entry.label}</p>
+      <p className="text-xs text-text-muted mt-0.5 mb-2">{entry.description}</p>
       <DownloadAction documentKey={documentKey} projectId={projectId} />
     </div>
   );
@@ -140,8 +140,8 @@ export function DocumentationPanel({ projectId }: { projectId: string }) {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">Documentation</h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">Documentation</h3>
+        <p className="text-xs text-text-muted mb-3">
           প্রতিটা document server-side জেনারেট হয় (project&apos;s current geometry/design/detailing/validation
           data থেকে) — জেনারেট করার সময় model-এ যা আছে তার একটা স্ন্যাপশট, তাই model বদলালে আবার ডাউনলোড
           করতে হবে সর্বশেষ ভার্সন পেতে।
@@ -152,19 +152,19 @@ export function DocumentationPanel({ projectId }: { projectId: string }) {
         <DownloadButton key={key} documentKey={key} projectId={projectId} />
       ))}
 
-      <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
-        <p className="text-sm font-medium text-slate-200">{DOCUMENT_REGISTRY["calc-sheets"].label}</p>
-        <p className="text-xs text-slate-500 mt-0.5 mb-2">{DOCUMENT_REGISTRY["calc-sheets"].description}</p>
+      <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+        <p className="text-sm font-medium text-text-primary">{DOCUMENT_REGISTRY["calc-sheets"].label}</p>
+        <p className="text-xs text-text-muted mt-0.5 mb-2">{DOCUMENT_REGISTRY["calc-sheets"].description}</p>
 
-        <p className="text-[10px] text-slate-500 mb-1">Filter by category (none selected = all):</p>
+        <p className="text-[10px] text-text-muted mb-1">Filter by category (none selected = all):</p>
         <div className="grid grid-cols-2 gap-1 mb-2">
           {CALC_SHEET_CATEGORIES.map((cat) => (
-            <label key={cat.value} className="flex items-center gap-1.5 text-[10px] text-slate-400">
+            <label key={cat.value} className="flex items-center gap-1.5 text-[10px] text-text-secondary">
               <input
                 type="checkbox"
                 checked={selectedCategories.has(cat.value)}
                 onChange={() => toggleCategory(cat.value)}
-                className="accent-sky-500"
+                className="accent-brand-600"
               />
               {cat.label}
             </label>

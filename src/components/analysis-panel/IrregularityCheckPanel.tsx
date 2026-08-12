@@ -24,10 +24,10 @@ interface IrregularityCheckPanelProps {
 }
 
 const STATUS_STYLE: Record<IrregularityStatus, string> = {
-  regular: "text-emerald-400",
-  irregular: "text-amber-400",
-  "extreme-irregular": "text-red-400",
-  "not-computable": "text-slate-500",
+  regular: "text-status-activeText",
+  irregular: "text-status-holdText",
+  "extreme-irregular": "text-red-600",
+  "not-computable": "text-text-muted",
 };
 
 const STATUS_LABEL: Record<IrregularityStatus, string> = {
@@ -90,13 +90,13 @@ export function IrregularityCheckPanel({
   return (
     <div className="space-y-3">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">Irregularity Check — BNBC 2020</h3>
+        <h3 className="text-sm font-medium text-text-primary mb-1">Irregularity Check — BNBC 2020</h3>
         {result && (
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-text-muted">
             সামগ্রিক ফলাফল:{" "}
             <span
               className={
-                result.hasAnyIrregularity ? "text-amber-400 font-semibold" : "text-emerald-400 font-semibold"
+                result.hasAnyIrregularity ? "text-status-holdText font-semibold" : "text-status-activeText font-semibold"
               }
             >
               {result.hasAnyIrregularity ? "এক বা একাধিক Irregularity পাওয়া গেছে" : "কোনো Irregularity নেই"}
@@ -106,21 +106,21 @@ export function IrregularityCheckPanel({
       </div>
 
       {!storyShearsProp && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
-          <p className="text-xs text-slate-500 mb-1.5">
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+          <p className="text-xs text-text-muted mb-1.5">
             প্রতিটা story-র cumulative shear দিন (Seismic বা Wind Load Panel এর Story Force
             Distribution টেবিল থেকে, kN এককে)
           </p>
           <div className="space-y-1.5">
             {[...nonBaseStories].reverse().map((story) => (
               <div key={story.storyId} className="flex items-center gap-2">
-                <span className="text-xs text-slate-500 w-28 truncate">{story.name}</span>
+                <span className="text-xs text-text-muted w-28 truncate">{story.name}</span>
                 <input
                   type="number"
                   step="any"
                   value={manualShears[story.storyId] ?? ""}
                   onChange={(e) => setManualShears((prev) => ({ ...prev, [story.storyId]: e.target.value }))}
-                  className="flex-1 rounded-md bg-slate-900 border border-slate-700 px-2 py-1 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+                  className="flex-1 rounded-md bg-surface-card border border-surface-border px-2 py-1 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
                   placeholder="kN"
                 />
               </div>
@@ -130,7 +130,7 @@ export function IrregularityCheckPanel({
       )}
 
       {!result && (
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-text-muted">
           Irregularity Check চালানোর জন্য একটা সফল Analysis result, Story Drift Check ফলাফল, ও
           প্রতিটা story-র shear প্রয়োজন।
         </p>
@@ -139,14 +139,14 @@ export function IrregularityCheckPanel({
       {result && (
         <>
           {result.stiffnessIrregularity.length > 0 && (
-            <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
-              <p className="text-xs text-slate-500 font-medium mb-1.5">
+            <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+              <p className="text-xs text-text-muted font-medium mb-1.5">
                 Stiffness Irregularity (Soft/Extreme Soft Storey) — approximate
               </p>
               <div className="space-y-1">
                 {[...result.stiffnessIrregularity].reverse().map((r) => (
                   <div key={r.storyId} className="flex justify-between text-xs px-1">
-                    <span className="text-slate-400">{r.storyName}</span>
+                    <span className="text-text-secondary">{r.storyName}</span>
                     <span className={STATUS_STYLE[r.status]}>{STATUS_LABEL[r.status]}</span>
                   </div>
                 ))}
@@ -155,12 +155,12 @@ export function IrregularityCheckPanel({
           )}
 
           {result.weakStorey.length > 0 && (
-            <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
-              <p className="text-xs text-slate-500 font-medium mb-1.5">Weak Storey (strength proxy — shear-based)</p>
+            <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+              <p className="text-xs text-text-muted font-medium mb-1.5">Weak Storey (strength proxy — shear-based)</p>
               <div className="space-y-1">
                 {[...result.weakStorey].reverse().map((r) => (
                   <div key={r.storyId} className="flex justify-between text-xs px-1">
-                    <span className="text-slate-400">{r.storyName}</span>
+                    <span className="text-text-secondary">{r.storyName}</span>
                     <span className={STATUS_STYLE[r.status]}>{STATUS_LABEL[r.status]}</span>
                   </div>
                 ))}
@@ -169,12 +169,12 @@ export function IrregularityCheckPanel({
           )}
 
           {result.geometricIrregularity.length > 0 && (
-            <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
-              <p className="text-xs text-slate-500 font-medium mb-1.5">Vertical Geometric Irregularity</p>
+            <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+              <p className="text-xs text-text-muted font-medium mb-1.5">Vertical Geometric Irregularity</p>
               <div className="space-y-1">
                 {[...result.geometricIrregularity].reverse().map((r) => (
                   <div key={r.storyId} className="flex justify-between text-xs px-1">
-                    <span className="text-slate-400">{r.storyName}</span>
+                    <span className="text-text-secondary">{r.storyName}</span>
                     <span className={STATUS_STYLE[r.status]}>{STATUS_LABEL[r.status]}</span>
                   </div>
                 ))}
@@ -183,12 +183,12 @@ export function IrregularityCheckPanel({
           )}
 
           {result.torsionalIrregularity.length > 0 && (
-            <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
-              <p className="text-xs text-slate-500 font-medium mb-1.5">Torsional Irregularity (Plan)</p>
+            <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+              <p className="text-xs text-text-muted font-medium mb-1.5">Torsional Irregularity (Plan)</p>
               <div className="space-y-1">
                 {[...result.torsionalIrregularity].reverse().map((r) => (
                   <div key={r.storyId} className="flex justify-between text-xs px-1">
-                    <span className="text-slate-400">
+                    <span className="text-text-secondary">
                       {r.storyName} (ratio {r.ratio.toFixed(2)})
                     </span>
                     <span className={STATUS_STYLE[r.status]}>{STATUS_LABEL[r.status]}</span>
@@ -198,13 +198,13 @@ export function IrregularityCheckPanel({
             </div>
           )}
 
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
-            <p className="text-xs text-slate-500 font-medium mb-1">Mass Irregularity</p>
-            <p className="text-xs text-slate-500">{result.massIrregularity.reason}</p>
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+            <p className="text-xs text-text-muted font-medium mb-1">Mass Irregularity</p>
+            <p className="text-xs text-text-muted">{result.massIrregularity.reason}</p>
           </div>
 
           {result.warnings.map((warning, i) => (
-            <p key={i} className="text-xs text-amber-400">
+            <p key={i} className="text-xs text-status-holdText">
               {warning}
             </p>
           ))}

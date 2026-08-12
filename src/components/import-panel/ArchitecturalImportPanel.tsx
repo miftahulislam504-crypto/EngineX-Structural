@@ -28,7 +28,7 @@ import { saveGeometryCore } from "@/lib/geometry/firestore";
 import type { StructuralElement } from "@/lib/types/element";
 
 const SELECT_CLASS =
-  "w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600";
+  "w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20";
 
 const CATEGORY_LABELS: Record<string, string> = {
   beam: "Beam",
@@ -100,8 +100,8 @@ export function ArchitecturalImportPanel({ projectId, onAddElement }: Architectu
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
-        <p className="text-xs text-slate-400 mb-2">
+      <div className="rounded-lg border border-surface-border bg-surface-card/40 p-3">
+        <p className="text-xs text-text-secondary mb-2">
           EngineXDraw-এ সর্বশেষ প্রকাশিত architectural model থেকে Wall/Slab/Column/Beam জ্যামিতি
           আনুন। কোনো ডেটা সরাসরি লেখা হবে না — প্রতিটা element-এর Material/Section বেছে দিয়ে
           নিশ্চিত করার পরেই মডেলে যোগ হবে।
@@ -110,40 +110,40 @@ export function ArchitecturalImportPanel({ projectId, onAddElement }: Architectu
           type="button"
           onClick={fetchAndParse}
           disabled={state.status === "loading"}
-          className="w-full rounded-md bg-sky-700 hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium py-1.5 transition-colors"
+          className="w-full rounded-md bg-brand-600 hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium py-1.5 transition-colors"
         >
           {state.status === "loading" ? "আনা হচ্ছে..." : "Draw থেকে আনুন"}
         </button>
       </div>
 
       {state.status === "no_data" && (
-        <p className="text-sm text-slate-500 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+        <p className="text-sm text-text-muted rounded-lg border border-surface-border bg-surface-card/40 p-3">
           এই প্রজেক্টে Draw থেকে এখনো কোনো architectural model প্রকাশিত হয়নি। EngineXDraw অ্যাপ
           থেকে প্রথমে মডেল publish করার অনুরোধ করুন।
         </p>
       )}
 
       {state.status === "error" && (
-        <p className="text-sm text-red-400 rounded-lg border border-red-900/50 bg-red-950/30 p-3">
+        <p className="text-sm text-red-600 rounded-lg border border-red-200 bg-red-950/30 p-3">
           {state.errorMessage}
         </p>
       )}
 
       {importError && (
-        <p className="text-sm text-red-400 rounded-lg border border-red-900/50 bg-red-950/30 p-3">
+        <p className="text-sm text-red-600 rounded-lg border border-red-200 bg-red-950/30 p-3">
           {importError}
         </p>
       )}
 
       {importedCount !== null && (
-        <p className="text-sm text-emerald-400 rounded-lg border border-emerald-900/50 bg-emerald-950/30 p-3">
+        <p className="text-sm text-status-activeText rounded-lg border border-status-activeBorder bg-status-activeBg p-3">
           {importedCount}টা element সফলভাবে মডেলে যোগ হয়েছে।
         </p>
       )}
 
       {state.status === "ready" && (
         <>
-          <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3 text-xs text-slate-400 space-y-1">
+          <div className="rounded-lg border border-surface-border bg-surface-card/40 p-3 text-xs text-text-secondary space-y-1">
             <p>
               {state.grids.length} Grid, {state.stories.length} Story, {state.items.length} Element
               পাওয়া গেছে
@@ -153,13 +153,13 @@ export function ArchitecturalImportPanel({ projectId, onAddElement }: Architectu
           </div>
 
           {state.skippedIssues.length > 0 && (
-            <div className="rounded-lg border border-amber-900/50 bg-amber-950/20 p-3">
-              <p className="text-xs font-medium text-amber-400 mb-1.5">
+            <div className="rounded-lg border border-status-holdBorder bg-status-holdBg p-3">
+              <p className="text-xs font-medium text-status-holdText mb-1.5">
                 {state.skippedIssues.length}টা element স্কিপ করা হয়েছে
               </p>
               <ul className="space-y-1">
                 {state.skippedIssues.map((issue) => (
-                  <li key={issue.elementRefId} className="text-xs text-amber-200/80">
+                  <li key={issue.elementRefId} className="text-xs text-status-holdText">
                     {issue.elementType} ({issue.elementRefId}) — {issue.reason}
                   </li>
                 ))}
@@ -168,14 +168,14 @@ export function ArchitecturalImportPanel({ projectId, onAddElement }: Architectu
           )}
 
           {state.items.length === 0 ? (
-            <p className="text-sm text-slate-500 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+            <p className="text-sm text-text-muted rounded-lg border border-surface-border bg-surface-card/40 p-3">
               আমদানিযোগ্য কোনো element পাওয়া যায়নি।
             </p>
           ) : (
             <div className="space-y-4">
               {Array.from(groupedItems.entries()).map(([category, items]) => (
                 <div key={category} className="space-y-2">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
                     {CATEGORY_LABELS[category] ?? category} ({items.length})
                   </h3>
                   {items.map((item) => (
@@ -200,7 +200,7 @@ export function ArchitecturalImportPanel({ projectId, onAddElement }: Architectu
             type="button"
             onClick={handleConfirm}
             disabled={!allResolved || isImporting || state.items.length === 0}
-            className="w-full rounded-md bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium py-2 transition-colors"
+            className="w-full rounded-md bg-status-activeText hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium py-2 transition-colors"
           >
             {isImporting
               ? "আমদানি হচ্ছে..."
@@ -235,17 +235,17 @@ function ImportItemRow({
   const isOverridden = item.categoryOverride === "shear-wall";
 
   return (
-    <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-2.5 space-y-2">
+    <div className="rounded-lg border border-surface-border bg-surface-card p-2.5 space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-slate-200 font-medium">{item.original.label}</span>
-        <span className="text-[10px] text-slate-500">{item.original.elementId}</span>
+        <span className="text-sm text-text-primary font-medium">{item.original.label}</span>
+        <span className="text-[10px] text-text-muted">{item.original.elementId}</span>
       </div>
 
       {item.issue && (
-        <div className="flex items-start justify-between gap-2 rounded-md bg-amber-950/30 border border-amber-900/40 px-2 py-1.5">
-          <p className="text-[11px] text-amber-200/90 flex-1">{item.issue.reason}</p>
+        <div className="flex items-start justify-between gap-2 rounded-md bg-status-holdBg border border-status-holdBorder/40 px-2 py-1.5">
+          <p className="text-[11px] text-status-holdText flex-1">{item.issue.reason}</p>
           {canOverrideCategory && (
-            <label className="flex items-center gap-1.5 text-[11px] text-amber-200 whitespace-nowrap flex-shrink-0">
+            <label className="flex items-center gap-1.5 text-[11px] text-status-holdText whitespace-nowrap flex-shrink-0">
               <input
                 type="checkbox"
                 checked={isOverridden}
@@ -260,7 +260,7 @@ function ImportItemRow({
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-[11px] text-slate-500 mb-1">Material</label>
+          <label className="block text-[11px] text-text-muted mb-1">Material</label>
           <select
             value={item.materialId}
             onChange={(e) => onMaterialChange(e.target.value)}
@@ -277,7 +277,7 @@ function ImportItemRow({
 
         {item.sectionId !== null && (
           <div>
-            <label className="block text-[11px] text-slate-500 mb-1">Section</label>
+            <label className="block text-[11px] text-text-muted mb-1">Section</label>
             <select
               value={item.sectionId}
               onChange={(e) => onSectionChange(e.target.value)}

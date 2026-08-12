@@ -122,20 +122,20 @@ export function SteelColumnDesignPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">Steel Column Design</h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">Steel Column Design</h3>
+        <p className="text-xs text-text-muted mb-3">
           AISC 360-16 — compression (flexural buckling), flexure, and H1 combined axial-flexure interaction for
           W-shape sections.
         </p>
 
-        <label className="block text-xs text-slate-500 mb-1">Column</label>
+        <label className="block text-xs text-text-muted mb-1">Column</label>
         <select
           value={selectedColumnId}
           onChange={(e) => {
             setSelectedColumnId(e.target.value);
             setReport(null);
           }}
-          className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-sm px-2.5 py-2 mb-2"
+          className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-sm px-2.5 py-2 mb-2"
         >
           <option value="">Select a column...</option>
           {columns.map((c) => (
@@ -146,13 +146,13 @@ export function SteelColumnDesignPanel() {
         </select>
 
         {selectedColumn && !isWShape && (
-          <p className="text-xs text-amber-500 bg-amber-950/30 border border-amber-900 rounded-md px-2.5 py-2 mb-2">
+          <p className="text-xs text-status-holdText bg-status-holdBg border border-status-holdBorder rounded-md px-2.5 py-2 mb-2">
             Steel column design in this version only supports W-shape sections. This column uses a{" "}
             {columnSection?.shape ?? "unknown"} section.
           </p>
         )}
         {selectedColumn && isWShape && !isSteel && (
-          <p className="text-xs text-amber-500 bg-amber-950/30 border border-amber-900 rounded-md px-2.5 py-2 mb-2">
+          <p className="text-xs text-status-holdText bg-status-holdBg border border-status-holdBorder rounded-md px-2.5 py-2 mb-2">
             This column&apos;s material is not steel — steel design does not apply.
           </p>
         )}
@@ -160,8 +160,8 @@ export function SteelColumnDesignPanel() {
 
       {selectedColumn && isWShape && isSteel && (
         <>
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-2">
-            <p className="text-xs text-slate-500 font-medium">
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-2">
+            <p className="text-xs text-text-muted font-medium">
               {(columnSection as WShapeSection).designation ?? "W-shape"}: d=
               {(columnSection as WShapeSection).depth}mm, bf={(columnSection as WShapeSection).flangeWidth}mm —
               Length: {(elementLength(selectedColumn) * 1000).toFixed(0)}mm
@@ -169,20 +169,20 @@ export function SteelColumnDesignPanel() {
 
             {governingForces ? (
               <div className="flex items-center justify-between">
-                <p className="text-xs text-emerald-400">
+                <p className="text-xs text-status-activeText">
                   From {sourceAnalysisType}: Pu≈{governingForces.maxAxial.toFixed(1)} kN, Mu≈
                   {governingForces.maxMoment.toFixed(1)} kN·m
                 </p>
                 <button
                   type="button"
                   onClick={handleUseAutoValues}
-                  className="text-xs bg-sky-800 hover:bg-sky-700 text-white px-2 py-1 rounded-md"
+                  className="text-xs bg-brand-100 hover:bg-brand-600 text-white px-2 py-1 rounded-md"
                 >
                   Use these
                 </button>
               </div>
             ) : (
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-text-muted">
                 No analysis result available for this column yet — run an Analysis first, or enter loads manually
                 below.
               </p>
@@ -191,23 +191,23 @@ export function SteelColumnDesignPanel() {
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Factored Axial Pu (kN)</label>
+              <label className="block text-xs text-text-muted mb-1">Factored Axial Pu (kN)</label>
               <input
                 type="number"
                 step="any"
                 value={factoredAxialLoadKN}
                 onChange={(e) => setFactoredAxialLoadKN(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Factored Moment Mu (kN·m)</label>
+              <label className="block text-xs text-text-muted mb-1">Factored Moment Mu (kN·m)</label>
               <input
                 type="number"
                 step="any"
                 value={factoredMomentKNm}
                 onChange={(e) => setFactoredMomentKNm(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
           </div>
@@ -215,11 +215,11 @@ export function SteelColumnDesignPanel() {
           <div className="grid grid-cols-2 gap-2">
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs text-slate-500">Effective Length KL (mm)</label>
+                <label className="block text-xs text-text-muted">Effective Length KL (mm)</label>
                 <button
                   type="button"
                   onClick={handleUseFullLengthAsEffective}
-                  className="text-xs text-sky-500 hover:text-sky-400"
+                  className="text-xs text-brand-600 hover:text-brand-700"
                 >
                   use full length
                 </button>
@@ -229,17 +229,17 @@ export function SteelColumnDesignPanel() {
                 step="any"
                 value={effectiveLengthMm}
                 onChange={(e) => setEffectiveLengthMm(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Cb (moment gradient factor)</label>
+              <label className="block text-xs text-text-muted mb-1">Cb (moment gradient factor)</label>
               <input
                 type="number"
                 step="any"
                 value={cb}
                 onChange={(e) => setCb(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
           </div>
@@ -247,7 +247,7 @@ export function SteelColumnDesignPanel() {
           <button
             type="button"
             onClick={handleRunDesign}
-            className="w-full rounded-md bg-sky-700 hover:bg-sky-600 text-white text-sm font-medium py-2 transition-colors"
+            className="w-full rounded-md bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium py-2 transition-colors"
           >
             ▶ Run Steel Column Design
           </button>
@@ -262,10 +262,10 @@ export function SteelColumnDesignPanel() {
 function SteelColumnDesignReportView({ report }: { report: SteelColumnDesignReport }) {
   const statusStyle =
     report.overallStatus === "ok"
-      ? "bg-emerald-950/30 border-emerald-900 text-emerald-400"
+      ? "bg-status-activeBg border-status-activeBorder text-status-activeText"
       : report.overallStatus === "warning"
-        ? "bg-amber-950/30 border-amber-900 text-amber-400"
-        : "bg-red-950/30 border-red-900 text-red-400";
+        ? "bg-status-holdBg border-status-holdBorder text-status-holdText"
+        : "bg-red-50 border-red-200 text-red-600";
   const statusIcon = report.overallStatus === "ok" ? "✓" : report.overallStatus === "warning" ? "⚠" : "✗";
 
   return (
@@ -276,41 +276,41 @@ function SteelColumnDesignReportView({ report }: { report: SteelColumnDesignRepo
         </p>
       </div>
 
-      <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-        <p className="text-xs text-slate-500 font-medium mb-1">Compression</p>
-        <p className="text-xs text-slate-300">
+      <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+        <p className="text-xs text-text-muted font-medium mb-1">Compression</p>
+        <p className="text-xs text-text-secondary">
           KL/ry = {fmt(report.compressionCapacity.slendernessRatio)} — {report.compressionCapacity.governingLimitState}
         </p>
-        <p className="text-xs text-slate-300">
+        <p className="text-xs text-text-secondary">
           Fcr = {fmt(report.compressionCapacity.fcrMPa)} MPa, φPn = {fmt(report.compressionCapacity.phiPnKN)} kN
         </p>
       </div>
 
-      <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-        <p className="text-xs text-slate-500 font-medium mb-1">Flexure</p>
-        <p className="text-xs text-slate-300">
+      <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+        <p className="text-xs text-text-muted font-medium mb-1">Flexure</p>
+        <p className="text-xs text-text-secondary">
           {report.flexuralCapacity.isCompact
             ? `φMn = ${fmt(report.flexuralCapacity.phiMnKNm)} kN·m (${report.flexuralCapacity.governingLimitState})`
             : "NOT compact — capacity not computed"}
         </p>
       </div>
 
-      <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-        <p className="text-xs text-slate-500 font-medium mb-1">Combined Interaction (AISC H1)</p>
-        <p className="text-xs text-slate-300">
+      <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+        <p className="text-xs text-text-muted font-medium mb-1">Combined Interaction (AISC H1)</p>
+        <p className="text-xs text-text-secondary">
           Pr/Pc = {fmt(report.interaction.axialRatio, 3)} — equation {report.interaction.governingEquation}
         </p>
-        <p className="text-xs text-slate-300">
+        <p className="text-xs text-text-secondary">
           Interaction value = {fmt(report.interaction.interactionValue, 3)} —{" "}
           {report.interaction.adequate ? "adequate" : "NOT adequate"}
         </p>
       </div>
 
       {report.allWarnings.length > 0 && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1.5">
-          <p className="text-xs text-slate-500 font-medium">Warnings:</p>
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1.5">
+          <p className="text-xs text-text-muted font-medium">Warnings:</p>
           {report.allWarnings.map((w, i) => (
-            <p key={i} className="text-xs text-amber-400 leading-relaxed">
+            <p key={i} className="text-xs text-status-holdText leading-relaxed">
               {w}
             </p>
           ))}

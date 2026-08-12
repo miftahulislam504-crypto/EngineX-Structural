@@ -95,16 +95,16 @@ export function StripFootingDesignPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">Strip Footing Design</h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">Strip Footing Design</h3>
+        <p className="text-xs text-text-muted mb-3">
           ACI 318-19 Chapter 13 — per-meter-run bearing sizing, cantilever flexural design, one-way shear.
         </p>
-        <p className="text-xs text-amber-500 bg-amber-950/30 border border-amber-900 rounded-md px-2.5 py-2 mb-2">
+        <p className="text-xs text-status-holdText bg-status-holdBg border border-status-holdBorder rounded-md px-2.5 py-2 mb-2">
           This app does not perform geotechnical analysis — enter the allowable bearing pressure from your
           geotechnical report, and the wall/line load from the Analysis results.
         </p>
 
-        <label className="block text-xs text-slate-500 mb-1">Strip Footing</label>
+        <label className="block text-xs text-text-muted mb-1">Strip Footing</label>
         <select
           value={selectedId}
           onChange={(e) => {
@@ -112,7 +112,7 @@ export function StripFootingDesignPanel() {
             setSizing(null);
             setReport(null);
           }}
-          className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-sm px-2.5 py-2 mb-2"
+          className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-sm px-2.5 py-2 mb-2"
         >
           <option value="">Select a strip footing...</option>
           {stripFootings.map((f) => (
@@ -123,7 +123,7 @@ export function StripFootingDesignPanel() {
         </select>
 
         {selected && !isConcrete && (
-          <p className="text-xs text-amber-500 bg-amber-950/30 border border-amber-900 rounded-md px-2.5 py-2 mb-2">
+          <p className="text-xs text-status-holdText bg-status-holdBg border border-status-holdBorder rounded-md px-2.5 py-2 mb-2">
             This footing&apos;s material is not concrete — RC design does not apply.
           </p>
         )}
@@ -131,71 +131,71 @@ export function StripFootingDesignPanel() {
 
       {selected && isConcrete && (
         <>
-          <p className="text-xs text-slate-500">Thickness: {selected.thickness}mm (from element)</p>
+          <p className="text-xs text-text-muted">Thickness: {selected.thickness}mm (from element)</p>
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Service Linear Load wa (kN/m)</label>
+              <label className="block text-xs text-text-muted mb-1">Service Linear Load wa (kN/m)</label>
               <input
                 type="number"
                 step="any"
                 value={serviceLinearLoadKNPerM}
                 onChange={(e) => setServiceLinearLoadKNPerM(e.target.value)}
                 placeholder="unfactored"
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Factored Linear Load wu (kN/m)</label>
+              <label className="block text-xs text-text-muted mb-1">Factored Linear Load wu (kN/m)</label>
               <input
                 type="number"
                 step="any"
                 value={factoredLinearLoadKNPerM}
                 onChange={(e) => setFactoredLinearLoadKNPerM(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Allowable Bearing Pressure qa (kPa)</label>
+              <label className="block text-xs text-text-muted mb-1">Allowable Bearing Pressure qa (kPa)</label>
               <input
                 type="number"
                 step="any"
                 value={allowableBearingPressureKPa}
                 onChange={(e) => setAllowableBearingPressureKPa(e.target.value)}
                 placeholder="from geotech report"
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Effective Cover (mm)</label>
+              <label className="block text-xs text-text-muted mb-1">Effective Cover (mm)</label>
               <input
                 type="number"
                 step="any"
                 value={effectiveCoverMm}
                 onChange={(e) => setEffectiveCoverMm(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Wall/Support Width (mm)</label>
+            <label className="block text-xs text-text-muted mb-1">Wall/Support Width (mm)</label>
             <input
               type="number"
               step="any"
               value={supportWidthMm}
               onChange={(e) => setSupportWidthMm(e.target.value)}
-              className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+              className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
             />
           </div>
 
           <button
             type="button"
             onClick={handleRunDesign}
-            className="w-full rounded-md bg-sky-700 hover:bg-sky-600 text-white text-sm font-medium py-2 transition-colors"
+            className="w-full rounded-md bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium py-2 transition-colors"
           >
             ▶ Run Strip Footing Design
           </button>
@@ -210,12 +210,12 @@ export function StripFootingDesignPanel() {
 
 function StripFootingSizingView({ sizing }: { sizing: StripFootingSizingResult }) {
   return (
-    <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-      <p className="text-xs text-slate-500 font-medium mb-1">Sizing (Soil Bearing)</p>
-      <p className="text-xs text-slate-300">Required width: {sizing.requiredWidthMm}mm (per meter run)</p>
-      <p className="text-xs text-slate-300">Net allowable pressure: {fmt(sizing.netAllowablePressureKPa)} kPa</p>
+    <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+      <p className="text-xs text-text-muted font-medium mb-1">Sizing (Soil Bearing)</p>
+      <p className="text-xs text-text-secondary">Required width: {sizing.requiredWidthMm}mm (per meter run)</p>
+      <p className="text-xs text-text-secondary">Net allowable pressure: {fmt(sizing.netAllowablePressureKPa)} kPa</p>
       {sizing.warnings.map((w, i) => (
-        <p key={i} className="text-xs text-amber-400 leading-relaxed">
+        <p key={i} className="text-xs text-status-holdText leading-relaxed">
           {w}
         </p>
       ))}
@@ -226,10 +226,10 @@ function StripFootingSizingView({ sizing }: { sizing: StripFootingSizingResult }
 function StripFootingDesignReportView({ report }: { report: StripFootingDesignReport }) {
   const statusStyle =
     report.overallStatus === "ok"
-      ? "bg-emerald-950/30 border-emerald-900 text-emerald-400"
+      ? "bg-status-activeBg border-status-activeBorder text-status-activeText"
       : report.overallStatus === "warning"
-        ? "bg-amber-950/30 border-amber-900 text-amber-400"
-        : "bg-red-950/30 border-red-900 text-red-400";
+        ? "bg-status-holdBg border-status-holdBorder text-status-holdText"
+        : "bg-red-50 border-red-200 text-red-600";
   const statusIcon = report.overallStatus === "ok" ? "✓" : report.overallStatus === "warning" ? "⚠" : "✗";
 
   return (
@@ -240,26 +240,26 @@ function StripFootingDesignReportView({ report }: { report: StripFootingDesignRe
         </p>
       </div>
 
-      <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-        <p className="text-xs text-slate-500 font-medium mb-1">Flexural Reinforcement</p>
-        <p className="text-xs text-slate-300">
+      <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+        <p className="text-xs text-text-muted font-medium mb-1">Flexural Reinforcement</p>
+        <p className="text-xs text-text-secondary">
           As = {fmt(report.flexuralDesign.governingAsMm2, 0)} mm²/m (M = {fmt(report.moment.momentKNmPerM)} kN·m/m)
         </p>
       </div>
 
-      <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-        <p className="text-xs text-slate-500 font-medium mb-1">One-Way Shear</p>
-        <p className="text-xs text-slate-300">
+      <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+        <p className="text-xs text-text-muted font-medium mb-1">One-Way Shear</p>
+        <p className="text-xs text-text-secondary">
           Vu = {fmt(report.oneWayShear.factoredShearKNPerM)} kN/m, φVc = {fmt(report.oneWayShear.phiVcKNPerM)} kN/m —{" "}
           {report.oneWayShear.adequate ? "OK" : "NOT adequate"}
         </p>
       </div>
 
       {report.allWarnings.length > 0 && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1.5">
-          <p className="text-xs text-slate-500 font-medium">Warnings:</p>
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1.5">
+          <p className="text-xs text-text-muted font-medium">Warnings:</p>
           {report.allWarnings.map((w, i) => (
-            <p key={i} className="text-xs text-amber-400 leading-relaxed">
+            <p key={i} className="text-xs text-status-holdText leading-relaxed">
               {w}
             </p>
           ))}

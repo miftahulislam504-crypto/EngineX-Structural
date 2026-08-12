@@ -22,14 +22,14 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-[10px] text-slate-500 mb-0.5">
+      <label className="block text-[10px] text-text-muted mb-0.5">
         {label}
         {unit ? ` (${unit})` : ""}
       </label>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+        className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
       />
     </div>
   );
@@ -118,8 +118,8 @@ export function GeneralNotesPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">General Notes</h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">General Notes</h3>
+        <p className="text-xs text-text-muted mb-3">
           Design criteria, material grade, cover আর Phase 10c-এর development/lap/hook length রেফারেন্স টেবিল একসাথে —
           MICON-স্টাইল General Notes পাতা। PDF export Hub-এর কাজ, এটা শুধু ডেটা।
         </p>
@@ -145,7 +145,7 @@ export function GeneralNotesPanel() {
         <button
           type="button"
           onClick={handleRun}
-          className="w-full rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium py-2 transition-colors"
+          className="w-full rounded-md bg-surface-hover hover:bg-surface-border text-text-primary text-sm font-medium py-2 transition-colors"
         >
           Generate General Notes
         </button>
@@ -153,37 +153,37 @@ export function GeneralNotesPanel() {
 
       {data && (
         <div className="space-y-4">
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-            <p className="text-xs text-slate-500 font-medium mb-1">Design Criteria</p>
-            <p className="text-xs text-slate-300">Code: {data.designCriteria.codeBasis.join(", ")}</p>
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+            <p className="text-xs text-text-muted font-medium mb-1">Design Criteria</p>
+            <p className="text-xs text-text-secondary">Code: {data.designCriteria.codeBasis.join(", ")}</p>
             {data.designCriteria.windSpeedKmh && (
-              <p className="text-xs text-slate-300">Wind Speed: {data.designCriteria.windSpeedKmh} km/h</p>
+              <p className="text-xs text-text-secondary">Wind Speed: {data.designCriteria.windSpeedKmh} km/h</p>
             )}
             {data.designCriteria.seismicZone && (
-              <p className="text-xs text-slate-300">Seismic Zone: {data.designCriteria.seismicZone}</p>
+              <p className="text-xs text-text-secondary">Seismic Zone: {data.designCriteria.seismicZone}</p>
             )}
           </div>
 
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-            <p className="text-xs text-slate-500 font-medium mb-1">Concrete Requirement</p>
-            <p className="text-xs text-slate-300">
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+            <p className="text-xs text-text-muted font-medium mb-1">Concrete Requirement</p>
+            <p className="text-xs text-text-secondary">
               Max Slump: {data.concreteRequirement.maxSlumpMm}mm · Curing: {data.concreteRequirement.curingMethod} (min{" "}
               {data.concreteRequirement.minCuringDays} days)
             </p>
           </div>
 
           <div>
-            <p className="text-xs text-slate-500 font-medium mb-1.5">Cover Requirements</p>
-            <table className="w-full text-xs text-slate-300">
+            <p className="text-xs text-text-muted font-medium mb-1.5">Cover Requirements</p>
+            <table className="w-full text-xs text-text-secondary">
               <thead>
-                <tr className="text-slate-500 text-left">
+                <tr className="text-text-muted text-left">
                   <th className="font-normal pb-1">Condition</th>
                   <th className="font-normal pb-1 text-right">Cover</th>
                 </tr>
               </thead>
               <tbody>
                 {data.coverRequirements.map((c, i) => (
-                  <tr key={i} className="border-t border-slate-800">
+                  <tr key={i} className="border-t border-surface-border">
                     <td className="py-1">{c.condition}</td>
                     <td className="py-1 text-right">{c.coverMm}mm</td>
                   </tr>
@@ -193,11 +193,11 @@ export function GeneralNotesPanel() {
           </div>
 
           <div>
-            <p className="text-xs text-slate-500 font-medium mb-1.5">Development / Lap / Hook Length Table</p>
+            <p className="text-xs text-text-muted font-medium mb-1.5">Development / Lap / Hook Length Table</p>
             <div className="overflow-x-auto">
-              <table className="w-full text-[10px] text-slate-300 whitespace-nowrap">
+              <table className="w-full text-[10px] text-text-secondary whitespace-nowrap">
                 <thead>
-                  <tr className="text-slate-500 text-left">
+                  <tr className="text-text-muted text-left">
                     <th className="font-normal pb-1 pr-2">Ø(mm)</th>
                     <th className="font-normal pb-1 pr-2 text-right">ld-tension</th>
                     <th className="font-normal pb-1 pr-2 text-right">ldc</th>
@@ -209,7 +209,7 @@ export function GeneralNotesPanel() {
                 </thead>
                 <tbody>
                   {data.developmentLengthTable.map((row, i) => (
-                    <tr key={i} className="border-t border-slate-800">
+                    <tr key={i} className="border-t border-surface-border">
                       <td className="py-1 pr-2">{row.barDiameterMm}</td>
                       <td className="py-1 pr-2 text-right">{fmt(row.tensionDevelopmentLengthMm)}</td>
                       <td className="py-1 pr-2 text-right">{fmt(row.compressionDevelopmentLengthMm)}</td>
@@ -222,7 +222,7 @@ export function GeneralNotesPanel() {
                 </tbody>
               </table>
             </div>
-            <p className="text-[10px] text-slate-600 mt-1">সব দৈর্ঘ্য mm-এ, উপরে দেওয়া fy/f&apos;c/cover অনুযায়ী।</p>
+            <p className="text-[10px] text-text-muted mt-1">সব দৈর্ঘ্য mm-এ, উপরে দেওয়া fy/f&apos;c/cover অনুযায়ী।</p>
           </div>
         </div>
       )}

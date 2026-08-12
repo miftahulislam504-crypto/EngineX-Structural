@@ -85,202 +85,202 @@ export function RetainingWallDesignPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">Retaining Wall Design</h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">Retaining Wall Design</h3>
+        <p className="text-xs text-text-muted mb-3">
           Cantilever retaining wall — Rankine active pressure, overturning/sliding/bearing stability, stem and
           toe/heel flexural design.
         </p>
-        <p className="text-xs text-amber-500 bg-amber-950/30 border border-amber-900 rounded-md px-2.5 py-2 mb-2">
+        <p className="text-xs text-status-holdText bg-status-holdBg border border-status-holdBorder rounded-md px-2.5 py-2 mb-2">
           This app does not perform geotechnical analysis — soil unit weight, friction angle, and allowable
           bearing pressure must come from your geotechnical report.
         </p>
       </div>
 
-      <p className="text-xs text-slate-500 font-medium">Wall Geometry</p>
+      <p className="text-xs text-text-muted font-medium">Wall Geometry</p>
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Stem Height (m)</label>
+          <label className="block text-xs text-text-muted mb-1">Stem Height (m)</label>
           <input
             type="number"
             step="any"
             value={stemHeightM}
             onChange={(e) => setStemHeightM(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Base Thickness (mm)</label>
+          <label className="block text-xs text-text-muted mb-1">Base Thickness (mm)</label>
           <input
             type="number"
             step="any"
             value={baseThicknessMm}
             onChange={(e) => setBaseThicknessMm(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Stem Top Thickness (mm)</label>
+          <label className="block text-xs text-text-muted mb-1">Stem Top Thickness (mm)</label>
           <input
             type="number"
             step="any"
             value={stemTopThicknessMm}
             onChange={(e) => setStemTopThicknessMm(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Stem Bottom Thickness (mm)</label>
+          <label className="block text-xs text-text-muted mb-1">Stem Bottom Thickness (mm)</label>
           <input
             type="number"
             step="any"
             value={stemBottomThicknessMm}
             onChange={(e) => setStemBottomThicknessMm(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Toe Width (m)</label>
+          <label className="block text-xs text-text-muted mb-1">Toe Width (m)</label>
           <input
             type="number"
             step="any"
             value={toeWidthM}
             onChange={(e) => setToeWidthM(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Heel Width (m)</label>
+          <label className="block text-xs text-text-muted mb-1">Heel Width (m)</label>
           <input
             type="number"
             step="any"
             value={heelWidthM}
             onChange={(e) => setHeelWidthM(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
       </div>
 
-      <p className="text-xs text-slate-500 font-medium">Backfill Soil</p>
+      <p className="text-xs text-text-muted font-medium">Backfill Soil</p>
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Unit Weight γ (kN/m³)</label>
+          <label className="block text-xs text-text-muted mb-1">Unit Weight γ (kN/m³)</label>
           <input
             type="number"
             step="any"
             value={soilUnitWeightKNm3}
             onChange={(e) => setSoilUnitWeightKNm3(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Friction Angle φ (deg)</label>
+          <label className="block text-xs text-text-muted mb-1">Friction Angle φ (deg)</label>
           <input
             type="number"
             step="any"
             value={frictionAngleDeg}
             onChange={(e) => setFrictionAngleDeg(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Surcharge (kPa) — optional</label>
+          <label className="block text-xs text-text-muted mb-1">Surcharge (kPa) — optional</label>
           <input
             type="number"
             step="any"
             value={surchargeKPa}
             onChange={(e) => setSurchargeKPa(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Allowable Bearing Pressure (kPa)</label>
+          <label className="block text-xs text-text-muted mb-1">Allowable Bearing Pressure (kPa)</label>
           <input
             type="number"
             step="any"
             value={allowableBearingPressureKPa}
             onChange={(e) => setAllowableBearingPressureKPa(e.target.value)}
             placeholder="from geotech report"
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Base-Soil Friction Coeff. μ — optional</label>
+          <label className="block text-xs text-text-muted mb-1">Base-Soil Friction Coeff. μ — optional</label>
           <input
             type="number"
             step="any"
             value={frictionCoefficient}
             onChange={(e) => setFrictionCoefficient(e.target.value)}
             placeholder="default: tan(2φ/3)"
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Passive Resistance Depth (m) — optional</label>
+          <label className="block text-xs text-text-muted mb-1">Passive Resistance Depth (m) — optional</label>
           <input
             type="number"
             step="any"
             value={passiveResistanceDepthM}
             onChange={(e) => setPassiveResistanceDepthM(e.target.value)}
             placeholder="default: neglected"
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
       </div>
 
-      <p className="text-xs text-slate-500 font-medium">Concrete / Reinforcement</p>
+      <p className="text-xs text-text-muted font-medium">Concrete / Reinforcement</p>
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Concrete Unit Weight (kN/m³)</label>
+          <label className="block text-xs text-text-muted mb-1">Concrete Unit Weight (kN/m³)</label>
           <input
             type="number"
             step="any"
             value={concreteUnitWeightKNm3}
             onChange={(e) => setConcreteUnitWeightKNm3(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
       </div>
       <div className="grid grid-cols-3 gap-2">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">f&apos;c (MPa)</label>
+          <label className="block text-xs text-text-muted mb-1">f&apos;c (MPa)</label>
           <input
             type="number"
             step="any"
             value={fcMPa}
             onChange={(e) => setFcMPa(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">fy (MPa)</label>
+          <label className="block text-xs text-text-muted mb-1">fy (MPa)</label>
           <input
             type="number"
             step="any"
             value={fyMPa}
             onChange={(e) => setFyMPa(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Cover (mm)</label>
+          <label className="block text-xs text-text-muted mb-1">Cover (mm)</label>
           <input
             type="number"
             step="any"
             value={effectiveCoverMm}
             onChange={(e) => setEffectiveCoverMm(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
       </div>
@@ -288,7 +288,7 @@ export function RetainingWallDesignPanel() {
       <button
         type="button"
         onClick={handleRunDesign}
-        className="w-full rounded-md bg-sky-700 hover:bg-sky-600 text-white text-sm font-medium py-2 transition-colors"
+        className="w-full rounded-md bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium py-2 transition-colors"
       >
         ▶ Run Retaining Wall Design
       </button>
@@ -301,10 +301,10 @@ export function RetainingWallDesignPanel() {
 function RetainingWallReportView({ report }: { report: RetainingWallDesignReport }) {
   const statusStyle =
     report.overallStatus === "ok"
-      ? "bg-emerald-950/30 border-emerald-900 text-emerald-400"
+      ? "bg-status-activeBg border-status-activeBorder text-status-activeText"
       : report.overallStatus === "warning"
-        ? "bg-amber-950/30 border-amber-900 text-amber-400"
-        : "bg-red-950/30 border-red-900 text-red-400";
+        ? "bg-status-holdBg border-status-holdBorder text-status-holdText"
+        : "bg-red-50 border-red-200 text-red-600";
   const statusIcon = report.overallStatus === "ok" ? "✓" : report.overallStatus === "warning" ? "⚠" : "✗";
 
   return (
@@ -315,53 +315,53 @@ function RetainingWallReportView({ report }: { report: RetainingWallDesignReport
         </p>
       </div>
 
-      <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-        <p className="text-xs text-slate-500 font-medium mb-1">Stability</p>
-        <p className="text-xs text-slate-300">
+      <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+        <p className="text-xs text-text-muted font-medium mb-1">Stability</p>
+        <p className="text-xs text-text-secondary">
           FS Overturning = {fmt(report.stability.factorOfSafetyOverturning, 2)} (min 2.0) —{" "}
           {report.stability.factorOfSafetyOverturning >= 2.0 ? "OK" : "NOT adequate"}
         </p>
-        <p className="text-xs text-slate-300">
+        <p className="text-xs text-text-secondary">
           FS Sliding = {fmt(report.stability.factorOfSafetySliding, 2)} (min 1.5) —{" "}
           {report.stability.factorOfSafetySliding >= 1.5 ? "OK" : "NOT adequate"}
         </p>
-        <p className="text-xs text-slate-300">
+        <p className="text-xs text-text-secondary">
           Bearing: max = {fmt(report.stability.maxBearingPressureKPa)} kPa, min ={" "}
           {fmt(report.stability.minBearingPressureKPa)} kPa —{" "}
           {report.stability.bearingAdequate ? "OK" : "NOT adequate"}
         </p>
-        <p className="text-xs text-slate-300">Eccentricity e = {fmt(report.stability.eccentricityM, 3)} m</p>
+        <p className="text-xs text-text-secondary">Eccentricity e = {fmt(report.stability.eccentricityM, 3)} m</p>
       </div>
 
-      <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-        <p className="text-xs text-slate-500 font-medium mb-1">Stem Reinforcement</p>
-        <p className="text-xs text-slate-300">
+      <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+        <p className="text-xs text-text-muted font-medium mb-1">Stem Reinforcement</p>
+        <p className="text-xs text-text-secondary">
           Mu = {fmt(report.stem.factoredMomentAtBaseKNmPerM)} kN·m/m, As ={" "}
           {fmt(report.stem.flexuralDesign.governingAsMm2, 0)} mm²/m
         </p>
       </div>
 
-      <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-        <p className="text-xs text-slate-500 font-medium mb-1">Toe Reinforcement</p>
-        <p className="text-xs text-slate-300">
+      <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+        <p className="text-xs text-text-muted font-medium mb-1">Toe Reinforcement</p>
+        <p className="text-xs text-text-secondary">
           Mu = {fmt(report.toe.factoredMomentKNmPerM)} kN·m/m, As = {fmt(report.toe.flexuralDesign.governingAsMm2, 0)}{" "}
           mm²/m
         </p>
       </div>
 
-      <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-        <p className="text-xs text-slate-500 font-medium mb-1">Heel Reinforcement</p>
-        <p className="text-xs text-slate-300">
+      <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+        <p className="text-xs text-text-muted font-medium mb-1">Heel Reinforcement</p>
+        <p className="text-xs text-text-secondary">
           Mu = {fmt(report.heel.factoredMomentKNmPerM)} kN·m/m, As ={" "}
           {fmt(report.heel.flexuralDesign.governingAsMm2, 0)} mm²/m
         </p>
       </div>
 
       {report.allWarnings.length > 0 && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1.5">
-          <p className="text-xs text-slate-500 font-medium">Warnings:</p>
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1.5">
+          <p className="text-xs text-text-muted font-medium">Warnings:</p>
           {report.allWarnings.map((w, i) => (
-            <p key={i} className="text-xs text-amber-400 leading-relaxed">
+            <p key={i} className="text-xs text-status-holdText leading-relaxed">
               {w}
             </p>
           ))}

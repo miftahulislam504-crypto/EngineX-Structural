@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, FolderOpen, ChevronRight, LogOut } from "lucide-react";
+import { Search, FolderOpen, ChevronRight, LogOut, MapPin, User, Calendar } from "lucide-react";
 import Image from "next/image";
 import { useAuthStore } from "@/lib/auth/useAuthStore";
 import { subscribeToMyProjects } from "@/lib/projects/firestore";
@@ -27,11 +27,15 @@ function StatusBadge({ status }: { status: ProjectStatus | string }) {
  * Project List পেজ (Phase 0.3) — এই App-এর এন্ট্রি পয়েন্ট, root ("/")।
  *
  * Hub_com/app/dashboard/projects/page.tsx এর visual pattern (search +
- * status filter + table-style list) অনুসরণ করা হয়েছে, কিন্তু
- * ইচ্ছাকৃতভাবে **read-only**: কোনো "নতুন প্রজেক্ট", ডিলিট, বা status
- * পরিবর্তনের অপশন নেই। কারণ lib/hub/permissions.ts এর নীতি অনুযায়ী
- * এই App প্রজেক্ট তৈরি/এডিট করে না — Hub-ই একমাত্র owner, এই App শুধু
- * প্রজেক্ট খুলে তার Structural মডেল নিয়ে কাজ করে।
+ * status filter + card-grid list) অনুসরণ করা হয়েছে — project-card/
+ * project-card-accent ক্লাস দুটোও Hub এর globals.css থেকে token-for-
+ * token পোর্ট করা, যাতে দুই App-এর card visual language মেলে। তবে
+ * এই App ইচ্ছাকৃতভাবে **read-only**: কোনো "নতুন প্রজেক্ট", ডিলিট, বা
+ * status পরিবর্তনের অপশন নেই (Hub এর কার্ডে যেমন footer-এ status
+ * dropdown + delete বাটন থাকে, এখানে শুধু "মডেল খুলুন" লিংক)। কারণ
+ * lib/hub/permissions.ts এর নীতি অনুযায়ী এই App প্রজেক্ট তৈরি/এডিট
+ * করে না — Hub-ই একমাত্র owner, এই App শুধু প্রজেক্ট খুলে তার
+ * Structural মডেল নিয়ে কাজ করে।
  *
  * ডেটা lib/projects/firestore.ts থেকে আসে, যেটা EngineXDraw এর
  * lib/projects.ts এর subscribeToMyProjects এর পোর্ট (দেখুন সেই ফাইলের
@@ -175,74 +179,73 @@ export default function ProjectListPage() {
             )}
           </div>
         ) : (
-          <div className="card overflow-hidden">
-            {/* Table header */}
-            <div className="hidden sm:grid grid-cols-[1fr_140px_100px_24px] gap-4 px-5 py-2.5 bg-surface border-b border-surface-border">
-              <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
-                প্রজেক্ট
-              </span>
-              <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
-                ক্লায়েন্ট
-              </span>
-              <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
-                অবস্থা
-              </span>
-              <span />
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {filtered.map((p) => {
+              const accent =
+                p.status === "active"
+                  ? "bg-green-500"
+                  : p.status === "completed"
+                    ? "bg-brand-500"
+                    : "bg-yellow-400";
 
-            <div>
-              {filtered.map((p) => (
+              return (
                 <button
                   key={p.id}
                   onClick={() => router.push(`/model/${p.id}`)}
-                  className="table-row group w-full text-left"
+                  className="project-card group text-left w-full"
                 >
-                  {/* Color bar */}
-                  <div
-                    className={`w-0.5 h-10 rounded-full flex-shrink-0 ${
-                      p.status === "active"
-                        ? "bg-green-500"
-                        : p.status === "completed"
-                          ? "bg-brand-500"
-                          : "bg-yellow-400"
-                    }`}
-                  />
+                  <div className={`project-card-accent ${accent}`} />
 
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-text-primary text-sm truncate">
-                        {p.projectName}
-                      </span>
-                      {p.projectCode && (
-                        <span className="text-xs font-mono text-text-muted bg-surface px-1.5 py-0.5 rounded-md hidden sm:inline">
+                  <div className="p-5 pl-6">
+                    {/* Top row: code + status */}
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      {p.projectCode ? (
+                        <span className="text-xs font-mono font-semibold text-text-muted bg-surface px-2 py-1 rounded-md">
                           {p.projectCode}
                         </span>
+                      ) : (
+                        <span />
                       )}
+                      <StatusBadge status={p.status} />
                     </div>
-                    <div className="text-xs text-text-muted truncate mt-0.5">
-                      {[p.location, formatDate(p.createdAt)].filter(Boolean).join(" · ")}
+
+                    {/* Title */}
+                    <h3 className="font-bold text-text-primary text-base leading-snug mb-3 line-clamp-2">
+                      {p.projectName}
+                    </h3>
+
+                    {/* Meta */}
+                    <div className="space-y-1.5">
+                      {p.clientName && (
+                        <div className="flex items-center gap-1.5 text-xs text-text-secondary">
+                          <User size={13} className="text-text-muted flex-shrink-0" />
+                          <span className="truncate">{p.clientName}</span>
+                        </div>
+                      )}
+                      {p.location && (
+                        <div className="flex items-center gap-1.5 text-xs text-text-secondary">
+                          <MapPin size={13} className="text-text-muted flex-shrink-0" />
+                          <span className="truncate">{p.location}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1.5 text-xs text-text-muted">
+                        <Calendar size={13} className="flex-shrink-0" />
+                        <span>{formatDate(p.createdAt)}</span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Client */}
-                  <div className="hidden sm:block text-sm text-text-secondary truncate w-[140px]">
-                    {p.clientName ?? "—"}
+                  {/* Footer bar: open action */}
+                  <div className="flex items-center justify-end gap-1.5 px-5 pl-6 py-3 border-t border-surface-border bg-surface/50 text-xs font-medium text-text-muted group-hover:text-text-primary">
+                    মডেল খুলুন
+                    <ChevronRight
+                      size={15}
+                      className="text-text-muted group-hover:text-text-primary transition-all flex-shrink-0"
+                    />
                   </div>
-
-                  {/* Status */}
-                  <div className="flex-shrink-0">
-                    <StatusBadge status={p.status} />
-                  </div>
-
-                  {/* Chevron */}
-                  <ChevronRight
-                    size={15}
-                    className="text-text-muted group-hover:text-text-primary transition-all flex-shrink-0"
-                  />
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
         )}
       </main>

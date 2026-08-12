@@ -78,10 +78,10 @@ export function GridPanel({ onAddGrid, onUpdateGrid, onDeleteGrid }: GridPanelPr
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-2">Grid System</h3>
+        <h3 className="text-sm font-medium text-text-primary mb-2">Grid System</h3>
 
         {grids.length === 0 ? (
-          <p className="text-xs text-slate-500">কোনো গ্রিড যোগ করা হয়নি।</p>
+          <p className="text-xs text-text-muted">কোনো গ্রিড যোগ করা হয়নি।</p>
         ) : (
           <ul className="space-y-1">
             {grids.map((grid) => (
@@ -90,13 +90,13 @@ export function GridPanel({ onAddGrid, onUpdateGrid, onDeleteGrid }: GridPanelPr
                 onClick={() => setSelection({ type: "grid", gridId: grid.gridId })}
                 className={`flex items-center justify-between rounded-md px-2.5 py-1.5 text-sm cursor-pointer transition-colors ${
                   selectedGridId === grid.gridId
-                    ? "bg-sky-950 text-sky-300 ring-1 ring-sky-800"
-                    : "hover:bg-slate-800/60 text-slate-300"
+                    ? "bg-brand-50 text-brand-700 ring-1 ring-brand-200"
+                    : "hover:bg-surface-hover text-text-secondary"
                 }`}
               >
                 <span>
                   <span className="font-medium">{grid.label}</span>
-                  <span className="text-slate-500 ml-1.5">
+                  <span className="text-text-muted ml-1.5">
                     ({grid.direction} = {grid.coordinate}m)
                   </span>
                 </span>
@@ -107,7 +107,7 @@ export function GridPanel({ onAddGrid, onUpdateGrid, onDeleteGrid }: GridPanelPr
                       e.stopPropagation();
                       toggleVisibility(grid);
                     }}
-                    className="text-xs text-slate-500 hover:text-slate-300 px-1"
+                    className="text-xs text-text-muted hover:text-text-primary px-1"
                     title={grid.visible ? "লুকান" : "দেখান"}
                   >
                     {grid.visible ? "👁" : "🚫"}
@@ -118,7 +118,7 @@ export function GridPanel({ onAddGrid, onUpdateGrid, onDeleteGrid }: GridPanelPr
                       e.stopPropagation();
                       onDeleteGrid(grid.gridId);
                     }}
-                    className="text-xs text-red-500/70 hover:text-red-400 px-1"
+                    className="text-xs text-red-500/70 hover:text-red-600 px-1"
                     title="ডিলিট করুন"
                   >
                     ✕
@@ -130,48 +130,45 @@ export function GridPanel({ onAddGrid, onUpdateGrid, onDeleteGrid }: GridPanelPr
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-2.5 border-t border-slate-800 pt-3">
+      <form onSubmit={handleSubmit} className="space-y-2.5 border-t border-surface-border pt-3">
         <div className="grid grid-cols-3 gap-2">
           <div className="col-span-1">
-            <label className="block text-xs text-slate-500 mb-1">লেবেল</label>
+            <label className="block text-xs text-text-muted mb-1">লেবেল</label>
             <input
               type="text"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="A"
-              className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+              className="input-field"
             />
           </div>
           <div className="col-span-1">
-            <label className="block text-xs text-slate-500 mb-1">দিক</label>
+            <label className="block text-xs text-text-muted mb-1">দিক</label>
             <select
               value={direction}
               onChange={(e) => setDirection(e.target.value as GridDirection)}
-              className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+              className="input-field"
             >
               <option value="X">X</option>
               <option value="Y">Y</option>
             </select>
           </div>
           <div className="col-span-1">
-            <label className="block text-xs text-slate-500 mb-1">কোঅর্ডিনেট (m)</label>
+            <label className="block text-xs text-text-muted mb-1">কোঅর্ডিনেট (m)</label>
             <input
               type="number"
               step="any"
               value={coordinate}
               onChange={(e) => setCoordinate(e.target.value)}
               placeholder="0.0"
-              className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+              className="input-field"
             />
           </div>
         </div>
 
-        {formError && <p className="text-xs text-red-400">{formError}</p>}
+        {formError && <p className="text-xs text-red-600">{formError}</p>}
 
-        <button
-          type="submit"
-          className="w-full rounded-md bg-sky-700 hover:bg-sky-600 text-white text-sm font-medium py-1.5 transition-colors"
-        >
+        <button type="submit" className="btn-primary w-full">
           + গ্রিড যোগ করুন
         </button>
       </form>

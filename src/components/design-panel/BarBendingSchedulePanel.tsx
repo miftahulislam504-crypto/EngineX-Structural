@@ -29,14 +29,14 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-[10px] text-slate-500 mb-0.5">
+      <label className="block text-[10px] text-text-muted mb-0.5">
         {label}
         {unit ? ` (${unit})` : ""}
       </label>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+        className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
       />
     </div>
   );
@@ -104,17 +104,17 @@ export function BarBendingSchedulePanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">Bar Bending Schedule (BBS)</h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">Bar Bending Schedule (BBS)</h3>
+        <p className="text-xs text-text-muted mb-3">
           10a (bar count) + 10b (zone spacing) + 10c (hook extension)-এর আউটপুট এখানে entry হিসেবে যোগ করুন — cut
           length, length, আর weight স্বয়ংক্রিয়ভাবে হিসাব হবে।
         </p>
 
-        <label className="block text-xs text-slate-500 mb-1">Shape Type</label>
+        <label className="block text-xs text-text-muted mb-1">Shape Type</label>
         <select
           value={mode}
           onChange={(e) => setMode(e.target.value as EntryMode)}
-          className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-sm px-2.5 py-2 mb-3"
+          className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-sm px-2.5 py-2 mb-3"
         >
           <option value="straight">Straight (main flexural bar)</option>
           <option value="stirrup-tie">Stirrup / Tie (closed loop)</option>
@@ -162,14 +162,14 @@ export function BarBendingSchedulePanel() {
           <button
             type="button"
             onClick={handleAdd}
-            className="flex-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium py-2 transition-colors"
+            className="flex-1 rounded-md bg-surface-hover hover:bg-surface-border text-text-primary text-sm font-medium py-2 transition-colors"
           >
             Add Entry
           </button>
           <button
             type="button"
             onClick={handleClear}
-            className="rounded-md bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 text-sm px-3 py-2 transition-colors"
+            className="rounded-md bg-surface-card hover:bg-surface-hover border border-surface-border text-text-secondary text-sm px-3 py-2 transition-colors"
           >
             Clear
           </button>
@@ -178,27 +178,27 @@ export function BarBendingSchedulePanel() {
 
       {entries.length > 0 && (
         <div className="space-y-3">
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-2">
-            <p className="text-xs text-slate-500 font-medium">Entries ({entries.length})</p>
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-2">
+            <p className="text-xs text-text-muted font-medium">Entries ({entries.length})</p>
             {entries.map((e, i) => (
-              <p key={i} className="text-xs text-slate-300">
+              <p key={i} className="text-xs text-text-secondary">
                 {e.barMark} ({e.elementLabel}): {e.count}-{e.barDiameterMm}mmØ {e.shapeType}, cut={fmt(e.cutLengthMm, 0)}mm,{" "}
                 {fmt(e.totalWeightKg)}kg
               </p>
             ))}
           </div>
 
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-            <p className="text-xs text-slate-500 font-medium mb-1">Summary by Diameter</p>
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+            <p className="text-xs text-text-muted font-medium mb-1">Summary by Diameter</p>
             {summary.map((s, i) => (
-              <p key={i} className="text-xs text-slate-300">
+              <p key={i} className="text-xs text-text-secondary">
                 {s.barDiameterMm}mmØ: {s.totalCount} bars, {fmt(s.totalLengthM)}m, {fmt(s.totalWeightKg)}kg
               </p>
             ))}
           </div>
 
-          <div className="rounded-md bg-emerald-950/30 border border-emerald-900 px-3 py-2.5">
-            <p className="text-xs text-emerald-400">Total rebar weight: {fmt(totalWeightKg)}kg</p>
+          <div className="rounded-md bg-status-activeBg border border-status-activeBorder px-3 py-2.5">
+            <p className="text-xs text-status-activeText">Total rebar weight: {fmt(totalWeightKg)}kg</p>
           </div>
         </div>
       )}

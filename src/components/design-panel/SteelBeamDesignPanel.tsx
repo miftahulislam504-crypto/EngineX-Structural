@@ -116,19 +116,19 @@ export function SteelBeamDesignPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">Steel Beam Design</h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">Steel Beam Design</h3>
+        <p className="text-xs text-text-muted mb-3">
           AISC 360-16 — flexure (compactness, yielding/LTB) and shear checks for W-shape sections.
         </p>
 
-        <label className="block text-xs text-slate-500 mb-1">Beam</label>
+        <label className="block text-xs text-text-muted mb-1">Beam</label>
         <select
           value={selectedBeamId}
           onChange={(e) => {
             setSelectedBeamId(e.target.value);
             setReport(null);
           }}
-          className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-sm px-2.5 py-2 mb-2"
+          className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-sm px-2.5 py-2 mb-2"
         >
           <option value="">Select a beam...</option>
           {beams.map((b) => (
@@ -139,13 +139,13 @@ export function SteelBeamDesignPanel() {
         </select>
 
         {selectedBeam && !isWShape && (
-          <p className="text-xs text-amber-500 bg-amber-950/30 border border-amber-900 rounded-md px-2.5 py-2 mb-2">
+          <p className="text-xs text-status-holdText bg-status-holdBg border border-status-holdBorder rounded-md px-2.5 py-2 mb-2">
             Steel beam design in this version only supports W-shape sections. This beam uses a{" "}
             {beamSection?.shape ?? "unknown"} section.
           </p>
         )}
         {selectedBeam && isWShape && !isSteel && (
-          <p className="text-xs text-amber-500 bg-amber-950/30 border border-amber-900 rounded-md px-2.5 py-2 mb-2">
+          <p className="text-xs text-status-holdText bg-status-holdBg border border-status-holdBorder rounded-md px-2.5 py-2 mb-2">
             This beam&apos;s material is not steel — steel design does not apply.
           </p>
         )}
@@ -153,8 +153,8 @@ export function SteelBeamDesignPanel() {
 
       {selectedBeam && isWShape && isSteel && (
         <>
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-2">
-            <p className="text-xs text-slate-500 font-medium">
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-2">
+            <p className="text-xs text-text-muted font-medium">
               {(beamSection as WShapeSection).designation ?? "W-shape"}: d=
               {(beamSection as WShapeSection).depth}mm, bf={(beamSection as WShapeSection).flangeWidth}mm — Span:{" "}
               {(elementLength(selectedBeam) * 1000).toFixed(0)}mm
@@ -162,20 +162,20 @@ export function SteelBeamDesignPanel() {
 
             {governingForces ? (
               <div className="flex items-center justify-between">
-                <p className="text-xs text-emerald-400">
+                <p className="text-xs text-status-activeText">
                   From {sourceAnalysisType}: Mu≈{governingForces.maxMoment.toFixed(1)} kN·m, Vu≈
                   {governingForces.maxShear.toFixed(1)} kN
                 </p>
                 <button
                   type="button"
                   onClick={handleUseAutoValues}
-                  className="text-xs bg-sky-800 hover:bg-sky-700 text-white px-2 py-1 rounded-md"
+                  className="text-xs bg-brand-100 hover:bg-brand-600 text-white px-2 py-1 rounded-md"
                 >
                   Use these
                 </button>
               </div>
             ) : (
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-text-muted">
                 No analysis result available for this beam yet — run an Analysis first, or enter Mu/Vu manually
                 below.
               </p>
@@ -184,23 +184,23 @@ export function SteelBeamDesignPanel() {
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Factored Moment Mu (kN·m)</label>
+              <label className="block text-xs text-text-muted mb-1">Factored Moment Mu (kN·m)</label>
               <input
                 type="number"
                 step="any"
                 value={factoredMomentKNm}
                 onChange={(e) => setFactoredMomentKNm(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Factored Shear Vu (kN)</label>
+              <label className="block text-xs text-text-muted mb-1">Factored Shear Vu (kN)</label>
               <input
                 type="number"
                 step="any"
                 value={factoredShearKN}
                 onChange={(e) => setFactoredShearKN(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
           </div>
@@ -208,8 +208,8 @@ export function SteelBeamDesignPanel() {
           <div className="grid grid-cols-2 gap-2">
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs text-slate-500">Unbraced Length Lb (mm)</label>
-                <button type="button" onClick={handleUseFullSpanAsUnbraced} className="text-xs text-sky-500 hover:text-sky-400">
+                <label className="block text-xs text-text-muted">Unbraced Length Lb (mm)</label>
+                <button type="button" onClick={handleUseFullSpanAsUnbraced} className="text-xs text-brand-600 hover:text-brand-700">
                   use full span
                 </button>
               </div>
@@ -218,17 +218,17 @@ export function SteelBeamDesignPanel() {
                 step="any"
                 value={unbracedLengthMm}
                 onChange={(e) => setUnbracedLengthMm(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Cb (moment gradient factor)</label>
+              <label className="block text-xs text-text-muted mb-1">Cb (moment gradient factor)</label>
               <input
                 type="number"
                 step="any"
                 value={cb}
                 onChange={(e) => setCb(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
           </div>
@@ -236,7 +236,7 @@ export function SteelBeamDesignPanel() {
           <button
             type="button"
             onClick={handleRunDesign}
-            className="w-full rounded-md bg-sky-700 hover:bg-sky-600 text-white text-sm font-medium py-2 transition-colors"
+            className="w-full rounded-md bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium py-2 transition-colors"
           >
             ▶ Run Steel Beam Design
           </button>
@@ -251,10 +251,10 @@ export function SteelBeamDesignPanel() {
 function SteelBeamDesignReportView({ report }: { report: SteelBeamDesignReport }) {
   const statusStyle =
     report.overallStatus === "ok"
-      ? "bg-emerald-950/30 border-emerald-900 text-emerald-400"
+      ? "bg-status-activeBg border-status-activeBorder text-status-activeText"
       : report.overallStatus === "warning"
-        ? "bg-amber-950/30 border-amber-900 text-amber-400"
-        : "bg-red-950/30 border-red-900 text-red-400";
+        ? "bg-status-holdBg border-status-holdBorder text-status-holdText"
+        : "bg-red-50 border-red-200 text-red-600";
   const statusIcon = report.overallStatus === "ok" ? "✓" : report.overallStatus === "warning" ? "⚠" : "✗";
 
   return (
@@ -265,18 +265,18 @@ function SteelBeamDesignReportView({ report }: { report: SteelBeamDesignReport }
         </p>
       </div>
 
-      <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-        <p className="text-xs text-slate-500 font-medium mb-1">Flexure</p>
-        <p className="text-xs text-slate-300">
+      <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+        <p className="text-xs text-text-muted font-medium mb-1">Flexure</p>
+        <p className="text-xs text-text-secondary">
           {report.flexuralCapacity.isCompact ? "Compact section" : "NOT compact — capacity not computed"}
         </p>
         {report.flexuralCapacity.isCompact && (
           <>
-            <p className="text-xs text-slate-300">
+            <p className="text-xs text-text-secondary">
               Lp = {fmt(report.flexuralCapacity.lpMm, 0)}mm, Lr = {fmt(report.flexuralCapacity.lrMm, 0)}mm —
               governing: {report.flexuralCapacity.governingLimitState}
             </p>
-            <p className="text-xs text-slate-300">
+            <p className="text-xs text-text-secondary">
               φMn = {fmt(report.flexuralCapacity.phiMnKNm)} kN·m — utilization{" "}
               {Number.isFinite(report.flexuralAdequacy.utilizationRatio)
                 ? `${(report.flexuralAdequacy.utilizationRatio * 100).toFixed(0)}%`
@@ -287,9 +287,9 @@ function SteelBeamDesignReportView({ report }: { report: SteelBeamDesignReport }
         )}
       </div>
 
-      <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-        <p className="text-xs text-slate-500 font-medium mb-1">Shear</p>
-        <p className="text-xs text-slate-300">
+      <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+        <p className="text-xs text-text-muted font-medium mb-1">Shear</p>
+        <p className="text-xs text-text-secondary">
           φVn = {fmt(report.shearCapacity.phiVnKN)} kN (Cv1={report.shearCapacity.cv1.toFixed(2)}) — utilization{" "}
           {Number.isFinite(report.shearAdequacy.utilizationRatio)
             ? `${(report.shearAdequacy.utilizationRatio * 100).toFixed(0)}%`
@@ -299,10 +299,10 @@ function SteelBeamDesignReportView({ report }: { report: SteelBeamDesignReport }
       </div>
 
       {report.allWarnings.length > 0 && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1.5">
-          <p className="text-xs text-slate-500 font-medium">Warnings:</p>
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1.5">
+          <p className="text-xs text-text-muted font-medium">Warnings:</p>
           {report.allWarnings.map((w, i) => (
-            <p key={i} className="text-xs text-amber-400 leading-relaxed">
+            <p key={i} className="text-xs text-status-holdText leading-relaxed">
               {w}
             </p>
           ))}

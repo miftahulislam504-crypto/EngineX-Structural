@@ -36,14 +36,14 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-[10px] text-slate-500 mb-0.5">
+      <label className="block text-[10px] text-text-muted mb-0.5">
         {label}
         {unit ? ` (${unit})` : ""}
       </label>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+        className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
       />
     </div>
   );
@@ -63,7 +63,7 @@ function useScale(widthMm: number, heightMm: number) {
 function BeamSvg({ detail }: { detail: BeamSectionDetail }) {
   const { scale, toSvgX, toSvgY } = useScale(detail.widthMm, detail.totalDepthMm);
   return (
-    <svg width={SVG_MAX_SIZE} height={SVG_MAX_SIZE} className="bg-slate-950 rounded-md border border-slate-800">
+    <svg width={SVG_MAX_SIZE} height={SVG_MAX_SIZE} className="bg-surface rounded-md border border-surface-border">
       <rect
         x={toSvgX(0)}
         y={toSvgY(detail.totalDepthMm)}
@@ -96,7 +96,7 @@ function BeamSvg({ detail }: { detail: BeamSectionDetail }) {
 function ColumnSvg({ detail }: { detail: ColumnSectionDetail }) {
   const { scale, toSvgX, toSvgY } = useScale(detail.widthMm, detail.totalDepthMm);
   return (
-    <svg width={SVG_MAX_SIZE} height={SVG_MAX_SIZE} className="bg-slate-950 rounded-md border border-slate-800">
+    <svg width={SVG_MAX_SIZE} height={SVG_MAX_SIZE} className="bg-surface rounded-md border border-surface-border">
       <rect
         x={toSvgX(0)}
         y={toSvgY(detail.totalDepthMm)}
@@ -126,7 +126,7 @@ function ColumnSvg({ detail }: { detail: ColumnSectionDetail }) {
 function FootingSvg({ detail }: { detail: FootingSectionDetail }) {
   const { scale, toSvgX, toSvgY } = useScale(detail.footingWidthMm, detail.footingThicknessMm);
   return (
-    <svg width={SVG_MAX_SIZE} height={SVG_MAX_SIZE} className="bg-slate-950 rounded-md border border-slate-800">
+    <svg width={SVG_MAX_SIZE} height={SVG_MAX_SIZE} className="bg-surface rounded-md border border-surface-border">
       <rect
         x={toSvgX(0)}
         y={toSvgY(detail.footingThicknessMm)}
@@ -244,17 +244,17 @@ export function SectionDetailPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">Section Detail</h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">Section Detail</h3>
+        <p className="text-xs text-text-muted mb-3">
           10a-এর bar layout-কে section-এর ভিতরে actual (x,y) পজিশনে বসিয়ে cross-section আঁকে — Foundation Detail
           (footing) সহ।
         </p>
 
-        <label className="block text-xs text-slate-500 mb-1">Element Type</label>
+        <label className="block text-xs text-text-muted mb-1">Element Type</label>
         <select
           value={mode}
           onChange={(e) => setMode(e.target.value as SectionMode)}
-          className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-sm px-2.5 py-2 mb-3"
+          className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-sm px-2.5 py-2 mb-3"
         >
           {(Object.keys(MODE_LABELS) as SectionMode[]).map((m) => (
             <option key={m} value={m}>
@@ -314,7 +314,7 @@ export function SectionDetailPanel() {
         <button
           type="button"
           onClick={handleRun}
-          className="w-full rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium py-2 transition-colors"
+          className="w-full rounded-md bg-surface-hover hover:bg-surface-border text-text-primary text-sm font-medium py-2 transition-colors"
         >
           Draw Section
         </button>
@@ -323,13 +323,13 @@ export function SectionDetailPanel() {
       {mode === "beam" && beamDetail && (
         <div className="space-y-3">
           <BeamSvg detail={beamDetail} />
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-text-secondary">
             Tension: {beamDetail.tensionBars.length} bars · Compression: {beamDetail.compressionBars.length} bars
           </p>
           {beamDetail.warnings.length > 0 && (
-            <div className="rounded-md bg-amber-950/20 border border-amber-900/60 px-3 py-2.5 space-y-1">
+            <div className="rounded-md bg-status-holdBg border border-status-holdBorder/60 px-3 py-2.5 space-y-1">
               {beamDetail.warnings.map((w, i) => (
-                <p key={i} className="text-xs text-amber-500 leading-relaxed">
+                <p key={i} className="text-xs text-status-holdText leading-relaxed">
                   {w}
                 </p>
               ))}
@@ -341,11 +341,11 @@ export function SectionDetailPanel() {
       {mode === "column" && columnDetail && (
         <div className="space-y-3">
           <ColumnSvg detail={columnDetail} />
-          <p className="text-xs text-slate-400">{columnDetail.bars.length} longitudinal bars placed</p>
+          <p className="text-xs text-text-secondary">{columnDetail.bars.length} longitudinal bars placed</p>
           {columnDetail.warnings.length > 0 && (
-            <div className="rounded-md bg-amber-950/20 border border-amber-900/60 px-3 py-2.5 space-y-1">
+            <div className="rounded-md bg-status-holdBg border border-status-holdBorder/60 px-3 py-2.5 space-y-1">
               {columnDetail.warnings.map((w, i) => (
-                <p key={i} className="text-xs text-amber-500 leading-relaxed">
+                <p key={i} className="text-xs text-status-holdText leading-relaxed">
                   {w}
                 </p>
               ))}
@@ -357,13 +357,13 @@ export function SectionDetailPanel() {
       {mode === "footing" && footingDetail && (
         <div className="space-y-3">
           <FootingSvg detail={footingDetail} />
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-text-secondary">
             Bottom: {footingDetail.bottomBars.length} bars ({fmt(footingDetail.bottomBars.length > 0 ? footingDetail.bottomBars[0].diameterMm : 0)}mmØ)
           </p>
           {footingDetail.warnings.length > 0 && (
-            <div className="rounded-md bg-amber-950/20 border border-amber-900/60 px-3 py-2.5 space-y-1">
+            <div className="rounded-md bg-status-holdBg border border-status-holdBorder/60 px-3 py-2.5 space-y-1">
               {footingDetail.warnings.map((w, i) => (
-                <p key={i} className="text-xs text-amber-500 leading-relaxed">
+                <p key={i} className="text-xs text-status-holdText leading-relaxed">
                   {w}
                 </p>
               ))}

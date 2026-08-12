@@ -93,11 +93,11 @@ export default function Phase0CheckPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 p-8">
+    <main className="min-h-screen bg-surface text-text-primary p-8">
       <div className="max-w-2xl mx-auto space-y-8">
         <div>
           <h1 className="text-2xl font-semibold">Phase 0 — Infrastructure Check</h1>
-          <p className="text-slate-400 mt-1">
+          <p className="text-text-secondary mt-1">
             Hub integration foundation যাচাই: Firebase config ও Cloud Run
             যোগাযোগ ঠিক আছে কিনা।
           </p>
@@ -129,20 +129,20 @@ function CheckCard({
   onCheck: () => void;
 }) {
   const statusColor: Record<CheckStatus, string> = {
-    idle: "bg-slate-800 text-slate-300",
-    running: "bg-amber-900/40 text-amber-300",
-    success: "bg-emerald-900/40 text-emerald-300",
-    error: "bg-red-900/40 text-red-300",
+    idle: "bg-surface-hover text-text-secondary",
+    running: "bg-status-holdBg text-status-holdText",
+    success: "bg-status-activeBg text-status-activeText",
+    error: "bg-red-50 text-red-600",
   };
 
   return (
-    <div className="rounded-lg border border-slate-800 p-5 space-y-3">
+    <div className="rounded-lg border border-surface-border p-5 space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="font-medium">{title}</h2>
         <button
           onClick={onCheck}
           disabled={result.status === "running"}
-          className="text-sm px-3 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 disabled:opacity-50 transition-colors"
+          className="text-sm px-3 py-1.5 rounded-md bg-surface-hover hover:bg-surface-border disabled:opacity-50 transition-colors"
         >
           যাচাই করুন
         </button>

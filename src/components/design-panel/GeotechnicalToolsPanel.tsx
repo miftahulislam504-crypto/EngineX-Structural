@@ -43,11 +43,11 @@ export function GeotechnicalToolsPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">Geotechnical Tools</h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">Geotechnical Tools</h3>
+        <p className="text-xs text-text-muted mb-3">
           Bearing capacity derivation, settlement analysis, and soil spring (Winkler) calculators.
         </p>
-        <p className="text-xs text-amber-500 bg-amber-950/30 border border-amber-900 rounded-md px-2.5 py-2 mb-3">
+        <p className="text-xs text-status-holdText bg-status-holdBg border border-status-holdBorder rounded-md px-2.5 py-2 mb-3">
           This app does not perform geotechnical analysis (no SPT/CPT interpretation, no boring-log processing) —
           all soil parameters below must come from your geotechnical report.
         </p>
@@ -65,7 +65,7 @@ export function GeotechnicalToolsPanel() {
               type="button"
               onClick={() => setTool(id)}
               className={`flex-1 rounded-md text-xs font-medium py-1.5 transition-colors ${
-                tool === id ? "bg-sky-700 text-white" : "bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200"
+                tool === id ? "bg-brand-600 text-white" : "bg-surface-card border border-surface-border text-text-secondary hover:text-text-primary"
               }`}
             >
               {label}
@@ -117,7 +117,7 @@ function BearingCapacityTool() {
         <select
           value={method}
           onChange={(e) => setMethod(e.target.value as BearingCapacityMethod)}
-          className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+          className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
         >
           <option value="terzaghi">Terzaghi</option>
           <option value="meyerhof">Meyerhof</option>
@@ -125,7 +125,7 @@ function BearingCapacityTool() {
         <select
           value={footingShape}
           onChange={(e) => setFootingShape(e.target.value as FootingShape)}
-          className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+          className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
         >
           <option value="strip">Strip</option>
           <option value="square">Square</option>
@@ -136,70 +136,70 @@ function BearingCapacityTool() {
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Friction Angle φ (°)</label>
+          <label className="block text-xs text-text-muted mb-1">Friction Angle φ (°)</label>
           <input
             type="number"
             step="any"
             value={frictionAngleDeg}
             onChange={(e) => setFrictionAngleDeg(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Cohesion c (kPa)</label>
+          <label className="block text-xs text-text-muted mb-1">Cohesion c (kPa)</label>
           <input
             type="number"
             step="any"
             value={cohesionKPa}
             onChange={(e) => setCohesionKPa(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Soil Unit Weight γ (kN/m³)</label>
+          <label className="block text-xs text-text-muted mb-1">Soil Unit Weight γ (kN/m³)</label>
           <input
             type="number"
             step="any"
             value={soilUnitWeightKNPerM3}
             onChange={(e) => setSoilUnitWeightKNPerM3(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Footing Depth Df (m)</label>
+          <label className="block text-xs text-text-muted mb-1">Footing Depth Df (m)</label>
           <input
             type="number"
             step="any"
             value={footingDepthM}
             onChange={(e) => setFootingDepthM(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Footing Width B (m)</label>
+          <label className="block text-xs text-text-muted mb-1">Footing Width B (m)</label>
           <input
             type="number"
             step="any"
             value={footingWidthM}
             onChange={(e) => setFootingWidthM(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
         {footingShape === "rectangular" && (
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Footing Length L (m)</label>
+            <label className="block text-xs text-text-muted mb-1">Footing Length L (m)</label>
             <input
               type="number"
               step="any"
               value={footingLengthM}
               onChange={(e) => setFootingLengthM(e.target.value)}
-              className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+              className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
             />
           </div>
         )}
@@ -207,24 +207,24 @@ function BearingCapacityTool() {
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Factor of Safety</label>
+          <label className="block text-xs text-text-muted mb-1">Factor of Safety</label>
           <input
             type="number"
             step="any"
             value={factorOfSafety}
             onChange={(e) => setFactorOfSafety(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Water Table Depth (m, optional)</label>
+          <label className="block text-xs text-text-muted mb-1">Water Table Depth (m, optional)</label>
           <input
             type="number"
             step="any"
             value={waterTableDepthM}
             onChange={(e) => setWaterTableDepthM(e.target.value)}
             placeholder="dry if blank"
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
       </div>
@@ -232,31 +232,31 @@ function BearingCapacityTool() {
       <button
         type="button"
         onClick={handleCompute}
-        className="w-full rounded-md bg-sky-700 hover:bg-sky-600 text-white text-sm font-medium py-2 transition-colors"
+        className="w-full rounded-md bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium py-2 transition-colors"
       >
         ▶ Compute Bearing Capacity
       </button>
 
       {result && (
         <div className="space-y-3">
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-            <p className="text-xs text-slate-500 font-medium mb-1">Bearing Capacity Factors</p>
-            <p className="text-xs text-slate-300">
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+            <p className="text-xs text-text-muted font-medium mb-1">Bearing Capacity Factors</p>
+            <p className="text-xs text-text-secondary">
               Nc = {fmt(result.factors.Nc, 2)}, Nq = {fmt(result.factors.Nq, 2)}, Nγ = {fmt(result.factors.Ngamma, 2)}
             </p>
           </div>
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-            <p className="text-xs text-slate-500 font-medium mb-1">Result</p>
-            <p className="text-xs text-slate-300">Ultimate qu = {fmt(result.ultimateBearingCapacityKPa)} kPa</p>
-            <p className="text-xs text-slate-300">Net ultimate = {fmt(result.netUltimateBearingCapacityKPa)} kPa</p>
-            <p className="text-sm text-emerald-400 font-medium">
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+            <p className="text-xs text-text-muted font-medium mb-1">Result</p>
+            <p className="text-xs text-text-secondary">Ultimate qu = {fmt(result.ultimateBearingCapacityKPa)} kPa</p>
+            <p className="text-xs text-text-secondary">Net ultimate = {fmt(result.netUltimateBearingCapacityKPa)} kPa</p>
+            <p className="text-sm text-status-activeText font-medium">
               Allowable qa = {fmt(result.allowableBearingPressureKPa)} kPa
             </p>
           </div>
           {result.warnings.length > 0 && (
-            <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1.5">
+            <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1.5">
               {result.warnings.map((w, i) => (
-                <p key={i} className="text-xs text-amber-400 leading-relaxed">
+                <p key={i} className="text-xs text-status-holdText leading-relaxed">
                   {w}
                 </p>
               ))}
@@ -322,68 +322,68 @@ function SettlementTool() {
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-slate-400 font-medium">Elastic (Immediate) Settlement</p>
+      <p className="text-xs text-text-secondary font-medium">Elastic (Immediate) Settlement</p>
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Net Pressure q (kPa)</label>
+          <label className="block text-xs text-text-muted mb-1">Net Pressure q (kPa)</label>
           <input
             type="number"
             step="any"
             value={netPressureKPa}
             onChange={(e) => setNetPressureKPa(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Soil Elastic Modulus Es (MPa)</label>
+          <label className="block text-xs text-text-muted mb-1">Soil Elastic Modulus Es (MPa)</label>
           <input
             type="number"
             step="any"
             value={soilElasticModulusMPa}
             onChange={(e) => setSoilElasticModulusMPa(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Footing Width B (m)</label>
+          <label className="block text-xs text-text-muted mb-1">Footing Width B (m)</label>
           <input
             type="number"
             step="any"
             value={footingWidthM}
             onChange={(e) => setFootingWidthM(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Footing Length L (m)</label>
+          <label className="block text-xs text-text-muted mb-1">Footing Length L (m)</label>
           <input
             type="number"
             step="any"
             value={footingLengthM}
             onChange={(e) => setFootingLengthM(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Poisson&apos;s Ratio ν</label>
+          <label className="block text-xs text-text-muted mb-1">Poisson&apos;s Ratio ν</label>
           <input
             type="number"
             step="any"
             value={soilPoissonRatio}
             onChange={(e) => setSoilPoissonRatio(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Rigidity</label>
+          <label className="block text-xs text-text-muted mb-1">Rigidity</label>
           <select
             value={rigidity}
             onChange={(e) => setRigidity(e.target.value as FootingRigidity)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           >
             <option value="rigid">Rigid</option>
             <option value="flexible">Flexible</option>
@@ -391,14 +391,14 @@ function SettlementTool() {
         </div>
       </div>
 
-      <label className="flex items-center gap-2 text-xs text-slate-400 pt-1">
+      <label className="flex items-center gap-2 text-xs text-text-secondary pt-1">
         <input type="checkbox" checked={includeConsolidation} onChange={(e) => setIncludeConsolidation(e.target.checked)} />
         Include consolidation settlement (clay layer)
       </label>
 
       {includeConsolidation && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-2">
-          <p className="text-xs text-slate-400 font-medium">Consolidation Settlement</p>
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-2">
+          <p className="text-xs text-text-secondary font-medium">Consolidation Settlement</p>
           <div className="grid grid-cols-2 gap-2">
             <input
               type="number"
@@ -406,7 +406,7 @@ function SettlementTool() {
               value={initialVoidRatio}
               onChange={(e) => setInitialVoidRatio(e.target.value)}
               placeholder="e0"
-              className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+              className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
             />
             <input
               type="number"
@@ -414,7 +414,7 @@ function SettlementTool() {
               value={compressionIndex}
               onChange={(e) => setCompressionIndex(e.target.value)}
               placeholder="Cc"
-              className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+              className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
             />
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -424,7 +424,7 @@ function SettlementTool() {
               value={recompressionIndex}
               onChange={(e) => setRecompressionIndex(e.target.value)}
               placeholder="Cr (optional)"
-              className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+              className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
             />
             <input
               type="number"
@@ -432,7 +432,7 @@ function SettlementTool() {
               value={layerThicknessM}
               onChange={(e) => setLayerThicknessM(e.target.value)}
               placeholder="H (m)"
-              className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+              className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
             />
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -442,7 +442,7 @@ function SettlementTool() {
               value={initialEffectiveStressKPa}
               onChange={(e) => setInitialEffectiveStressKPa(e.target.value)}
               placeholder="σ'0 (kPa)"
-              className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+              className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
             />
             <input
               type="number"
@@ -450,7 +450,7 @@ function SettlementTool() {
               value={stressIncreaseKPa}
               onChange={(e) => setStressIncreaseKPa(e.target.value)}
               placeholder="Δσ' (kPa)"
-              className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+              className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
             />
           </div>
           <input
@@ -459,26 +459,26 @@ function SettlementTool() {
             value={preconsolidationPressureKPa}
             onChange={(e) => setPreconsolidationPressureKPa(e.target.value)}
             placeholder="σ'c (kPa, optional — over-consolidated)"
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
       )}
 
       <div>
-        <label className="block text-xs text-slate-500 mb-1">Allowable Total Settlement (mm)</label>
+        <label className="block text-xs text-text-muted mb-1">Allowable Total Settlement (mm)</label>
         <input
           type="number"
           step="any"
           value={allowableSettlementMm}
           onChange={(e) => setAllowableSettlementMm(e.target.value)}
-          className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+          className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
         />
       </div>
 
       <button
         type="button"
         onClick={handleCompute}
-        className="w-full rounded-md bg-sky-700 hover:bg-sky-600 text-white text-sm font-medium py-2 transition-colors"
+        className="w-full rounded-md bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium py-2 transition-colors"
       >
         ▶ Compute Settlement
       </button>
@@ -488,8 +488,8 @@ function SettlementTool() {
           <div
             className={`rounded-md border px-3 py-2.5 ${
               result.adequate
-                ? "bg-emerald-950/30 border-emerald-900 text-emerald-400"
-                : "bg-red-950/30 border-red-900 text-red-400"
+                ? "bg-status-activeBg border-status-activeBorder text-status-activeText"
+                : "bg-red-50 border-red-200 text-red-600"
             }`}
           >
             <p className="text-xs font-medium">
@@ -498,9 +498,9 @@ function SettlementTool() {
             </p>
           </div>
           {result.warnings.length > 0 && (
-            <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1.5">
+            <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1.5">
               {result.warnings.map((w, i) => (
-                <p key={i} className="text-xs text-amber-400 leading-relaxed">
+                <p key={i} className="text-xs text-status-holdText leading-relaxed">
                   {w}
                 </p>
               ))}
@@ -555,7 +555,7 @@ function SoilSpringTool() {
       <select
         value={method}
         onChange={(e) => setMethod(e.target.value as SubgradeReactionMethod)}
-        className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+        className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
       >
         <option value="from-allowable-bearing-pressure">From Allowable Bearing Pressure</option>
         <option value="from-plate-load-test">From Plate Load Test</option>
@@ -570,7 +570,7 @@ function SoilSpringTool() {
             value={allowableBearingPressureKPa}
             onChange={(e) => setAllowableBearingPressureKPa(e.target.value)}
             placeholder="qa (kPa)"
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
           <input
             type="number"
@@ -578,7 +578,7 @@ function SoilSpringTool() {
             value={assumedSettlementMm}
             onChange={(e) => setAssumedSettlementMm(e.target.value)}
             placeholder="assumed settlement (mm)"
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
       )}
@@ -591,7 +591,7 @@ function SoilSpringTool() {
             value={plateLoadTestKsKNPerM3}
             onChange={(e) => setPlateLoadTestKsKNPerM3(e.target.value)}
             placeholder="plate ks (kN/m³)"
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
           <input
             type="number"
@@ -599,7 +599,7 @@ function SoilSpringTool() {
             value={plateWidthM}
             onChange={(e) => setPlateWidthM(e.target.value)}
             placeholder="plate width (m)"
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
       )}
@@ -612,7 +612,7 @@ function SoilSpringTool() {
             value={soilElasticModulusMPa}
             onChange={(e) => setSoilElasticModulusMPa(e.target.value)}
             placeholder="Es (MPa)"
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
           <input
             type="number"
@@ -620,61 +620,61 @@ function SoilSpringTool() {
             value={soilPoissonRatio}
             onChange={(e) => setSoilPoissonRatio(e.target.value)}
             placeholder="ν"
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
       )}
 
       <div>
-        <label className="block text-xs text-slate-500 mb-1">Actual Foundation Width (m)</label>
+        <label className="block text-xs text-text-muted mb-1">Actual Foundation Width (m)</label>
         <input
           type="number"
           step="any"
           value={actualFoundationWidthM}
           onChange={(e) => setActualFoundationWidthM(e.target.value)}
-          className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+          className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
         />
       </div>
 
       <button
         type="button"
         onClick={handleCompute}
-        className="w-full rounded-md bg-sky-700 hover:bg-sky-600 text-white text-sm font-medium py-2 transition-colors"
+        className="w-full rounded-md bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium py-2 transition-colors"
       >
         ▶ Compute ks
       </button>
 
       {result && (
         <div className="space-y-3">
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
-            <p className="text-sm text-emerald-400 font-medium">
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+            <p className="text-sm text-status-activeText font-medium">
               ks = {fmt(result.modulusOfSubgradeReactionKNPerM3, 0)} kN/m³
             </p>
           </div>
 
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Tributary Area (m², for a node/point spring)</label>
+            <label className="block text-xs text-text-muted mb-1">Tributary Area (m², for a node/point spring)</label>
             <input
               type="number"
               step="any"
               value={tributaryAreaM2}
               onChange={(e) => setTributaryAreaM2(e.target.value)}
-              className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+              className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
             />
           </div>
 
           {spring && (
-            <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
-              <p className="text-sm text-emerald-400 font-medium">
+            <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+              <p className="text-sm text-status-activeText font-medium">
                 Node Spring Stiffness K = {fmt(spring.springStiffnessKNPerM, 0)} kN/m
               </p>
             </div>
           )}
 
           {result.warnings.length > 0 && (
-            <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1.5">
+            <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1.5">
               {result.warnings.map((w, i) => (
-                <p key={i} className="text-xs text-amber-400 leading-relaxed">
+                <p key={i} className="text-xs text-status-holdText leading-relaxed">
                   {w}
                 </p>
               ))}

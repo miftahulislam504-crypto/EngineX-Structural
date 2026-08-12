@@ -78,27 +78,27 @@ export function DrawingSyncPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">Drawing Synchronization</h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">Drawing Synchronization</h3>
+        <p className="text-xs text-text-muted mb-3">
           একটা detail generate হওয়ার সময়ের ইনপুট vs বর্তমান ইনপুট তুলনা করে বলে দেয় detail এখনো valid কিনা, আর ঠিক
           কোন ইনপুট বদলেছে।
         </p>
 
         <div className="grid grid-cols-2 gap-2 mb-3">
           <div>
-            <label className="block text-[10px] text-slate-500 mb-0.5">Detail ID</label>
+            <label className="block text-[10px] text-text-muted mb-0.5">Detail ID</label>
             <input
               value={detailId}
               onChange={(e) => setDetailId(e.target.value)}
-              className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+              className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
             />
           </div>
           <div>
-            <label className="block text-[10px] text-slate-500 mb-0.5">Detail Type</label>
+            <label className="block text-[10px] text-text-muted mb-0.5">Detail Type</label>
             <select
               value={detailType}
               onChange={(e) => setDetailType(e.target.value as DetailingType)}
-              className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+              className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
             >
               {DETAIL_TYPES.map((t) => (
                 <option key={t} value={t}>
@@ -109,7 +109,7 @@ export function DrawingSyncPanel() {
           </div>
         </div>
 
-        <p className="text-[10px] text-slate-500 mb-1">Inputs (generated-at snapshot vs current)</p>
+        <p className="text-[10px] text-text-muted mb-1">Inputs (generated-at snapshot vs current)</p>
         <div className="space-y-1.5 mb-2">
           {rows.map((row, i) => (
             <div key={i} className="grid grid-cols-3 gap-1.5">
@@ -117,19 +117,19 @@ export function DrawingSyncPanel() {
                 value={row.key}
                 onChange={(e) => updateRow(i, "key", e.target.value)}
                 placeholder="key"
-                className="rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
               <input
                 value={row.generatedValue}
                 onChange={(e) => updateRow(i, "generatedValue", e.target.value)}
                 placeholder="generated value"
-                className="rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
               <input
                 value={row.currentValue}
                 onChange={(e) => updateRow(i, "currentValue", e.target.value)}
                 placeholder="current value"
-                className="rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
           ))}
@@ -137,7 +137,7 @@ export function DrawingSyncPanel() {
         <button
           type="button"
           onClick={addRow}
-          className="text-xs text-slate-500 hover:text-slate-300 mb-3"
+          className="text-xs text-text-muted hover:text-text-secondary mb-3"
         >
           + Add input
         </button>
@@ -146,7 +146,7 @@ export function DrawingSyncPanel() {
           <button
             type="button"
             onClick={handleGenerateSnapshot}
-            className="rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium py-2 transition-colors"
+            className="rounded-md bg-surface-hover hover:bg-surface-border text-text-primary text-sm font-medium py-2 transition-colors"
           >
             1. Snapshot at Generation
           </button>
@@ -154,7 +154,7 @@ export function DrawingSyncPanel() {
             type="button"
             onClick={handleCheckSync}
             disabled={!record}
-            className="rounded-md bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-slate-200 text-sm font-medium py-2 transition-colors"
+            className="rounded-md bg-surface-hover hover:bg-surface-border disabled:opacity-40 disabled:hover:bg-surface-hover text-text-primary text-sm font-medium py-2 transition-colors"
           >
             2. Check Current
           </button>
@@ -162,20 +162,20 @@ export function DrawingSyncPanel() {
       </div>
 
       {record && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-          <p className="text-xs text-slate-500 font-medium mb-1">Snapshot Recorded</p>
-          <p className="text-xs text-slate-300">Fingerprint: {record.inputFingerprint}</p>
-          <p className="text-xs text-slate-500">{new Date(record.generatedAtIso).toLocaleString()}</p>
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+          <p className="text-xs text-text-muted font-medium mb-1">Snapshot Recorded</p>
+          <p className="text-xs text-text-secondary">Fingerprint: {record.inputFingerprint}</p>
+          <p className="text-xs text-text-muted">{new Date(record.generatedAtIso).toLocaleString()}</p>
         </div>
       )}
 
       {checkResult && (
         <div
           className={`rounded-md border px-3 py-2.5 space-y-1 ${
-            checkResult.isStale ? "bg-amber-950/30 border-amber-900" : "bg-emerald-950/30 border-emerald-900"
+            checkResult.isStale ? "bg-status-holdBg border-status-holdBorder" : "bg-status-activeBg border-status-activeBorder"
           }`}
         >
-          <p className={`text-xs leading-relaxed ${checkResult.isStale ? "text-amber-500" : "text-emerald-400"}`}>
+          <p className={`text-xs leading-relaxed ${checkResult.isStale ? "text-status-holdText" : "text-status-activeText"}`}>
             {checkResult.isStale
               ? `Stale — এই detail বর্তমান ইনপুটের সাথে মিলছে না (${checkResult.changedKeys.join(", ")} বদলেছে)। Regenerate করুন।`
               : "In sync — এই detail বর্তমান ইনপুটের সাথে মিলছে।"}

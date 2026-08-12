@@ -79,31 +79,31 @@ export function DetailingPanel({
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">Detailing Model — 3D Rebar Visualization</h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">Detailing Model — 3D Rebar Visualization</h3>
+        <p className="text-xs text-text-muted mb-3">
           প্রতিটা Design panel-এ &quot;Send to Detailing Model&quot; চেপে rebar generate করুন, তারপর মূল 3D
           viewport-এ (উপরে) সেটা overlay হিসেবে দেখা যাবে।
         </p>
       </div>
 
-      <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-2.5">
-        <p className="text-xs text-slate-500 font-medium">Display</p>
+      <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-2.5">
+        <p className="text-xs text-text-muted font-medium">Display</p>
 
-        <label className="flex items-center justify-between text-xs text-slate-300">
+        <label className="flex items-center justify-between text-xs text-text-secondary">
           <span>Stirrups / Ties</span>
           <input type="checkbox" checked={showStirrups} onChange={(e) => onToggleStirrups(e.target.checked)} />
         </label>
-        <label className="flex items-center justify-between text-xs text-slate-300">
+        <label className="flex items-center justify-between text-xs text-text-secondary">
           <span>Slab/Wall/Footing Mesh</span>
           <input type="checkbox" checked={showMesh} onChange={(e) => onToggleMesh(e.target.checked)} />
         </label>
 
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Isolate Element (single-member focus)</label>
+          <label className="block text-xs text-text-muted mb-1">Isolate Element (single-member focus)</label>
           <select
             value={isolateElementId ?? ""}
             onChange={(e) => onSetIsolateElementId(e.target.value === "" ? null : e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2.5 py-1.5"
+            className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2.5 py-1.5"
           >
             <option value="">সব element (whole structure)</option>
             {resultList.map((r) => (
@@ -115,14 +115,14 @@ export function DetailingPanel({
         </div>
       </div>
 
-      <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-        <p className="text-xs text-slate-500 font-medium mb-1">Status</p>
-        <p className="text-xs text-slate-300">
+      <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+        <p className="text-xs text-text-muted font-medium mb-1">Status</p>
+        <p className="text-xs text-text-secondary">
           {resultList.length} element{resultList.length === 1 ? "" : "s"} detailed / {elements.length} total elements
         </p>
-        <p className="text-xs text-slate-300">Estimated rebar weight: {totalWeight.toFixed(0)} kg</p>
+        <p className="text-xs text-text-secondary">Estimated rebar weight: {totalWeight.toFixed(0)} kg</p>
         {elementsWithIssues.length > 0 && (
-          <p className="text-xs text-amber-400">
+          <p className="text-xs text-status-holdText">
             ⚠ {elementsWithIssues.length} element-এর design status ok না — detailing হয়তো ভুল ডিজাইন থেকে
             জেনারেট হয়েছে, নিচের list-এ লাল/হলুদ চিহ্নিত।
           </p>
@@ -130,25 +130,25 @@ export function DetailingPanel({
       </div>
 
       {resultList.length > 0 && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1.5">
-          <p className="text-xs text-slate-500 font-medium mb-1">Detailed Elements</p>
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1.5">
+          <p className="text-xs text-text-muted font-medium mb-1">Detailed Elements</p>
           <div className="space-y-1 max-h-48 overflow-y-auto">
             {resultList.map((r) => {
               const statusColor =
                 r.sourceDesignStatus === "ok"
-                  ? "text-emerald-400"
+                  ? "text-status-activeText"
                   : r.sourceDesignStatus === "warning"
-                    ? "text-amber-400"
-                    : "text-red-400";
+                    ? "text-status-holdText"
+                    : "text-red-600";
               return (
                 <button
                   key={r.elementId}
                   onClick={() => onSetIsolateElementId(r.elementId)}
-                  className={`w-full flex items-center justify-between text-xs px-2 py-1 rounded hover:bg-slate-900 transition-colors ${
-                    isolateElementId === r.elementId ? "bg-slate-900" : ""
+                  className={`w-full flex items-center justify-between text-xs px-2 py-1 rounded hover:bg-surface-card transition-colors ${
+                    isolateElementId === r.elementId ? "bg-surface-card" : ""
                   }`}
                 >
-                  <span className="text-slate-300">
+                  <span className="text-text-secondary">
                     {r.elementLabel} — {CATEGORY_LABEL[r.category]}
                   </span>
                   <span className={statusColor}>{r.sourceDesignStatus}</span>
@@ -160,12 +160,12 @@ export function DetailingPanel({
       )}
 
       {combinedSchedule.length > 0 && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
-          <p className="text-xs text-slate-500 font-medium mb-2">Bar Bending Schedule (BBS)</p>
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+          <p className="text-xs text-text-muted font-medium mb-2">Bar Bending Schedule (BBS)</p>
           <div className="overflow-x-auto">
-            <table className="w-full text-xs text-slate-300">
+            <table className="w-full text-xs text-text-secondary">
               <thead>
-                <tr className="text-slate-500 border-b border-slate-800">
+                <tr className="text-text-muted border-b border-surface-border">
                   <th className="text-left py-1 pr-2">Mark</th>
                   <th className="text-left py-1 pr-2">Element</th>
                   <th className="text-right py-1 pr-2">Dia</th>
@@ -176,9 +176,9 @@ export function DetailingPanel({
               </thead>
               <tbody>
                 {combinedSchedule.map((row, i) => (
-                  <tr key={i} className="border-b border-slate-900">
+                  <tr key={i} className="border-b border-surface-border">
                     <td className="py-1 pr-2">{row.barMark}</td>
-                    <td className="py-1 pr-2 text-slate-500">{row.elementLabel}</td>
+                    <td className="py-1 pr-2 text-text-muted">{row.elementLabel}</td>
                     <td className="py-1 pr-2 text-right">{row.diameterMm}mm</td>
                     <td className="py-1 pr-2 text-right">{row.count}</td>
                     <td className="py-1 pr-2 text-right">{row.cutLengthMm.toFixed(0)}</td>

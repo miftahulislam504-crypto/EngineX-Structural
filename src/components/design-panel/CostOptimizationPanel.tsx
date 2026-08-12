@@ -100,53 +100,53 @@ export function CostOptimizationPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">Cost Optimization — Material Cost Estimate</h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">Cost Optimization — Material Cost Estimate</h3>
+        <p className="text-xs text-text-muted mb-3">
           Weight Optimization takeoff-এর উপর ইঞ্জিনিয়ার-দেওয়া unit rate প্রয়োগ করে material cost অনুমান —
           rebar/formwork/labor অন্তর্ভুক্ত না।
         </p>
 
         <div className="mb-3">
-          <label className="block text-[10px] text-slate-500 mb-0.5">Currency Symbol</label>
+          <label className="block text-[10px] text-text-muted mb-0.5">Currency Symbol</label>
           <input
             value={currencyLabel}
             onChange={(e) => setCurrencyLabel(e.target.value)}
-            className="w-24 rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+            className="w-24 rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
           />
         </div>
 
         {materialTypesInLibrary.length === 0 ? (
-          <p className="text-xs text-amber-500">মডেলের material library-তে কোনো material নেই — আগে Material tab-এ যোগ করুন।</p>
+          <p className="text-xs text-status-holdText">মডেলের material library-তে কোনো material নেই — আগে Material tab-এ যোগ করুন।</p>
         ) : (
           <div className="space-y-2.5">
-            <p className="text-xs text-slate-500 font-medium">Unit Rates (মডেলে ব্যবহৃত material অনুযায়ী)</p>
+            <p className="text-xs text-text-muted font-medium">Unit Rates (মডেলে ব্যবহৃত material অনুযায়ী)</p>
             {materialTypesInLibrary.map((mt) => {
               const basis = pricingBasisOverride[mt] ?? DEFAULT_PRICING_BASIS[mt];
               return (
                 <div key={mt} className="grid grid-cols-3 gap-2 items-end">
                   <div>
-                    <label className="block text-[10px] text-slate-500 mb-0.5">{MATERIAL_TYPE_LABELS[mt]}</label>
+                    <label className="block text-[10px] text-text-muted mb-0.5">{MATERIAL_TYPE_LABELS[mt]}</label>
                     <input
                       value={rateInputs[mt]}
                       onChange={(e) => setRateInputs((prev) => ({ ...prev, [mt]: e.target.value }))}
                       placeholder="rate"
-                      className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                      className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] text-slate-500 mb-0.5">Pricing Basis</label>
+                    <label className="block text-[10px] text-text-muted mb-0.5">Pricing Basis</label>
                     <select
                       value={basis}
                       onChange={(e) =>
                         setPricingBasisOverride((prev) => ({ ...prev, [mt]: e.target.value as "volume" | "weight" }))
                       }
-                      className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                      className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
                     >
                       <option value="volume">per m³</option>
                       <option value="weight">per kg</option>
                     </select>
                   </div>
-                  <p className="text-[10px] text-slate-600 pb-1.5">
+                  <p className="text-[10px] text-text-muted pb-1.5">
                     {currencyLabel}/{basis === "weight" ? "kg" : "m³"}
                   </p>
                 </div>
@@ -158,19 +158,19 @@ export function CostOptimizationPanel() {
 
       <div
         className={`rounded-md border px-3 py-2.5 ${
-          result.categoryCosts.length > 0 ? "bg-emerald-950/30 border-emerald-900" : "bg-amber-950/30 border-amber-900"
+          result.categoryCosts.length > 0 ? "bg-status-activeBg border-status-activeBorder" : "bg-status-holdBg border-status-holdBorder"
         }`}
       >
-        <p className={`text-xs leading-relaxed ${result.categoryCosts.length > 0 ? "text-emerald-400" : "text-amber-500"}`}>
+        <p className={`text-xs leading-relaxed ${result.categoryCosts.length > 0 ? "text-status-activeText" : "text-status-holdText"}`}>
           {result.message}
         </p>
       </div>
 
       {result.categoryCosts.length > 0 && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 overflow-hidden">
+        <div className="rounded-md bg-surface border border-surface-border overflow-hidden">
           <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-slate-800 text-slate-500">
+              <tr className="border-b border-surface-border text-text-muted">
                 <th className="text-left px-3 py-2 font-medium">Category</th>
                 <th className="text-left px-3 py-2 font-medium">Material</th>
                 <th className="text-right px-3 py-2 font-medium">Qty</th>
@@ -179,26 +179,26 @@ export function CostOptimizationPanel() {
             </thead>
             <tbody>
               {result.categoryCosts.map((c) => (
-                <tr key={`${c.category}::${c.materialType}`} className="border-b border-slate-900 last:border-0">
-                  <td className="px-3 py-1.5 text-slate-300">{CATEGORY_LABELS[c.category]}</td>
-                  <td className="px-3 py-1.5 text-slate-500 capitalize">{c.materialType}</td>
-                  <td className="px-3 py-1.5 text-right text-slate-400">
+                <tr key={`${c.category}::${c.materialType}`} className="border-b border-surface-border last:border-0">
+                  <td className="px-3 py-1.5 text-text-secondary">{CATEGORY_LABELS[c.category]}</td>
+                  <td className="px-3 py-1.5 text-text-muted capitalize">{c.materialType}</td>
+                  <td className="px-3 py-1.5 text-right text-text-secondary">
                     {c.pricingBasis === "weight"
                       ? `${fmt(c.totalWeightKN, 1)} kN`
                       : `${fmt(c.totalVolumeM3, 3)} m³`}
                   </td>
-                  <td className="px-3 py-1.5 text-right text-slate-300">
+                  <td className="px-3 py-1.5 text-right text-text-secondary">
                     {c.cost !== null ? `${currencyLabel}${c.cost.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "rate missing"}
                   </td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
-              <tr className="border-t border-slate-800 font-medium">
-                <td className="px-3 py-2 text-slate-200" colSpan={3}>
+              <tr className="border-t border-surface-border font-medium">
+                <td className="px-3 py-2 text-text-primary" colSpan={3}>
                   Total (material only)
                 </td>
-                <td className="px-3 py-2 text-right text-slate-200">
+                <td className="px-3 py-2 text-right text-text-primary">
                   {currencyLabel}
                   {result.totalCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                 </td>
@@ -208,17 +208,17 @@ export function CostOptimizationPanel() {
         </div>
       )}
 
-      {result.categoryCosts.length > 0 && <p className="text-[10px] text-slate-600">{result.currencyNote}</p>}
+      {result.categoryCosts.length > 0 && <p className="text-[10px] text-text-muted">{result.currencyNote}</p>}
 
       {result.excluded.length > 0 && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1.5">
-          <p className="text-xs text-slate-500 font-medium mb-1">Excluded from Takeoff ({result.excluded.length})</p>
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1.5">
+          <p className="text-xs text-text-muted font-medium mb-1">Excluded from Takeoff ({result.excluded.length})</p>
           {result.excluded.map((e) => (
             <div key={e.elementId} className="text-xs">
-              <span className="text-slate-300">
+              <span className="text-text-secondary">
                 {CATEGORY_LABELS[e.category]} &quot;{e.elementLabel}&quot;
               </span>
-              <span className="text-slate-500"> — {e.reason}</span>
+              <span className="text-text-muted"> — {e.reason}</span>
             </div>
           ))}
         </div>

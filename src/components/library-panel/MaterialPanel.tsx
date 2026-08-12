@@ -176,27 +176,27 @@ export function MaterialPanel({ onAddMaterial, onDeleteMaterial }: MaterialPanel
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-2">Material Library</h3>
+        <h3 className="text-sm font-medium text-text-primary mb-2">Material Library</h3>
 
         {materials.length === 0 ? (
-          <p className="text-xs text-slate-500">কোনো material যোগ করা হয়নি।</p>
+          <p className="text-xs text-text-muted">কোনো material যোগ করা হয়নি।</p>
         ) : (
           <ul className="space-y-1">
             {materials.map((material) => (
               <li
                 key={material.materialId}
-                className="flex items-center justify-between rounded-md px-2.5 py-1.5 text-sm hover:bg-slate-800/60 text-slate-300"
+                className="flex items-center justify-between rounded-md px-2.5 py-1.5 text-sm hover:bg-surface-hover text-text-secondary"
               >
                 <span>
                   <span className="font-medium">{material.name}</span>
-                  <span className="text-slate-500 ml-1.5 text-xs">
+                  <span className="text-text-muted ml-1.5 text-xs">
                     {getConfig(material.type).summarize(material)}
                   </span>
                 </span>
                 <button
                   type="button"
                   onClick={() => onDeleteMaterial(material.materialId)}
-                  className="text-xs text-red-500/70 hover:text-red-400 px-1"
+                  className="text-xs text-red-500/70 hover:text-red-600 px-1"
                   title="ডিলিট করুন"
                 >
                   ✕
@@ -207,9 +207,9 @@ export function MaterialPanel({ onAddMaterial, onDeleteMaterial }: MaterialPanel
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-2.5 border-t border-slate-800 pt-3">
+      <form onSubmit={handleSubmit} className="space-y-2.5 border-t border-surface-border pt-3">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">ধরন</label>
+          <label className="block text-xs text-text-muted mb-1">ধরন</label>
           <div className="grid grid-cols-4 gap-1.5">
             {MATERIAL_CONFIGS.map((config) => (
               <button
@@ -218,8 +218,8 @@ export function MaterialPanel({ onAddMaterial, onDeleteMaterial }: MaterialPanel
                 onClick={() => setMaterialType(config.type)}
                 className={`rounded-md px-1.5 py-1.5 text-xs transition-colors ${
                   materialType === config.type
-                    ? "bg-sky-700 text-white"
-                    : "bg-slate-900 border border-slate-700 text-slate-400"
+                    ? "bg-brand-600 text-white"
+                    : "bg-surface-card border border-surface-border text-text-secondary"
                 }`}
               >
                 {config.label}
@@ -229,7 +229,7 @@ export function MaterialPanel({ onAddMaterial, onDeleteMaterial }: MaterialPanel
         </div>
 
         {materialType === "composite" && (
-          <p className="text-xs text-amber-500 bg-amber-950/30 border border-amber-900 rounded-md px-2.5 py-2">
+          <p className="text-xs text-status-holdText bg-status-holdBg border border-status-holdBorder rounded-md px-2.5 py-2">
             ⚠️ Composite material-এর effective property এখানে placeholder
             হিসেবে থাকে। প্রকৃত transformed-section হিসাব ছাড়া ডিফল্ট
             মান ব্যবহার করবেন না — নিজে হিসাব করে বসান।
@@ -237,31 +237,31 @@ export function MaterialPanel({ onAddMaterial, onDeleteMaterial }: MaterialPanel
         )}
 
         <div>
-          <label className="block text-xs text-slate-500 mb-1">নাম</label>
+          <label className="block text-xs text-text-muted mb-1">নাম</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={`${activeConfig.label} Material`}
-            className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+            className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
           />
         </div>
 
         <div>
-          <label className="block text-xs text-slate-500 mb-1">{activeConfig.fieldLabel}</label>
+          <label className="block text-xs text-text-muted mb-1">{activeConfig.fieldLabel}</label>
           <input
             type="number"
             step="any"
             value={strengthValue}
             onChange={(e) => setStrengthValue(e.target.value)}
             placeholder={activeConfig.placeholder}
-            className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+            className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
           />
         </div>
 
         {materialType === "concrete" && (
           <div>
-            <label className="block text-xs text-slate-500 mb-1">
+            <label className="block text-xs text-text-muted mb-1">
               Rebar fy (MPa) — Phase 6 RC Design এ ব্যবহৃত হবে
             </label>
             <input
@@ -270,16 +270,16 @@ export function MaterialPanel({ onAddMaterial, onDeleteMaterial }: MaterialPanel
               value={rebarFyValue}
               onChange={(e) => setRebarFyValue(e.target.value)}
               placeholder="414"
-              className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+              className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
             />
           </div>
         )}
 
-        {formError && <p className="text-xs text-red-400">{formError}</p>}
+        {formError && <p className="text-xs text-red-600">{formError}</p>}
 
         <button
           type="submit"
-          className="w-full rounded-md bg-sky-700 hover:bg-sky-600 text-white text-sm font-medium py-1.5 transition-colors"
+          className="w-full rounded-md bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium py-1.5 transition-colors"
         >
           + Material যোগ করুন
         </button>

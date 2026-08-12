@@ -99,10 +99,10 @@ export function StoryPanel({ onAddStory, onUpdateStory, onDeleteStory }: StoryPa
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-2">Story System</h3>
+        <h3 className="text-sm font-medium text-text-primary mb-2">Story System</h3>
 
         {displayStories.length === 0 ? (
-          <p className="text-xs text-slate-500">কোনো story যোগ করা হয়নি।</p>
+          <p className="text-xs text-text-muted">কোনো story যোগ করা হয়নি।</p>
         ) : (
           <ul className="space-y-1">
             {[...displayStories].reverse().map((story) => (
@@ -111,18 +111,18 @@ export function StoryPanel({ onAddStory, onUpdateStory, onDeleteStory }: StoryPa
                 onClick={() => setSelection({ type: "story", storyId: story.storyId })}
                 className={`flex items-center justify-between rounded-md px-2.5 py-1.5 text-sm cursor-pointer transition-colors ${
                   selectedStoryId === story.storyId
-                    ? "bg-sky-950 text-sky-300 ring-1 ring-sky-800"
-                    : "hover:bg-slate-800/60 text-slate-300"
+                    ? "bg-brand-50 text-brand-700 ring-1 ring-brand-200"
+                    : "hover:bg-surface-hover text-text-secondary"
                 }`}
               >
                 <span>
                   <span className="font-medium">{story.name}</span>
                   {story.isBaseLevel && (
-                    <span className="ml-1.5 text-[10px] uppercase tracking-wide text-amber-500">
+                    <span className="ml-1.5 text-[10px] uppercase tracking-wide text-status-holdText">
                       base
                     </span>
                   )}
-                  <span className="text-slate-500 ml-1.5 block text-xs">
+                  <span className="text-text-muted ml-1.5 block text-xs">
                     EL {story.elevation.toFixed(2)}m
                     {story.height > 0 && ` · H ${story.height.toFixed(2)}m`}
                   </span>
@@ -134,7 +134,7 @@ export function StoryPanel({ onAddStory, onUpdateStory, onDeleteStory }: StoryPa
                       e.stopPropagation();
                       toggleVisibility(story);
                     }}
-                    className="text-xs text-slate-500 hover:text-slate-300 px-1"
+                    className="text-xs text-text-muted hover:text-text-primary px-1"
                     title={story.visible ? "লুকান" : "দেখান"}
                   >
                     {story.visible ? "👁" : "🚫"}
@@ -145,7 +145,7 @@ export function StoryPanel({ onAddStory, onUpdateStory, onDeleteStory }: StoryPa
                       e.stopPropagation();
                       onDeleteStory(story.storyId);
                     }}
-                    className="text-xs text-red-500/70 hover:text-red-400 px-1"
+                    className="text-xs text-red-500/70 hover:text-red-600 px-1"
                     title="ডিলিট করুন"
                   >
                     ✕
@@ -157,47 +157,44 @@ export function StoryPanel({ onAddStory, onUpdateStory, onDeleteStory }: StoryPa
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-2.5 border-t border-slate-800 pt-3">
+      <form onSubmit={handleSubmit} className="space-y-2.5 border-t border-surface-border pt-3">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">নাম</label>
+          <label className="block text-xs text-text-muted mb-1">নাম</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Ground Floor"
-            className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+            className="input-field"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-2 items-end">
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Elevation (m)</label>
+            <label className="block text-xs text-text-muted mb-1">Elevation (m)</label>
             <input
               type="number"
               step="any"
               value={elevation}
               onChange={(e) => setElevation(e.target.value)}
               placeholder="0.0"
-              className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+              className="input-field"
             />
           </div>
-          <label className="flex items-center gap-1.5 text-xs text-slate-400 pb-1.5">
+          <label className="flex items-center gap-1.5 text-xs text-text-secondary pb-1.5">
             <input
               type="checkbox"
               checked={isBaseLevel}
               onChange={(e) => setIsBaseLevel(e.target.checked)}
-              className="rounded border-slate-700 bg-slate-900"
+              className="rounded border-surface-border"
             />
             Base Level
           </label>
         </div>
 
-        {formError && <p className="text-xs text-red-400">{formError}</p>}
+        {formError && <p className="text-xs text-red-600">{formError}</p>}
 
-        <button
-          type="submit"
-          className="w-full rounded-md bg-sky-700 hover:bg-sky-600 text-white text-sm font-medium py-1.5 transition-colors"
-        >
+        <button type="submit" className="btn-primary w-full">
           + Story যোগ করুন
         </button>
       </form>

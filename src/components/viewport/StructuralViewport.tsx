@@ -2,7 +2,7 @@
 
 import { Suspense, useMemo, useRef } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, GizmoHelper, GizmoViewport } from "@react-three/drei";
+import { OrbitControls, GizmoHelper, GizmoViewport, Grid } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { GridLines } from "./GridLines";
 import { StoryPlanes } from "./StoryPlanes";
@@ -163,6 +163,26 @@ export function StructuralViewport({
         <Suspense fallback={null}>
           <ambientLight intensity={0.6} />
           <directionalLight position={[10, 15, 10]} intensity={0.8} />
+
+          {/* Reference floor grid — CAD সফটওয়্যার (ETABS ইত্যাদি) এর
+              মতো একটা হালকা ground-plane grid, শুধু spatial depth/scale
+              cue হিসেবে। GridLines.tsx এর structural grid থেকে আলাদা —
+              এটা কোনো ডেটা রাখে না, ক্লিক-নিষ্ক্রিয়, শুধু visual। span
+              অন্য কম্পোনেন্টে ব্যবহৃত ২০মি convention এর সাথে মেলানো। */}
+          <Grid
+            position={[0, -0.01, 0]}
+            args={[20, 20]}
+            cellSize={1}
+            cellThickness={0.5}
+            cellColor="#dde3ea"
+            sectionSize={5}
+            sectionThickness={1}
+            sectionColor="#c4ccd6"
+            fadeDistance={30}
+            fadeStrength={1}
+            followCamera={false}
+            infiniteGrid={false}
+          />
 
           <OriginMarker />
 

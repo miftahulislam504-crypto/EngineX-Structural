@@ -46,7 +46,7 @@ export function OriginMarker() {
       {/* Origin point */}
       <mesh>
         <sphereGeometry args={[0.06, 16, 16]} />
-        <meshBasicMaterial color="#f8fafc" />
+        <meshBasicMaterial color="#1e293b" />
       </mesh>
     </group>
   );

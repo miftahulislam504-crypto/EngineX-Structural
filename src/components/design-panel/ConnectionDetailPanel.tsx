@@ -31,14 +31,14 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-[10px] text-slate-500 mb-0.5">
+      <label className="block text-[10px] text-text-muted mb-0.5">
         {label}
         {unit ? ` (${unit})` : ""}
       </label>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+        className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
       />
     </div>
   );
@@ -57,7 +57,7 @@ function useScale(widthMm: number, heightMm: number) {
 function BoltedSvg({ layout }: { layout: BoltedConnectionLayout }) {
   const { scale, toSvgX, toSvgY } = useScale(layout.plateWidthMm, layout.plateHeightMm);
   return (
-    <svg width={SVG_MAX_SIZE} height={SVG_MAX_SIZE} className="bg-slate-950 rounded-md border border-slate-800">
+    <svg width={SVG_MAX_SIZE} height={SVG_MAX_SIZE} className="bg-surface rounded-md border border-surface-border">
       <rect
         x={toSvgX(0)}
         y={toSvgY(layout.plateHeightMm)}
@@ -77,7 +77,7 @@ function BoltedSvg({ layout }: { layout: BoltedConnectionLayout }) {
 function WeldedSvg({ layout }: { layout: WeldedConnectionLayout }) {
   const { scale, toSvgX, toSvgY } = useScale(layout.plateWidthMm, layout.plateHeightMm);
   return (
-    <svg width={SVG_MAX_SIZE} height={SVG_MAX_SIZE} className="bg-slate-950 rounded-md border border-slate-800">
+    <svg width={SVG_MAX_SIZE} height={SVG_MAX_SIZE} className="bg-surface rounded-md border border-surface-border">
       <rect
         x={toSvgX(0)}
         y={toSvgY(layout.plateHeightMm)}
@@ -105,7 +105,7 @@ function WeldedSvg({ layout }: { layout: WeldedConnectionLayout }) {
 function BasePlateSvg({ layout }: { layout: BasePlateLayout }) {
   const { scale, toSvgX, toSvgY } = useScale(layout.plateWidthMm, layout.plateLengthMm);
   return (
-    <svg width={SVG_MAX_SIZE} height={SVG_MAX_SIZE} className="bg-slate-950 rounded-md border border-slate-800">
+    <svg width={SVG_MAX_SIZE} height={SVG_MAX_SIZE} className="bg-surface rounded-md border border-surface-border">
       <rect
         x={toSvgX(0)}
         y={toSvgY(layout.plateLengthMm)}
@@ -203,17 +203,17 @@ export function ConnectionDetailPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">Connection Detail</h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">Connection Detail</h3>
+        <p className="text-xs text-text-muted mb-3">
           Phase 6g-এর bolt/weld/plate arrangement-কে actual geometry-তে বসায় — bolt hole, weld line, anchor bolt
           position।
         </p>
 
-        <label className="block text-xs text-slate-500 mb-1">Connection Type</label>
+        <label className="block text-xs text-text-muted mb-1">Connection Type</label>
         <select
           value={mode}
           onChange={(e) => setMode(e.target.value as ConnectionMode)}
-          className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-sm px-2.5 py-2 mb-3"
+          className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-sm px-2.5 py-2 mb-3"
         >
           {(Object.keys(MODE_LABELS) as ConnectionMode[]).map((m) => (
             <option key={m} value={m}>
@@ -272,7 +272,7 @@ export function ConnectionDetailPanel() {
         <button
           type="button"
           onClick={handleRun}
-          className="w-full rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium py-2 transition-colors"
+          className="w-full rounded-md bg-surface-hover hover:bg-surface-border text-text-primary text-sm font-medium py-2 transition-colors"
         >
           Draw Connection
         </button>
@@ -281,11 +281,11 @@ export function ConnectionDetailPanel() {
       {mode === "bolted" && boltedLayout && (
         <div className="space-y-3">
           <BoltedSvg layout={boltedLayout} />
-          <p className="text-xs text-slate-400">{boltedLayout.holes.length} bolt holes</p>
+          <p className="text-xs text-text-secondary">{boltedLayout.holes.length} bolt holes</p>
           {boltedLayout.warnings.length > 0 && (
-            <div className="rounded-md bg-amber-950/20 border border-amber-900/60 px-3 py-2.5 space-y-1">
+            <div className="rounded-md bg-status-holdBg border border-status-holdBorder/60 px-3 py-2.5 space-y-1">
               {boltedLayout.warnings.map((w, i) => (
-                <p key={i} className="text-xs text-amber-500 leading-relaxed">
+                <p key={i} className="text-xs text-status-holdText leading-relaxed">
                   {w}
                 </p>
               ))}
@@ -298,9 +298,9 @@ export function ConnectionDetailPanel() {
         <div className="space-y-3">
           <WeldedSvg layout={weldedLayout} />
           {weldedLayout.warnings.length > 0 && (
-            <div className="rounded-md bg-amber-950/20 border border-amber-900/60 px-3 py-2.5 space-y-1">
+            <div className="rounded-md bg-status-holdBg border border-status-holdBorder/60 px-3 py-2.5 space-y-1">
               {weldedLayout.warnings.map((w, i) => (
-                <p key={i} className="text-xs text-amber-500 leading-relaxed">
+                <p key={i} className="text-xs text-status-holdText leading-relaxed">
                   {w}
                 </p>
               ))}
@@ -312,11 +312,11 @@ export function ConnectionDetailPanel() {
       {mode === "base-plate" && basePlateLayout && (
         <div className="space-y-3">
           <BasePlateSvg layout={basePlateLayout} />
-          <p className="text-xs text-slate-400">{basePlateLayout.anchorBolts.length} anchor bolts</p>
+          <p className="text-xs text-text-secondary">{basePlateLayout.anchorBolts.length} anchor bolts</p>
           {basePlateLayout.warnings.length > 0 && (
-            <div className="rounded-md bg-amber-950/20 border border-amber-900/60 px-3 py-2.5 space-y-1">
+            <div className="rounded-md bg-status-holdBg border border-status-holdBorder/60 px-3 py-2.5 space-y-1">
               {basePlateLayout.warnings.map((w, i) => (
-                <p key={i} className="text-xs text-amber-500 leading-relaxed">
+                <p key={i} className="text-xs text-status-holdText leading-relaxed">
                   {w}
                 </p>
               ))}

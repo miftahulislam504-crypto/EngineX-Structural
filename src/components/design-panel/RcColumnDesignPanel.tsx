@@ -216,19 +216,19 @@ export function RcColumnDesignPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">RC Column Design</h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">RC Column Design</h3>
+        <p className="text-xs text-text-muted mb-3">
           ACI 318-19 — slenderness (moment magnification), P-M interaction, reinforcement ratio, tie spacing.
         </p>
 
-        <label className="block text-xs text-slate-500 mb-1">Column</label>
+        <label className="block text-xs text-text-muted mb-1">Column</label>
         <select
           value={selectedColumnId}
           onChange={(e) => {
             setSelectedColumnId(e.target.value);
             setReport(null);
           }}
-          className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-sm px-2.5 py-2 mb-2"
+          className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-sm px-2.5 py-2 mb-2"
         >
           <option value="">Select a column...</option>
           {columns.map((c) => (
@@ -239,13 +239,13 @@ export function RcColumnDesignPanel() {
         </select>
 
         {selectedColumn && !isRectangular && (
-          <p className="text-xs text-amber-500 bg-amber-950/30 border border-amber-900 rounded-md px-2.5 py-2 mb-2">
+          <p className="text-xs text-status-holdText bg-status-holdBg border border-status-holdBorder rounded-md px-2.5 py-2 mb-2">
             RC column design in this version only supports rectangular sections. This column uses a{" "}
             {columnSection?.shape ?? "unknown"} section.
           </p>
         )}
         {selectedColumn && isRectangular && !isConcrete && (
-          <p className="text-xs text-amber-500 bg-amber-950/30 border border-amber-900 rounded-md px-2.5 py-2 mb-2">
+          <p className="text-xs text-status-holdText bg-status-holdBg border border-status-holdBorder rounded-md px-2.5 py-2 mb-2">
             This column&apos;s material is not concrete — RC design does not apply.
           </p>
         )}
@@ -253,15 +253,15 @@ export function RcColumnDesignPanel() {
 
       {selectedColumn && isRectangular && isConcrete && (
         <>
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-2">
-            <p className="text-xs text-slate-500 font-medium">
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-2">
+            <p className="text-xs text-text-muted font-medium">
               Section: {(columnSection as RectangularSection).width}×{(columnSection as RectangularSection).depth}
               mm, Length: {(elementLength(selectedColumn) * 1000).toFixed(0)}mm
             </p>
 
             {governingForces ? (
               <div className="flex items-center justify-between">
-                <p className="text-xs text-emerald-400">
+                <p className="text-xs text-status-activeText">
                   From {sourceAnalysisType}: Pu≈{governingForces.maxAxial.toFixed(1)} kN, M1≈
                   {Math.min(governingForces.startM, governingForces.endM).toFixed(1)}, M2≈
                   {Math.max(governingForces.startM, governingForces.endM).toFixed(1)} kN·m
@@ -269,13 +269,13 @@ export function RcColumnDesignPanel() {
                 <button
                   type="button"
                   onClick={handleUseAutoValues}
-                  className="text-xs bg-sky-800 hover:bg-sky-700 text-white px-2 py-1 rounded-md"
+                  className="text-xs bg-brand-100 hover:bg-brand-600 text-white px-2 py-1 rounded-md"
                 >
                   Use these
                 </button>
               </div>
             ) : (
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-text-muted">
                 No analysis result available for this column yet — run an Analysis first, or enter loads manually
                 below.
               </p>
@@ -284,57 +284,57 @@ export function RcColumnDesignPanel() {
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Factored Axial Pu (kN)</label>
+              <label className="block text-xs text-text-muted mb-1">Factored Axial Pu (kN)</label>
               <input
                 type="number"
                 step="any"
                 value={factoredAxialLoadKN}
                 onChange={(e) => setFactoredAxialLoadKN(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Critical Buckling Load Pc (kN)</label>
+              <label className="block text-xs text-text-muted mb-1">Critical Buckling Load Pc (kN)</label>
               <input
                 type="number"
                 step="any"
                 value={criticalBucklingLoadKN}
                 onChange={(e) => setCriticalBucklingLoadKN(e.target.value)}
                 placeholder="from Buckling Analysis"
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs text-slate-500 mb-1">M1 — smaller end moment (kN·m)</label>
+              <label className="block text-xs text-text-muted mb-1">M1 — smaller end moment (kN·m)</label>
               <input
                 type="number"
                 step="any"
                 value={m1KNm}
                 onChange={(e) => setM1KNm(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-500 mb-1">M2 — larger end moment (kN·m)</label>
+              <label className="block text-xs text-text-muted mb-1">M2 — larger end moment (kN·m)</label>
               <input
                 type="number"
                 step="any"
                 value={m2KNm}
                 onChange={(e) => setM2KNm(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
           </div>
 
           <div className="flex gap-4">
-            <label className="flex items-center gap-1.5 text-xs text-slate-400">
+            <label className="flex items-center gap-1.5 text-xs text-text-secondary">
               <input type="checkbox" checked={isSwayFrame} onChange={(e) => setIsSwayFrame(e.target.checked)} />
               Sway frame
             </label>
-            <label className="flex items-center gap-1.5 text-xs text-slate-400">
+            <label className="flex items-center gap-1.5 text-xs text-text-secondary">
               <input
                 type="checkbox"
                 checked={isSingleCurvature}
@@ -344,7 +344,7 @@ export function RcColumnDesignPanel() {
             </label>
           </div>
 
-          <label className="flex items-center gap-1.5 text-xs text-slate-400">
+          <label className="flex items-center gap-1.5 text-xs text-text-secondary">
             <input
               type="checkbox"
               checked={enableBiaxialCheck}
@@ -355,83 +355,83 @@ export function RcColumnDesignPanel() {
 
           {enableBiaxialCheck && (
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Muy — moment about Y-axis (kN·m)</label>
+              <label className="block text-xs text-text-muted mb-1">Muy — moment about Y-axis (kN·m)</label>
               <input
                 type="number"
                 step="any"
                 value={momentYKNm}
                 onChange={(e) => setMomentYKNm(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Effective Length Factor k</label>
+              <label className="block text-xs text-text-muted mb-1">Effective Length Factor k</label>
               <input
                 type="number"
                 step="any"
                 value={effectiveLengthFactor}
                 onChange={(e) => setEffectiveLengthFactor(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Cover to Bar Centroid (mm)</label>
+              <label className="block text-xs text-text-muted mb-1">Cover to Bar Centroid (mm)</label>
               <input
                 type="number"
                 step="any"
                 value={coverToBarCentroidMm}
                 onChange={(e) => setCoverToBarCentroidMm(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Total Longitudinal As (mm²)</label>
+              <label className="block text-xs text-text-muted mb-1">Total Longitudinal As (mm²)</label>
               <input
                 type="number"
                 step="any"
                 value={totalAsMm2}
                 onChange={(e) => setTotalAsMm2(e.target.value)}
                 placeholder="all bars combined"
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Longitudinal Bar Diameter (mm)</label>
+              <label className="block text-xs text-text-muted mb-1">Longitudinal Bar Diameter (mm)</label>
               <input
                 type="number"
                 step="any"
                 value={longitudinalBarDiameterMm}
                 onChange={(e) => setLongitudinalBarDiameterMm(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Tie Diameter (mm)</label>
+              <label className="block text-xs text-text-muted mb-1">Tie Diameter (mm)</label>
               <input
                 type="number"
                 step="any"
                 value={tieDiameterMm}
                 onChange={(e) => setTieDiameterMm(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Provided Tie Spacing (mm) — optional</label>
+              <label className="block text-xs text-text-muted mb-1">Provided Tie Spacing (mm) — optional</label>
               <input
                 type="number"
                 step="any"
                 value={providedTieSpacingMm}
                 onChange={(e) => setProvidedTieSpacingMm(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
           </div>
@@ -439,7 +439,7 @@ export function RcColumnDesignPanel() {
           <button
             type="button"
             onClick={handleRunDesign}
-            className="w-full rounded-md bg-sky-700 hover:bg-sky-600 text-white text-sm font-medium py-2 transition-colors"
+            className="w-full rounded-md bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium py-2 transition-colors"
           >
             ▶ Run RC Column Design
           </button>
@@ -448,7 +448,7 @@ export function RcColumnDesignPanel() {
             <button
               type="button"
               onClick={handleSendToDetailing}
-              className="w-full rounded-md bg-emerald-800 hover:bg-emerald-700 text-white text-sm font-medium py-2 transition-colors"
+              className="w-full rounded-md bg-status-activeText hover:opacity-90 text-white text-sm font-medium py-2 transition-colors"
             >
               {detailingSent ? "✓ Sent to Detailing Model" : "🔩 Send to Detailing Model"}
             </button>
@@ -470,10 +470,10 @@ function RcColumnDesignReportView({
 }) {
   const statusStyle =
     report.overallStatus === "ok"
-      ? "bg-emerald-950/30 border-emerald-900 text-emerald-400"
+      ? "bg-status-activeBg border-status-activeBorder text-status-activeText"
       : report.overallStatus === "warning"
-        ? "bg-amber-950/30 border-amber-900 text-amber-400"
-        : "bg-red-950/30 border-red-900 text-red-400";
+        ? "bg-status-holdBg border-status-holdBorder text-status-holdText"
+        : "bg-red-50 border-red-200 text-red-600";
   const statusIcon = report.overallStatus === "ok" ? "✓" : report.overallStatus === "warning" ? "⚠" : "✗";
 
   return (
@@ -484,23 +484,23 @@ function RcColumnDesignReportView({
         </p>
       </div>
 
-      <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-        <p className="text-xs text-slate-500 font-medium mb-1">Slenderness</p>
-        <p className="text-xs text-slate-300">
+      <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+        <p className="text-xs text-text-muted font-medium mb-1">Slenderness</p>
+        <p className="text-xs text-text-secondary">
           kLu/r = {fmt(report.slenderness.klOverR)} (limit {fmt(report.slenderness.slendernessLimit)}) —{" "}
           {report.slenderness.isSlenderColumn ? "slender" : "short (slenderness may be neglected)"}
         </p>
         {report.slenderness.isSlenderColumn && (
-          <p className="text-xs text-slate-300">
+          <p className="text-xs text-text-secondary">
             δns = {fmt(report.slenderness.magnificationFactor, 3)}, magnified moment ={" "}
             {fmt(report.slenderness.magnifiedMomentKNm)} kN·m
           </p>
         )}
       </div>
 
-      <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-        <p className="text-xs text-slate-500 font-medium mb-1">P-M Interaction</p>
-        <p className="text-xs text-slate-300">
+      <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+        <p className="text-xs text-text-muted font-medium mb-1">P-M Interaction</p>
+        <p className="text-xs text-text-secondary">
           φMn (interpolated at Pu) = {fmt(report.adequacy.interpolatedPhiMnKNm)} kN·m — utilization{" "}
           {Number.isFinite(report.adequacy.utilizationRatio)
             ? `${(report.adequacy.utilizationRatio * 100).toFixed(0)}%`
@@ -510,21 +510,21 @@ function RcColumnDesignReportView({
       </div>
 
       {biaxialResult && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-          <p className="text-xs text-slate-500 font-medium mb-1">Biaxial Bending (Load Contour)</p>
-          <p className="text-xs text-slate-300">
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+          <p className="text-xs text-text-muted font-medium mb-1">Biaxial Bending (Load Contour)</p>
+          <p className="text-xs text-text-secondary">
             φMnx = {fmt(biaxialResult.phiMnxKNm)} kN·m, φMny = {fmt(biaxialResult.phiMnyKNm)} kN·m
           </p>
-          <p className="text-xs text-slate-300">
+          <p className="text-xs text-text-secondary">
             (Mux/φMnx) + (Muy/φMny) = {fmt(biaxialResult.interactionValue, 3)} —{" "}
             {biaxialResult.adequate ? "adequate" : "NOT adequate"}
           </p>
         </div>
       )}
 
-      <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-        <p className="text-xs text-slate-500 font-medium mb-1">Reinforcement Ratio</p>
-        <p className="text-xs text-slate-300">
+      <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+        <p className="text-xs text-text-muted font-medium mb-1">Reinforcement Ratio</p>
+        <p className="text-xs text-text-secondary">
           ρg = {(report.reinforcementRatio.ratio * 100).toFixed(2)}% (limits{" "}
           {(report.reinforcementRatio.minRatio * 100).toFixed(0)}%–
           {(report.reinforcementRatio.maxRatio * 100).toFixed(0)}%) —{" "}
@@ -532,9 +532,9 @@ function RcColumnDesignReportView({
         </p>
       </div>
 
-      <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-        <p className="text-xs text-slate-500 font-medium mb-1">Tie Spacing</p>
-        <p className="text-xs text-slate-300">
+      <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+        <p className="text-xs text-text-muted font-medium mb-1">Tie Spacing</p>
+        <p className="text-xs text-text-secondary">
           Max spacing {fmt(report.tieSpacing.maxSpacingMm, 0)}mm
           {report.tieSpacing.providedSpacingMm !== null &&
             ` — provided ${report.tieSpacing.providedSpacingMm.toFixed(0)}mm (${report.tieSpacing.adequate ? "OK" : "NOT adequate"})`}
@@ -542,15 +542,15 @@ function RcColumnDesignReportView({
       </div>
 
       {(report.allWarnings.length > 0 || (biaxialResult?.warnings.length ?? 0) > 0) && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1.5">
-          <p className="text-xs text-slate-500 font-medium">Warnings:</p>
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1.5">
+          <p className="text-xs text-text-muted font-medium">Warnings:</p>
           {report.allWarnings.map((w, i) => (
-            <p key={`r${i}`} className="text-xs text-amber-400 leading-relaxed">
+            <p key={`r${i}`} className="text-xs text-status-holdText leading-relaxed">
               {w}
             </p>
           ))}
           {biaxialResult?.warnings.map((w, i) => (
-            <p key={`b${i}`} className="text-xs text-amber-400 leading-relaxed">
+            <p key={`b${i}`} className="text-xs text-status-holdText leading-relaxed">
               {w}
             </p>
           ))}

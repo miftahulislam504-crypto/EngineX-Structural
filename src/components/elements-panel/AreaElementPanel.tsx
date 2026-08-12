@@ -125,10 +125,10 @@ export function AreaElementPanel({ onAddElement, onDeleteElement }: AreaElementP
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-2">Slab / Wall / Shear Wall / Core Wall / Mat Foundation</h3>
+        <h3 className="text-sm font-medium text-text-primary mb-2">Slab / Wall / Shear Wall / Core Wall / Mat Foundation</h3>
 
         {areaElements.length === 0 ? (
-          <p className="text-xs text-slate-500">কোনো element যোগ করা হয়নি।</p>
+          <p className="text-xs text-text-muted">কোনো element যোগ করা হয়নি।</p>
         ) : (
           <ul className="space-y-1">
             {areaElements.map((element) => {
@@ -143,11 +143,11 @@ export function AreaElementPanel({ onAddElement, onDeleteElement }: AreaElementP
               return (
                 <li
                   key={element.elementId}
-                  className="flex items-center justify-between rounded-md px-2.5 py-1.5 text-sm hover:bg-slate-800/60 text-slate-300"
+                  className="flex items-center justify-between rounded-md px-2.5 py-1.5 text-sm hover:bg-surface-hover text-text-secondary"
                 >
                   <span>
                     <span className="font-medium">{element.label}</span>
-                    <span className="text-slate-500 ml-1.5 text-xs">
+                    <span className="text-text-muted ml-1.5 text-xs">
                       ({DRAWABLE_CATEGORY_LABELS[element.category as DrawableCategory]},{" "}
                       {area.toFixed(1)} m²)
                     </span>
@@ -155,7 +155,7 @@ export function AreaElementPanel({ onAddElement, onDeleteElement }: AreaElementP
                   <button
                     type="button"
                     onClick={() => onDeleteElement(element.elementId)}
-                    className="text-xs text-red-500/70 hover:text-red-400 px-1"
+                    className="text-xs text-red-500/70 hover:text-red-600 px-1"
                     title="ডিলিট করুন"
                   >
                     ✕
@@ -184,21 +184,21 @@ export function AreaElementPanel({ onAddElement, onDeleteElement }: AreaElementP
           onCancel={handleCancelPending}
         />
       ) : activeCategory ? (
-        <p className="text-xs text-sky-400 border-t border-slate-800 pt-3">
+        <p className="text-xs text-brand-700 border-t border-surface-border pt-3">
           viewport এ আঁকা চলছে — উপরের toolbar থেকে Finish/Cancel করুন।
         </p>
       ) : materials.length === 0 ? (
-        <p className="text-xs text-amber-500 border-t border-slate-800 pt-3">
+        <p className="text-xs text-status-holdText border-t border-surface-border pt-3">
           Slab/Wall আঁকার আগে অন্তত একটা Material লাইব্রেরিতে থাকতে হবে।
         </p>
       ) : (
-        <div className="grid grid-cols-2 gap-2 border-t border-slate-800 pt-3">
+        <div className="grid grid-cols-2 gap-2 border-t border-surface-border pt-3">
           {(["slab", "wall", "shear-wall", "core-wall", "mat-foundation"] as const).map((category) => (
             <button
               key={category}
               type="button"
               onClick={() => handleStartDraw(category)}
-              className="rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium py-2 transition-colors"
+              className="rounded-md bg-surface-hover hover:bg-surface-border text-text-primary text-sm font-medium py-2 transition-colors"
             >
               ✏️ Draw {DRAWABLE_CATEGORY_LABELS[category]}
             </button>
@@ -241,30 +241,30 @@ function PendingAreaElementForm({
   onCancel,
 }: PendingAreaElementFormProps) {
   return (
-    <form onSubmit={onSubmit} className="space-y-2.5 border-t border-slate-800 pt-3">
-      <div className="rounded-md bg-sky-950/40 border border-sky-900 px-2.5 py-2 text-xs text-sky-300">
+    <form onSubmit={onSubmit} className="space-y-2.5 border-t border-surface-border pt-3">
+      <div className="rounded-md bg-brand-50/40 border border-brand-200 px-2.5 py-2 text-xs text-brand-700">
         {DRAWABLE_CATEGORY_LABELS[category]} আঁকা শেষ — {vertexCount} vertex, {area.toFixed(1)} m² এলাকা।
         এখন বিস্তারিত দিন:
       </div>
 
       <div>
-        <label className="block text-xs text-slate-500 mb-1">লেবেল</label>
+        <label className="block text-xs text-text-muted mb-1">লেবেল</label>
         <input
           type="text"
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder={DRAWABLE_CATEGORY_LABEL_PREFIXES[category]}
-          className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+          className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
         />
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Material</label>
+          <label className="block text-xs text-text-muted mb-1">Material</label>
           <select
             value={materialId}
             onChange={(e) => setMaterialId(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+            className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
           >
             <option value="">নির্বাচন করুন</option>
             {materials.map((m) => (
@@ -275,29 +275,29 @@ function PendingAreaElementForm({
           </select>
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Thickness (mm)</label>
+          <label className="block text-xs text-text-muted mb-1">Thickness (mm)</label>
           <input
             type="number"
             value={thickness}
             onChange={(e) => setThickness(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+            className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
           />
         </div>
       </div>
 
-      {formError && <p className="text-xs text-red-400">{formError}</p>}
+      {formError && <p className="text-xs text-red-600">{formError}</p>}
 
       <div className="flex gap-2">
         <button
           type="submit"
-          className="flex-1 rounded-md bg-sky-700 hover:bg-sky-600 text-white text-sm font-medium py-1.5 transition-colors"
+          className="flex-1 rounded-md bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium py-1.5 transition-colors"
         >
           + {DRAWABLE_CATEGORY_LABELS[category]} তৈরি করুন
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm px-3 py-1.5 transition-colors"
+          className="rounded-md bg-surface-hover hover:bg-surface-border text-text-secondary text-sm px-3 py-1.5 transition-colors"
         >
           বাতিল
         </button>

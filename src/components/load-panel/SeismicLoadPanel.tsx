@@ -54,10 +54,10 @@ export function SeismicLoadPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">
+        <h3 className="text-sm font-medium text-text-primary mb-1">
           Earthquake Load — BNBC 2020 ELF
         </h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <p className="text-xs text-text-muted mb-3">
           Equivalent Lateral Force পদ্ধতি — নিয়মিত, নির্দিষ্ট উচ্চতার নিচের ভবনের জন্য।
           Irregular/উঁচু ভবনে Dynamic Analysis প্রয়োজন হতে পারে।
         </p>
@@ -65,11 +65,11 @@ export function SeismicLoadPanel() {
         <div className="space-y-2.5">
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Seismic Zone</label>
+              <label className="block text-xs text-text-muted mb-1">Seismic Zone</label>
               <select
                 value={seismicZone}
                 onChange={(e) => setSeismicZone(e.target.value as SeismicZone)}
-                className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+                className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
               >
                 <option value="1">Zone 1</option>
                 <option value="2">Zone 2</option>
@@ -78,11 +78,11 @@ export function SeismicLoadPanel() {
               </select>
             </div>
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Site Class</label>
+              <label className="block text-xs text-text-muted mb-1">Site Class</label>
               <select
                 value={siteClass}
                 onChange={(e) => setSiteClass(e.target.value as SiteClass)}
-                className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+                className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
               >
                 <option value="SA">SA — Rock</option>
                 <option value="SB">SB</option>
@@ -94,11 +94,11 @@ export function SeismicLoadPanel() {
           </div>
 
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Structural System</label>
+            <label className="block text-xs text-text-muted mb-1">Structural System</label>
             <select
               value={structuralSystem}
               onChange={(e) => setStructuralSystem(e.target.value as StructuralSystem)}
-              className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+              className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
             >
               <option value="moment-frame-concrete">RC Moment Frame</option>
               <option value="moment-frame-steel">Steel Moment Frame</option>
@@ -108,11 +108,11 @@ export function SeismicLoadPanel() {
           </div>
 
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Occupancy Category</label>
+            <label className="block text-xs text-text-muted mb-1">Occupancy Category</label>
             <select
               value={occupancyCategory}
               onChange={(e) => setOccupancyCategory(e.target.value as OccupancyCategory)}
-              className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+              className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
             >
               <option value="I">I</option>
               <option value="II">II — সাধারণ ভবন</option>
@@ -123,30 +123,30 @@ export function SeismicLoadPanel() {
 
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Height (m)</label>
+              <label className="block text-xs text-text-muted mb-1">Height (m)</label>
               <input
                 type="number"
                 value={buildingHeight}
                 onChange={(e) => setBuildingHeight(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+                className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Stories</label>
+              <label className="block text-xs text-text-muted mb-1">Stories</label>
               <input
                 type="number"
                 value={numberOfStories}
                 onChange={(e) => setNumberOfStories(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+                className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Seismic Weight (kN)</label>
+              <label className="block text-xs text-text-muted mb-1">Seismic Weight (kN)</label>
               <input
                 type="number"
                 value={seismicWeight}
                 onChange={(e) => setSeismicWeight(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+                className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
               />
             </div>
           </div>
@@ -154,29 +154,29 @@ export function SeismicLoadPanel() {
       </div>
 
       {result && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1.5">
-          <p className="text-xs text-slate-400">
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1.5">
+          <p className="text-xs text-text-secondary">
             Fundamental Period T:{" "}
-            <span className="text-slate-200 font-medium">{result.fundamentalPeriod.toFixed(3)} sec</span>
+            <span className="text-text-primary font-medium">{result.fundamentalPeriod.toFixed(3)} sec</span>
           </p>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-text-secondary">
             Seismic Response Coefficient C<sub>s</sub>:{" "}
-            <span className="text-slate-200 font-medium">
+            <span className="text-text-primary font-medium">
               {result.seismicResponseCoefficient.toFixed(4)}
             </span>
           </p>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-text-secondary">
             Base Shear V:{" "}
-            <span className="text-sky-300 font-semibold">{result.baseShear.toFixed(1)} kN</span>
+            <span className="text-brand-700 font-semibold">{result.baseShear.toFixed(1)} kN</span>
           </p>
 
-          <div className="pt-1.5 border-t border-slate-800">
-            <p className="text-xs text-slate-500 mb-1">Story Force Distribution</p>
+          <div className="pt-1.5 border-t border-surface-border">
+            <p className="text-xs text-text-muted mb-1">Story Force Distribution</p>
             <div className="max-h-40 overflow-y-auto space-y-0.5">
               {[...result.storyForces].reverse().map((sf) => (
                 <div
                   key={sf.storyIndex}
-                  className="flex justify-between text-xs text-slate-400 px-1"
+                  className="flex justify-between text-xs text-text-secondary px-1"
                 >
                   <span>Story {sf.storyIndex}</span>
                   <span>{sf.force.toFixed(1)} kN</span>
@@ -186,7 +186,7 @@ export function SeismicLoadPanel() {
           </div>
 
           {result.warnings.map((warning, i) => (
-            <p key={i} className="text-xs text-amber-400 pt-1 border-t border-slate-800 mt-1.5">
+            <p key={i} className="text-xs text-status-holdText pt-1 border-t border-surface-border mt-1.5">
               {warning}
             </p>
           ))}

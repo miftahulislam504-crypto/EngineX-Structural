@@ -101,10 +101,10 @@ export function StripFootingPanel({ onAddElement, onDeleteElement }: StripFootin
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-2">Strip Footing</h3>
+        <h3 className="text-sm font-medium text-text-primary mb-2">Strip Footing</h3>
 
         {stripFootings.length === 0 ? (
-          <p className="text-xs text-slate-500">কোনো Strip Footing যোগ করা হয়নি।</p>
+          <p className="text-xs text-text-muted">কোনো Strip Footing যোগ করা হয়নি।</p>
         ) : (
           <ul className="space-y-1">
             {stripFootings.map((element) => {
@@ -115,13 +115,13 @@ export function StripFootingPanel({ onAddElement, onDeleteElement }: StripFootin
                   onClick={() => setSelection({ type: "element", elementId: element.elementId })}
                   className={`flex items-center justify-between rounded-md px-2.5 py-1.5 text-sm cursor-pointer transition-colors ${
                     selectedElementId === element.elementId
-                      ? "bg-sky-950 text-sky-300 ring-1 ring-sky-800"
-                      : "hover:bg-slate-800/60 text-slate-300"
+                      ? "bg-brand-50 text-brand-700 ring-1 ring-brand-200"
+                      : "hover:bg-surface-hover text-text-secondary"
                   }`}
                 >
                   <span>
                     <span className="font-medium">{element.label}</span>
-                    <span className="text-slate-500 ml-1.5 text-xs">(t={element.thickness}mm)</span>
+                    <span className="text-text-muted ml-1.5 text-xs">(t={element.thickness}mm)</span>
                   </span>
                   <button
                     type="button"
@@ -129,7 +129,7 @@ export function StripFootingPanel({ onAddElement, onDeleteElement }: StripFootin
                       e.stopPropagation();
                       onDeleteElement(element.elementId);
                     }}
-                    className="text-xs text-red-500/70 hover:text-red-400 px-1"
+                    className="text-xs text-red-500/70 hover:text-red-600 px-1"
                     title="ডিলিট করুন"
                   >
                     ✕
@@ -142,28 +142,28 @@ export function StripFootingPanel({ onAddElement, onDeleteElement }: StripFootin
       </div>
 
       {noMaterials ? (
-        <p className="text-xs text-amber-500 border-t border-slate-800 pt-3">
+        <p className="text-xs text-status-holdText border-t border-surface-border pt-3">
           Strip Footing যোগ করার আগে অন্তত একটা Material লাইব্রেরিতে থাকতে হবে।
         </p>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-2.5 border-t border-slate-800 pt-3">
+        <form onSubmit={handleSubmit} className="space-y-2.5 border-t border-surface-border pt-3">
           <div>
-            <label className="block text-xs text-slate-500 mb-1">লেবেল</label>
+            <label className="block text-xs text-text-muted mb-1">লেবেল</label>
             <input
               type="text"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="SF1"
-              className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+              className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
             />
           </div>
 
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Material</label>
+            <label className="block text-xs text-text-muted mb-1">Material</label>
             <select
               value={materialId}
               onChange={(e) => setMaterialId(e.target.value)}
-              className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+              className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
             >
               <option value="">নির্বাচন করুন</option>
               {materials.map((m) => (
@@ -175,7 +175,7 @@ export function StripFootingPanel({ onAddElement, onDeleteElement }: StripFootin
           </div>
 
           <div>
-            <p className="text-xs text-slate-500 mb-1">Start Point (m)</p>
+            <p className="text-xs text-text-muted mb-1">Start Point (m)</p>
             <div className="grid grid-cols-3 gap-1.5">
               <input
                 type="number"
@@ -183,7 +183,7 @@ export function StripFootingPanel({ onAddElement, onDeleteElement }: StripFootin
                 value={startX}
                 onChange={(e) => setStartX(e.target.value)}
                 placeholder="X"
-                className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+                className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
               />
               <input
                 type="number"
@@ -191,7 +191,7 @@ export function StripFootingPanel({ onAddElement, onDeleteElement }: StripFootin
                 value={startY}
                 onChange={(e) => setStartY(e.target.value)}
                 placeholder="Y"
-                className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+                className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
               />
               <input
                 type="number"
@@ -199,13 +199,13 @@ export function StripFootingPanel({ onAddElement, onDeleteElement }: StripFootin
                 value={startZ}
                 onChange={(e) => setStartZ(e.target.value)}
                 placeholder="Z"
-                className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+                className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
               />
             </div>
           </div>
 
           <div>
-            <p className="text-xs text-slate-500 mb-1">End Point (m)</p>
+            <p className="text-xs text-text-muted mb-1">End Point (m)</p>
             <div className="grid grid-cols-3 gap-1.5">
               <input
                 type="number"
@@ -213,7 +213,7 @@ export function StripFootingPanel({ onAddElement, onDeleteElement }: StripFootin
                 value={endX}
                 onChange={(e) => setEndX(e.target.value)}
                 placeholder="X"
-                className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+                className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
               />
               <input
                 type="number"
@@ -221,7 +221,7 @@ export function StripFootingPanel({ onAddElement, onDeleteElement }: StripFootin
                 value={endY}
                 onChange={(e) => setEndY(e.target.value)}
                 placeholder="Y"
-                className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+                className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
               />
               <input
                 type="number"
@@ -229,26 +229,26 @@ export function StripFootingPanel({ onAddElement, onDeleteElement }: StripFootin
                 value={endZ}
                 onChange={(e) => setEndZ(e.target.value)}
                 placeholder="Z"
-                className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+                className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Thickness (mm)</label>
+            <label className="block text-xs text-text-muted mb-1">Thickness (mm)</label>
             <input
               type="number"
               value={thickness}
               onChange={(e) => setThickness(e.target.value)}
-              className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+              className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
             />
           </div>
 
-          {formError && <p className="text-xs text-red-400">{formError}</p>}
+          {formError && <p className="text-xs text-red-600">{formError}</p>}
 
           <button
             type="submit"
-            className="w-full rounded-md bg-sky-700 hover:bg-sky-600 text-white text-sm font-medium py-1.5 transition-colors"
+            className="w-full rounded-md bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium py-1.5 transition-colors"
           >
             + Strip Footing যোগ করুন
           </button>

@@ -94,25 +94,25 @@ export function CombinedFootingDesignPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">Combined Footing Design</h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">Combined Footing Design</h3>
+        <p className="text-xs text-text-muted mb-3">
           ACI 318-19 Chapter 13 — resultant-centroid sizing (uniform pressure), longitudinal and transverse flexure,
           shear.
         </p>
-        <p className="text-xs text-amber-500 bg-amber-950/30 border border-amber-900 rounded-md px-2.5 py-2 mb-2">
+        <p className="text-xs text-status-holdText bg-status-holdBg border border-status-holdBorder rounded-md px-2.5 py-2 mb-2">
           This app does not perform geotechnical analysis — enter the allowable bearing pressure from your
           geotechnical report, and each column&apos;s reaction from the Analysis results. Columns A and B are
           assumed collinear (same axis).
         </p>
 
-        <label className="block text-xs text-slate-500 mb-1">Combined Footing</label>
+        <label className="block text-xs text-text-muted mb-1">Combined Footing</label>
         <select
           value={selectedId}
           onChange={(e) => {
             setSelectedId(e.target.value);
             setReport(null);
           }}
-          className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-sm px-2.5 py-2 mb-2"
+          className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-sm px-2.5 py-2 mb-2"
         >
           <option value="">Select a combined footing...</option>
           {combinedFootings.map((f) => (
@@ -123,7 +123,7 @@ export function CombinedFootingDesignPanel() {
         </select>
 
         {selected && !isConcrete && (
-          <p className="text-xs text-amber-500 bg-amber-950/30 border border-amber-900 rounded-md px-2.5 py-2 mb-2">
+          <p className="text-xs text-status-holdText bg-status-holdBg border border-status-holdBorder rounded-md px-2.5 py-2 mb-2">
             This footing&apos;s material is not concrete — RC design does not apply.
           </p>
         )}
@@ -131,104 +131,104 @@ export function CombinedFootingDesignPanel() {
 
       {selected && isConcrete && (
         <>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-text-muted">
             Thickness: {selected.thickness}mm (from element) · Column spacing: {fmt(columnToColumnSpacingMm, 0)}mm
             (from element geometry)
           </p>
 
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-2">
-            <p className="text-xs text-slate-400 font-medium">Column A</p>
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-2">
+            <p className="text-xs text-text-secondary font-medium">Column A</p>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs text-slate-500 mb-1">Service Load Pa (kN)</label>
+                <label className="block text-xs text-text-muted mb-1">Service Load Pa (kN)</label>
                 <input
                   type="number"
                   step="any"
                   value={servicePointLoadAKN}
                   onChange={(e) => setServicePointLoadAKN(e.target.value)}
                   placeholder="unfactored"
-                  className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                  className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-500 mb-1">Factored Load Pu (kN)</label>
+                <label className="block text-xs text-text-muted mb-1">Factored Load Pu (kN)</label>
                 <input
                   type="number"
                   step="any"
                   value={factoredPointLoadAKN}
                   onChange={(e) => setFactoredPointLoadAKN(e.target.value)}
-                  className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                  className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
                 />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs text-slate-500 mb-1">Width along spacing (mm)</label>
+                <label className="block text-xs text-text-muted mb-1">Width along spacing (mm)</label>
                 <input
                   type="number"
                   step="any"
                   value={columnAWidthMm}
                   onChange={(e) => setColumnAWidthMm(e.target.value)}
-                  className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                  className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-500 mb-1">Depth perpendicular (mm)</label>
+                <label className="block text-xs text-text-muted mb-1">Depth perpendicular (mm)</label>
                 <input
                   type="number"
                   step="any"
                   value={columnADepthMm}
                   onChange={(e) => setColumnADepthMm(e.target.value)}
-                  className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                  className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
                 />
               </div>
             </div>
           </div>
 
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-2">
-            <p className="text-xs text-slate-400 font-medium">Column B</p>
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-2">
+            <p className="text-xs text-text-secondary font-medium">Column B</p>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs text-slate-500 mb-1">Service Load Pa (kN)</label>
+                <label className="block text-xs text-text-muted mb-1">Service Load Pa (kN)</label>
                 <input
                   type="number"
                   step="any"
                   value={servicePointLoadBKN}
                   onChange={(e) => setServicePointLoadBKN(e.target.value)}
                   placeholder="unfactored"
-                  className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                  className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-500 mb-1">Factored Load Pu (kN)</label>
+                <label className="block text-xs text-text-muted mb-1">Factored Load Pu (kN)</label>
                 <input
                   type="number"
                   step="any"
                   value={factoredPointLoadBKN}
                   onChange={(e) => setFactoredPointLoadBKN(e.target.value)}
-                  className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                  className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
                 />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs text-slate-500 mb-1">Width along spacing (mm)</label>
+                <label className="block text-xs text-text-muted mb-1">Width along spacing (mm)</label>
                 <input
                   type="number"
                   step="any"
                   value={columnBWidthMm}
                   onChange={(e) => setColumnBWidthMm(e.target.value)}
-                  className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                  className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-500 mb-1">Depth perpendicular (mm)</label>
+                <label className="block text-xs text-text-muted mb-1">Depth perpendicular (mm)</label>
                 <input
                   type="number"
                   step="any"
                   value={columnBDepthMm}
                   onChange={(e) => setColumnBDepthMm(e.target.value)}
-                  className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                  className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
                 />
               </div>
             </div>
@@ -236,43 +236,43 @@ export function CombinedFootingDesignPanel() {
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Allowable Bearing Pressure qa (kPa)</label>
+              <label className="block text-xs text-text-muted mb-1">Allowable Bearing Pressure qa (kPa)</label>
               <input
                 type="number"
                 step="any"
                 value={allowableBearingPressureKPa}
                 onChange={(e) => setAllowableBearingPressureKPa(e.target.value)}
                 placeholder="from geotech report"
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Effective Cover (mm)</label>
+              <label className="block text-xs text-text-muted mb-1">Effective Cover (mm)</label>
               <input
                 type="number"
                 step="any"
                 value={effectiveCoverMm}
                 onChange={(e) => setEffectiveCoverMm(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Perpendicular Footing Width (mm)</label>
+            <label className="block text-xs text-text-muted mb-1">Perpendicular Footing Width (mm)</label>
             <input
               type="number"
               step="any"
               value={perpendicularWidthMm}
               onChange={(e) => setPerpendicularWidthMm(e.target.value)}
-              className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+              className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
             />
           </div>
 
           <button
             type="button"
             onClick={handleRunDesign}
-            className="w-full rounded-md bg-sky-700 hover:bg-sky-600 text-white text-sm font-medium py-2 transition-colors"
+            className="w-full rounded-md bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium py-2 transition-colors"
           >
             ▶ Run Combined Footing Design
           </button>
@@ -287,10 +287,10 @@ export function CombinedFootingDesignPanel() {
 function CombinedFootingDesignReportView({ report }: { report: CombinedFootingDesignReport }) {
   const statusStyle =
     report.overallStatus === "ok"
-      ? "bg-emerald-950/30 border-emerald-900 text-emerald-400"
+      ? "bg-status-activeBg border-status-activeBorder text-status-activeText"
       : report.overallStatus === "warning"
-        ? "bg-amber-950/30 border-amber-900 text-amber-400"
-        : "bg-red-950/30 border-red-900 text-red-400";
+        ? "bg-status-holdBg border-status-holdBorder text-status-holdText"
+        : "bg-red-50 border-red-200 text-red-600";
   const statusIcon = report.overallStatus === "ok" ? "✓" : report.overallStatus === "warning" ? "⚠" : "✗";
 
   return (
@@ -301,26 +301,26 @@ function CombinedFootingDesignReportView({ report }: { report: CombinedFootingDe
         </p>
       </div>
 
-      <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-        <p className="text-xs text-slate-500 font-medium mb-1">Sizing (Resultant-Centroid)</p>
-        <p className="text-xs text-slate-300">
+      <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+        <p className="text-xs text-text-muted font-medium mb-1">Sizing (Resultant-Centroid)</p>
+        <p className="text-xs text-text-secondary">
           Length {report.sizing.footingLengthMm}mm × Width {report.sizing.footingWidthMm}mm (area{" "}
           {fmt(report.sizing.requiredAreaM2, 2)}m²)
         </p>
-        <p className="text-xs text-slate-300">
+        <p className="text-xs text-text-secondary">
           Overhang beyond A: {fmt(report.sizing.overhangBeyondColumnAMm, 0)}mm · beyond B:{" "}
           {fmt(report.sizing.overhangBeyondColumnBMm, 0)}mm
         </p>
-        <p className="text-xs text-slate-300">Uniform pressure: {fmt(report.sizing.uniformPressureKPa)} kPa</p>
+        <p className="text-xs text-text-secondary">Uniform pressure: {fmt(report.sizing.uniformPressureKPa)} kPa</p>
       </div>
 
-      <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-        <p className="text-xs text-slate-500 font-medium mb-1">Longitudinal Flexural Reinforcement</p>
-        <p className="text-xs text-slate-300">
+      <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+        <p className="text-xs text-text-muted font-medium mb-1">Longitudinal Flexural Reinforcement</p>
+        <p className="text-xs text-text-secondary">
           Top (hogging, between columns): As = {fmt(report.longitudinalDesign.topReinforcement.governingAsMm2, 0)} mm²
           (M = {fmt(report.longitudinalMoments.maxHoggingMomentKNm)} kN·m)
         </p>
-        <p className="text-xs text-slate-300">
+        <p className="text-xs text-text-secondary">
           Bottom (sagging, overhang): As = {fmt(report.longitudinalDesign.bottomReinforcement.governingAsMm2, 0)} mm² (M
           = {fmt(report.longitudinalMoments.maxSaggingMomentKNm)} kN·m)
         </p>
@@ -332,16 +332,16 @@ function CombinedFootingDesignReportView({ report }: { report: CombinedFootingDe
           ["B", report.transverseAtColumnB],
         ] as const
       ).map(([labelSuffix, t]) => (
-        <div key={labelSuffix} className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-          <p className="text-xs text-slate-500 font-medium mb-1">Transverse @ Column {labelSuffix}</p>
-          <p className="text-xs text-slate-300">
+        <div key={labelSuffix} className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+          <p className="text-xs text-text-muted font-medium mb-1">Transverse @ Column {labelSuffix}</p>
+          <p className="text-xs text-text-secondary">
             As = {fmt(t.flexuralDesign.governingAsMm2, 0)} mm²/m (M = {fmt(t.moment.momentKNmPerM)} kN·m/m)
           </p>
-          <p className="text-xs text-slate-300">
+          <p className="text-xs text-text-secondary">
             One-way shear: {t.oneWayShear.adequate ? "OK" : "NOT adequate"} — Vu = {fmt(t.oneWayShear.factoredShearKNPerM)}{" "}
             kN/m, φVc = {fmt(t.oneWayShear.phiVcKNPerM)} kN/m
           </p>
-          <p className="text-xs text-slate-300">
+          <p className="text-xs text-text-secondary">
             Punching shear: {t.punchingShear.adequate ? "OK" : "NOT adequate"} — φVc ={" "}
             {fmt(t.punchingShear.phiVcKN)} kN
           </p>
@@ -349,10 +349,10 @@ function CombinedFootingDesignReportView({ report }: { report: CombinedFootingDe
       ))}
 
       {report.allWarnings.length > 0 && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1.5">
-          <p className="text-xs text-slate-500 font-medium">Warnings:</p>
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1.5">
+          <p className="text-xs text-text-muted font-medium">Warnings:</p>
           {report.allWarnings.map((w, i) => (
-            <p key={i} className="text-xs text-amber-400 leading-relaxed">
+            <p key={i} className="text-xs text-status-holdText leading-relaxed">
               {w}
             </p>
           ))}

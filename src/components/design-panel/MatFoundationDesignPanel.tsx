@@ -131,24 +131,24 @@ export function MatFoundationDesignPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">Mat/Raft Foundation Design</h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">Mat/Raft Foundation Design</h3>
+        <p className="text-xs text-text-muted mb-3">
           Rigid-method pressure distribution (uniform/linear-eccentric), per-column local flexure and punching shear.
         </p>
-        <p className="text-xs text-amber-500 bg-amber-950/30 border border-amber-900 rounded-md px-2.5 py-2 mb-2">
+        <p className="text-xs text-status-holdText bg-status-holdBg border border-status-holdBorder rounded-md px-2.5 py-2 mb-2">
           This app does not perform geotechnical analysis and treats the mat as rigid (linear pressure distribution)
           — flexible-mat (beam-on-elastic-foundation) behavior is not modeled. Enter the allowable bearing pressure
           from your geotechnical report, and each column&apos;s reaction, position, and edge condition manually.
         </p>
 
-        <label className="block text-xs text-slate-500 mb-1">Mat/Raft Foundation</label>
+        <label className="block text-xs text-text-muted mb-1">Mat/Raft Foundation</label>
         <select
           value={selectedId}
           onChange={(e) => {
             setSelectedId(e.target.value);
             setReport(null);
           }}
-          className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-sm px-2.5 py-2 mb-2"
+          className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-sm px-2.5 py-2 mb-2"
         >
           <option value="">Select a mat foundation...</option>
           {mats.map((m) => (
@@ -159,7 +159,7 @@ export function MatFoundationDesignPanel() {
         </select>
 
         {selected && !isConcrete && (
-          <p className="text-xs text-amber-500 bg-amber-950/30 border border-amber-900 rounded-md px-2.5 py-2 mb-2">
+          <p className="text-xs text-status-holdText bg-status-holdBg border border-status-holdBorder rounded-md px-2.5 py-2 mb-2">
             This mat&apos;s material is not concrete — RC design does not apply.
           </p>
         )}
@@ -167,47 +167,47 @@ export function MatFoundationDesignPanel() {
 
       {selected && isConcrete && (
         <>
-          <p className="text-xs text-slate-500">Thickness: {selected.thickness}mm (from element)</p>
+          <p className="text-xs text-text-muted">Thickness: {selected.thickness}mm (from element)</p>
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Allowable Bearing Pressure qa (kPa)</label>
+              <label className="block text-xs text-text-muted mb-1">Allowable Bearing Pressure qa (kPa)</label>
               <input
                 type="number"
                 step="any"
                 value={allowableBearingPressureKPa}
                 onChange={(e) => setAllowableBearingPressureKPa(e.target.value)}
                 placeholder="from geotech report"
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Effective Cover (mm)</label>
+              <label className="block text-xs text-text-muted mb-1">Effective Cover (mm)</label>
               <input
                 type="number"
                 step="any"
                 value={effectiveCoverMm}
                 onChange={(e) => setEffectiveCoverMm(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
           </div>
 
           <div className="space-y-3">
-            <p className="text-xs text-slate-400 font-medium">Columns</p>
+            <p className="text-xs text-text-secondary font-medium">Columns</p>
             {columns.map((c) => (
-              <div key={c.id} className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-2">
+              <div key={c.id} className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-2">
                 <div className="flex items-center justify-between">
                   <input
                     type="text"
                     value={c.label}
                     onChange={(e) => updateColumn(c.id, { label: e.target.value })}
-                    className="w-28 rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1"
+                    className="w-28 rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1"
                   />
                   <button
                     type="button"
                     onClick={() => removeColumn(c.id)}
-                    className="text-xs text-red-500/70 hover:text-red-400 px-1"
+                    className="text-xs text-red-500/70 hover:text-red-600 px-1"
                     title="ডিলিট করুন"
                   >
                     ✕
@@ -221,7 +221,7 @@ export function MatFoundationDesignPanel() {
                     value={c.xM}
                     onChange={(e) => updateColumn(c.id, { xM: e.target.value })}
                     placeholder="X (m)"
-                    className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                    className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
                   />
                   <input
                     type="number"
@@ -229,7 +229,7 @@ export function MatFoundationDesignPanel() {
                     value={c.zM}
                     onChange={(e) => updateColumn(c.id, { zM: e.target.value })}
                     placeholder="Z (m)"
-                    className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                    className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
                   />
                 </div>
 
@@ -240,7 +240,7 @@ export function MatFoundationDesignPanel() {
                     value={c.servicePointLoadKN}
                     onChange={(e) => updateColumn(c.id, { servicePointLoadKN: e.target.value })}
                     placeholder="Pa (kN)"
-                    className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                    className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
                   />
                   <input
                     type="number"
@@ -248,7 +248,7 @@ export function MatFoundationDesignPanel() {
                     value={c.factoredPointLoadKN}
                     onChange={(e) => updateColumn(c.id, { factoredPointLoadKN: e.target.value })}
                     placeholder="Pu (kN)"
-                    className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                    className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
                   />
                 </div>
 
@@ -259,7 +259,7 @@ export function MatFoundationDesignPanel() {
                     value={c.columnWidthMm}
                     onChange={(e) => updateColumn(c.id, { columnWidthMm: e.target.value })}
                     placeholder="Width (mm)"
-                    className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                    className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
                   />
                   <input
                     type="number"
@@ -267,7 +267,7 @@ export function MatFoundationDesignPanel() {
                     value={c.columnDepthMm}
                     onChange={(e) => updateColumn(c.id, { columnDepthMm: e.target.value })}
                     placeholder="Depth (mm)"
-                    className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                    className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
                   />
                 </div>
 
@@ -275,7 +275,7 @@ export function MatFoundationDesignPanel() {
                   <select
                     value={c.columnPosition}
                     onChange={(e) => updateColumn(c.id, { columnPosition: e.target.value as ColumnPosition })}
-                    className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                    className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
                   >
                     <option value="interior">Interior</option>
                     <option value="edge">Edge</option>
@@ -287,7 +287,7 @@ export function MatFoundationDesignPanel() {
                     value={c.tributaryCantileverMm}
                     onChange={(e) => updateColumn(c.id, { tributaryCantileverMm: e.target.value })}
                     placeholder="Cantilever (mm)"
-                    className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                    className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
                   />
                 </div>
               </div>
@@ -295,7 +295,7 @@ export function MatFoundationDesignPanel() {
             <button
               type="button"
               onClick={addColumn}
-              className="w-full rounded-md border border-dashed border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 text-xs py-1.5 transition-colors"
+              className="w-full rounded-md border border-dashed border-surface-border text-text-secondary hover:text-text-primary hover:border-text-muted text-xs py-1.5 transition-colors"
             >
               + Add Column
             </button>
@@ -304,7 +304,7 @@ export function MatFoundationDesignPanel() {
           <button
             type="button"
             onClick={handleRunDesign}
-            className="w-full rounded-md bg-sky-700 hover:bg-sky-600 text-white text-sm font-medium py-2 transition-colors"
+            className="w-full rounded-md bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium py-2 transition-colors"
           >
             ▶ Run Mat Foundation Design
           </button>
@@ -319,10 +319,10 @@ export function MatFoundationDesignPanel() {
 function MatFoundationDesignReportView({ report }: { report: MatFoundationDesignReport }) {
   const statusStyle =
     report.overallStatus === "ok"
-      ? "bg-emerald-950/30 border-emerald-900 text-emerald-400"
+      ? "bg-status-activeBg border-status-activeBorder text-status-activeText"
       : report.overallStatus === "warning"
-        ? "bg-amber-950/30 border-amber-900 text-amber-400"
-        : "bg-red-950/30 border-red-900 text-red-400";
+        ? "bg-status-holdBg border-status-holdBorder text-status-holdText"
+        : "bg-red-50 border-red-200 text-red-600";
   const statusIcon = report.overallStatus === "ok" ? "✓" : report.overallStatus === "warning" ? "⚠" : "✗";
 
   return (
@@ -333,26 +333,26 @@ function MatFoundationDesignReportView({ report }: { report: MatFoundationDesign
         </p>
       </div>
 
-      <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-        <p className="text-xs text-slate-500 font-medium mb-1">Pressure Distribution (Rigid Method)</p>
-        <p className="text-xs text-slate-300">
+      <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+        <p className="text-xs text-text-muted font-medium mb-1">Pressure Distribution (Rigid Method)</p>
+        <p className="text-xs text-text-secondary">
           Area {fmt(report.sizing.planAreaM2, 2)}m² · Avg pressure {fmt(report.sizing.averagePressureKPa)} kPa
         </p>
-        <p className="text-xs text-slate-300">
+        <p className="text-xs text-text-secondary">
           Max {fmt(report.sizing.maxPressureKPa)} kPa · Min {fmt(report.sizing.minPressureKPa)} kPa
         </p>
-        <p className="text-xs text-slate-300">
+        <p className="text-xs text-text-secondary">
           Eccentricity: X = {fmt(report.sizing.eccentricityXM, 3)}m, Z = {fmt(report.sizing.eccentricityZM, 3)}m
         </p>
       </div>
 
       {report.perColumn.map((c) => (
-        <div key={c.label} className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-          <p className="text-xs text-slate-500 font-medium mb-1">Column {c.label}</p>
-          <p className="text-xs text-slate-300">
+        <div key={c.label} className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+          <p className="text-xs text-text-muted font-medium mb-1">Column {c.label}</p>
+          <p className="text-xs text-text-secondary">
             As = {fmt(c.flexuralDesign.governingAsMm2, 0)} mm²/m (M = {fmt(c.moment.momentKNmPerM)} kN·m/m)
           </p>
-          <p className="text-xs text-slate-300">
+          <p className="text-xs text-text-secondary">
             Punching shear: {c.punchingShear.adequate ? "OK" : "NOT adequate"} — φVc = {fmt(c.punchingShear.phiVcKN)}{" "}
             kN
           </p>
@@ -360,10 +360,10 @@ function MatFoundationDesignReportView({ report }: { report: MatFoundationDesign
       ))}
 
       {report.allWarnings.length > 0 && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1.5">
-          <p className="text-xs text-slate-500 font-medium">Warnings:</p>
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1.5">
+          <p className="text-xs text-text-muted font-medium">Warnings:</p>
           {report.allWarnings.map((w, i) => (
-            <p key={i} className="text-xs text-amber-400 leading-relaxed">
+            <p key={i} className="text-xs text-status-holdText leading-relaxed">
               {w}
             </p>
           ))}

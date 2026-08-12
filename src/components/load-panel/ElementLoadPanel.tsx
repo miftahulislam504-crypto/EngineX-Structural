@@ -135,23 +135,23 @@ export function ElementLoadPanel({ onAddLoadCase, onDeleteLoadCase }: ElementLoa
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-2">Element Load</h3>
+        <h3 className="text-sm font-medium text-text-primary mb-2">Element Load</h3>
 
         {patterns.length === 0 ? (
-          <p className="text-xs text-amber-500">প্রথমে অন্তত একটা Load Pattern তৈরি করুন।</p>
+          <p className="text-xs text-status-holdText">প্রথমে অন্তত একটা Load Pattern তৈরি করুন।</p>
         ) : elements.length === 0 ? (
-          <p className="text-xs text-amber-500">প্রথমে অন্তত একটা Element তৈরি করুন।</p>
+          <p className="text-xs text-status-holdText">প্রথমে অন্তত একটা Element তৈরি করুন।</p>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-2.5">
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Element</label>
+              <label className="block text-xs text-text-muted mb-1">Element</label>
               <select
                 value={elementId}
                 onChange={(e) => {
                   setElementId(e.target.value);
                   setApplicationType("uniform-line"); // ডিফল্ট রিসেট, applicableTypes পরে ঠিক করবে
                 }}
-                className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+                className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
               >
                 <option value="">নির্বাচন করুন</option>
                 {elements.map((el) => (
@@ -165,11 +165,11 @@ export function ElementLoadPanel({ onAddLoadCase, onDeleteLoadCase }: ElementLoa
             {selectedElement && (
               <>
                 <div>
-                  <label className="block text-xs text-slate-500 mb-1">Load Pattern</label>
+                  <label className="block text-xs text-text-muted mb-1">Load Pattern</label>
                   <select
                     value={patternId}
                     onChange={(e) => setPatternId(e.target.value)}
-                    className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+                    className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
                   >
                     <option value="">নির্বাচন করুন</option>
                     {patterns.map((p) => (
@@ -181,7 +181,7 @@ export function ElementLoadPanel({ onAddLoadCase, onDeleteLoadCase }: ElementLoa
                 </div>
 
                 <div>
-                  <label className="block text-xs text-slate-500 mb-1">প্রয়োগের ধরন</label>
+                  <label className="block text-xs text-text-muted mb-1">প্রয়োগের ধরন</label>
                   <div className="grid grid-cols-3 gap-1.5">
                     {applicableTypes.map((type) => (
                       <button
@@ -190,8 +190,8 @@ export function ElementLoadPanel({ onAddLoadCase, onDeleteLoadCase }: ElementLoa
                         onClick={() => setApplicationType(type)}
                         className={`rounded-md px-1.5 py-1.5 text-xs transition-colors ${
                           applicationType === type
-                            ? "bg-sky-700 text-white"
-                            : "bg-slate-900 border border-slate-700 text-slate-400"
+                            ? "bg-brand-600 text-white"
+                            : "bg-surface-card border border-surface-border text-text-secondary"
                         }`}
                       >
                         {type === "point"
@@ -209,17 +209,17 @@ export function ElementLoadPanel({ onAddLoadCase, onDeleteLoadCase }: ElementLoa
                 {applicationType === "point" && (
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-xs text-slate-500 mb-1">Force Y (kN)</label>
+                      <label className="block text-xs text-text-muted mb-1">Force Y (kN)</label>
                       <input
                         type="number"
                         step="any"
                         value={forceY}
                         onChange={(e) => setForceY(e.target.value)}
-                        className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+                        className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-slate-500 mb-1">Position (0-1)</label>
+                      <label className="block text-xs text-text-muted mb-1">Position (0-1)</label>
                       <input
                         type="number"
                         step="any"
@@ -227,7 +227,7 @@ export function ElementLoadPanel({ onAddLoadCase, onDeleteLoadCase }: ElementLoa
                         max="1"
                         value={positionRatio}
                         onChange={(e) => setPositionRatio(e.target.value)}
-                        className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+                        className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
                       />
                     </div>
                   </div>
@@ -235,33 +235,33 @@ export function ElementLoadPanel({ onAddLoadCase, onDeleteLoadCase }: ElementLoa
 
                 {applicationType === "uniform-line" && (
                   <div>
-                    <label className="block text-xs text-slate-500 mb-1">Intensity (kN/m)</label>
+                    <label className="block text-xs text-text-muted mb-1">Intensity (kN/m)</label>
                     <input
                       type="number"
                       step="any"
                       value={intensityY}
                       onChange={(e) => setIntensityY(e.target.value)}
-                      className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+                      className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
                     />
                   </div>
                 )}
 
                 {applicationType === "uniform-area" && (
                   <div>
-                    <label className="block text-xs text-slate-500 mb-1">Intensity (kN/m²)</label>
+                    <label className="block text-xs text-text-muted mb-1">Intensity (kN/m²)</label>
                     <input
                       type="number"
                       step="any"
                       value={intensity}
                       onChange={(e) => setIntensity(e.target.value)}
-                      className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+                      className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
                     />
                   </div>
                 )}
 
                 {applicationType === "temperature-change" && (
                   <div>
-                    <label className="block text-xs text-slate-500 mb-1">
+                    <label className="block text-xs text-text-muted mb-1">
                       Temperature Change (°C)
                     </label>
                     <input
@@ -269,16 +269,16 @@ export function ElementLoadPanel({ onAddLoadCase, onDeleteLoadCase }: ElementLoa
                       step="any"
                       value={temperatureChange}
                       onChange={(e) => setTemperatureChange(e.target.value)}
-                      className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+                      className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
                     />
                   </div>
                 )}
 
-                {formError && <p className="text-xs text-red-400">{formError}</p>}
+                {formError && <p className="text-xs text-red-600">{formError}</p>}
 
                 <button
                   type="submit"
-                  className="w-full rounded-md bg-sky-700 hover:bg-sky-600 text-white text-sm font-medium py-1.5 transition-colors"
+                  className="w-full rounded-md bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium py-1.5 transition-colors"
                 >
                   + Load যোগ করুন
                 </button>
@@ -289,21 +289,21 @@ export function ElementLoadPanel({ onAddLoadCase, onDeleteLoadCase }: ElementLoa
       </div>
 
       {selectedElement && elementLoadCases.length > 0 && (
-        <div className="border-t border-slate-800 pt-3">
-          <p className="text-xs text-slate-500 mb-1.5">
+        <div className="border-t border-surface-border pt-3">
+          <p className="text-xs text-text-muted mb-1.5">
             {selectedElement.label} এ প্রযুক্ত Load:
           </p>
           <ul className="space-y-1">
             {elementLoadCases.map((lc) => (
               <li
                 key={lc.loadCaseId}
-                className="flex items-center justify-between rounded-md px-2.5 py-1.5 text-sm hover:bg-slate-800/60 text-slate-300"
+                className="flex items-center justify-between rounded-md px-2.5 py-1.5 text-sm hover:bg-surface-hover text-text-secondary"
               >
                 <span className="text-xs">{describeLoadCase(lc)}</span>
                 <button
                   type="button"
                   onClick={() => onDeleteLoadCase(lc.loadCaseId)}
-                  className="text-xs text-red-500/70 hover:text-red-400 px-1"
+                  className="text-xs text-red-500/70 hover:text-red-600 px-1"
                   title="ডিলিট করুন"
                 >
                   ✕

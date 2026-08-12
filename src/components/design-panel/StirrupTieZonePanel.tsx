@@ -32,14 +32,14 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-[10px] text-slate-500 mb-0.5">
+      <label className="block text-[10px] text-text-muted mb-0.5">
         {label}
         {unit ? ` (${unit})` : ""}
       </label>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+        className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
       />
     </div>
   );
@@ -111,17 +111,17 @@ export function StirrupTieZonePanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">Stirrup / Tie Zones</h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">Stirrup / Tie Zones</h3>
+        <p className="text-xs text-text-muted mb-3">
           Support/midspan (beam) বা end/mid (column) shear-driven spacing-কে buildable multi-zone pattern-এ ভাগ করে —
           সাপোর্টের কাছে tighter, মাঝখানে wider (MICON-স্টাইল &quot;5/7/5&quot; কনভেনশন)।
         </p>
 
-        <label className="block text-xs text-slate-500 mb-1">Element Type</label>
+        <label className="block text-xs text-text-muted mb-1">Element Type</label>
         <select
           value={mode}
           onChange={(e) => setMode(e.target.value as ElementMode)}
-          className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-sm px-2.5 py-2 mb-3"
+          className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-sm px-2.5 py-2 mb-3"
         >
           {(Object.keys(MODE_LABELS) as ElementMode[]).map((m) => (
             <option key={m} value={m}>
@@ -130,7 +130,7 @@ export function StirrupTieZonePanel() {
           ))}
         </select>
 
-        <label className="flex items-center gap-2 text-xs text-slate-400 mb-3">
+        <label className="flex items-center gap-2 text-xs text-text-secondary mb-3">
           <input type="checkbox" checked={useSeismic} onChange={(e) => setUseSeismic(e.target.checked)} />
           Seismic special moment frame confinement zone (ACI 318-19 Ch.18 — simplified, see warnings)
         </label>
@@ -186,7 +186,7 @@ export function StirrupTieZonePanel() {
         <button
           type="button"
           onClick={handleRun}
-          className="w-full rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium py-2 transition-colors"
+          className="w-full rounded-md bg-surface-hover hover:bg-surface-border text-text-primary text-sm font-medium py-2 transition-colors"
         >
           Solve Zones
         </button>
@@ -195,22 +195,22 @@ export function StirrupTieZonePanel() {
       {mode === "beam" && beamResult && (
         <div className="space-y-3">
           {beamResult.zones.map((zone, i) => (
-            <div key={i} className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-              <p className="text-xs text-slate-500 font-medium mb-1">{zone.label}</p>
-              <p className="text-xs text-slate-300">
+            <div key={i} className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+              <p className="text-xs text-text-muted font-medium mb-1">{zone.label}</p>
+              <p className="text-xs text-text-secondary">
                 {zone.stirrupDiameterMm}mmØ @ {zone.spacingMm}mm c/c — length {fmt(zone.lengthMm)}mm
               </p>
             </div>
           ))}
           {beamResult.seismicConfinementLengthMm !== null && (
-            <p className="text-[10px] text-slate-600">
+            <p className="text-[10px] text-text-muted">
               Seismic confinement length: {fmt(beamResult.seismicConfinementLengthMm)}mm from each support face
             </p>
           )}
           {beamResult.warnings.length > 0 && (
-            <div className="rounded-md bg-amber-950/20 border border-amber-900/60 px-3 py-2.5 space-y-1">
+            <div className="rounded-md bg-status-holdBg border border-status-holdBorder/60 px-3 py-2.5 space-y-1">
               {beamResult.warnings.map((w, i) => (
-                <p key={i} className="text-xs text-amber-500 leading-relaxed">
+                <p key={i} className="text-xs text-status-holdText leading-relaxed">
                   {w}
                 </p>
               ))}
@@ -222,22 +222,22 @@ export function StirrupTieZonePanel() {
       {mode === "column" && columnResult && (
         <div className="space-y-3">
           {columnResult.zones.map((zone, i) => (
-            <div key={i} className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-              <p className="text-xs text-slate-500 font-medium mb-1">{zone.label}</p>
-              <p className="text-xs text-slate-300">
+            <div key={i} className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+              <p className="text-xs text-text-muted font-medium mb-1">{zone.label}</p>
+              <p className="text-xs text-text-secondary">
                 {zone.stirrupDiameterMm}mmØ @ {zone.spacingMm}mm c/c — length {fmt(zone.lengthMm)}mm
               </p>
             </div>
           ))}
-          <p className="text-[10px] text-slate-600">
+          <p className="text-[10px] text-text-muted">
             General max spacing (ACI §25.7.2.1): {fmt(columnResult.generalMaxSpacingMm)}mm
             {columnResult.seismicConfinementLengthMm !== null &&
               ` · Confinement length: ${fmt(columnResult.seismicConfinementLengthMm)}mm from each joint face`}
           </p>
           {columnResult.warnings.length > 0 && (
-            <div className="rounded-md bg-amber-950/20 border border-amber-900/60 px-3 py-2.5 space-y-1">
+            <div className="rounded-md bg-status-holdBg border border-status-holdBorder/60 px-3 py-2.5 space-y-1">
               {columnResult.warnings.map((w, i) => (
-                <p key={i} className="text-xs text-amber-500 leading-relaxed">
+                <p key={i} className="text-xs text-status-holdText leading-relaxed">
                   {w}
                 </p>
               ))}

@@ -33,14 +33,14 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-[10px] text-slate-500 mb-0.5">
+      <label className="block text-[10px] text-text-muted mb-0.5">
         {label}
         {unit ? ` (${unit})` : ""}
       </label>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+        className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
       />
     </div>
   );
@@ -177,20 +177,20 @@ export function SectionOptimizationPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">Section Optimization</h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">Section Optimization</h3>
+        <p className="text-xs text-text-muted mb-3">
           RC-এ bar size × count, Steel-এ {STEEL_W_SHAPE_CATALOG.length}টি W-shape catalog sweep করে — প্রতিটা
           candidate Phase 6a/6b/6c design module দিয়ে verify করে সর্বনিম্ন material quantity বেছে নেয়।
         </p>
 
-        <label className="block text-xs text-slate-500 mb-1">Section Type</label>
+        <label className="block text-xs text-text-muted mb-1">Section Type</label>
         <select
           value={sectionType}
           onChange={(e) => {
             setSectionType(e.target.value as SectionType);
             setResult(null);
           }}
-          className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-sm px-2.5 py-2 mb-3"
+          className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-sm px-2.5 py-2 mb-3"
         >
           {(Object.keys(SECTION_TYPE_LABELS) as SectionType[]).map((type) => (
             <option key={type} value={type}>
@@ -220,11 +220,11 @@ export function SectionOptimizationPanel() {
               <Field label="Clear Cover" value={rcbClearCoverMm} onChange={setRcbClearCoverMm} unit="mm" />
             </div>
             <div>
-              <label className="block text-[10px] text-slate-500 mb-0.5">Support Condition</label>
+              <label className="block text-[10px] text-text-muted mb-0.5">Support Condition</label>
               <select
                 value={rcbSupportCondition}
                 onChange={(e) => setRcbSupportCondition(e.target.value as BeamSupportCondition)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               >
                 <option value="simply-supported">Simply Supported</option>
                 <option value="one-end-continuous">One End Continuous</option>
@@ -266,11 +266,11 @@ export function SectionOptimizationPanel() {
               <Field label="M2 (larger end)" value={rccM2KNm} onChange={setRccM2KNm} unit="kN·m" />
             </div>
             <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 text-xs text-slate-400">
+              <label className="flex items-center gap-2 text-xs text-text-secondary">
                 <input type="checkbox" checked={rccIsSwayFrame} onChange={(e) => setRccIsSwayFrame(e.target.checked)} />
                 Sway frame
               </label>
-              <label className="flex items-center gap-2 text-xs text-slate-400">
+              <label className="flex items-center gap-2 text-xs text-text-secondary">
                 <input
                   type="checkbox"
                   checked={rccIsSingleCurvature}
@@ -315,7 +315,7 @@ export function SectionOptimizationPanel() {
         <button
           type="button"
           onClick={handleRunOptimization}
-          className="w-full rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium py-2 transition-colors"
+          className="w-full rounded-md bg-surface-hover hover:bg-surface-border text-text-primary text-sm font-medium py-2 transition-colors"
         >
           Run Optimization
         </button>
@@ -325,29 +325,29 @@ export function SectionOptimizationPanel() {
         <div className="space-y-3">
           <div
             className={`rounded-md border px-3 py-2.5 ${
-              result.best ? "bg-emerald-950/30 border-emerald-900" : "bg-amber-950/30 border-amber-900"
+              result.best ? "bg-status-activeBg border-status-activeBorder" : "bg-status-holdBg border-status-holdBorder"
             }`}
           >
-            <p className={`text-xs leading-relaxed ${result.best ? "text-emerald-400" : "text-amber-500"}`}>
+            <p className={`text-xs leading-relaxed ${result.best ? "text-status-activeText" : "text-status-holdText"}`}>
               {result.message}
             </p>
           </div>
 
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-            <p className="text-xs text-slate-500">
-              Candidates evaluated: <span className="text-slate-300">{result.candidatesEvaluated}</span> · Feasible:{" "}
-              <span className="text-slate-300">{result.feasibleCandidatesFound}</span>
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+            <p className="text-xs text-text-muted">
+              Candidates evaluated: <span className="text-text-secondary">{result.candidatesEvaluated}</span> · Feasible:{" "}
+              <span className="text-text-secondary">{result.feasibleCandidatesFound}</span>
             </p>
           </div>
 
           {result.best && (
-            <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1.5">
-              <p className="text-xs text-slate-500 font-medium mb-1">Best Candidate</p>
-              <p className="text-xs text-slate-300">{result.best.description}</p>
-              <p className="text-xs text-slate-300">
+            <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1.5">
+              <p className="text-xs text-text-muted font-medium mb-1">Best Candidate</p>
+              <p className="text-xs text-text-secondary">{result.best.description}</p>
+              <p className="text-xs text-text-secondary">
                 {result.best.quantityLabel}: {fmt(result.best.quantityMetric)}
               </p>
-              <p className="text-xs text-slate-300">Status: {result.best.overallStatus}</p>
+              <p className="text-xs text-text-secondary">Status: {result.best.overallStatus}</p>
             </div>
           )}
         </div>

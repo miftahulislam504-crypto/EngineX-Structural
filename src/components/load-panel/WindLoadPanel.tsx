@@ -47,31 +47,31 @@ export function WindLoadPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">Wind Load — BNBC 2020 ELF</h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">Wind Load — BNBC 2020 ELF</h3>
+        <p className="text-xs text-text-muted mb-3">
           সরলীকৃত পদ্ধতি — rigid, নিয়মিত আকৃতির ভবনের preliminary design এর জন্য। চূড়ান্ত
           ডিজাইনে পূর্ণাঙ্গ BNBC 2020 Chapter 2 যাচাই করুন।
         </p>
 
         <div className="space-y-2.5">
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Basic Wind Speed V (m/s)</label>
+            <label className="block text-xs text-text-muted mb-1">Basic Wind Speed V (m/s)</label>
             <input
               type="number"
               value={basicWindSpeed}
               onChange={(e) => setBasicWindSpeed(e.target.value)}
-              className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+              className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
             />
           </div>
 
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Exposure Category</label>
+            <label className="block text-xs text-text-muted mb-1">Exposure Category</label>
             <select
               value={exposureCategory}
               onChange={(e) =>
                 setExposureCategory(e.target.value as WindLoadInput["exposureCategory"])
               }
-              className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+              className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
             >
               <option value="A">A — বড় শহরের কেন্দ্র</option>
               <option value="B">B — শহুরে/উপশহুরে</option>
@@ -82,42 +82,42 @@ export function WindLoadPanel() {
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Building Height (m)</label>
+              <label className="block text-xs text-text-muted mb-1">Building Height (m)</label>
               <input
                 type="number"
                 value={buildingHeight}
                 onChange={(e) => setBuildingHeight(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+                className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Building Width (m)</label>
+              <label className="block text-xs text-text-muted mb-1">Building Width (m)</label>
               <input
                 type="number"
                 value={buildingWidth}
                 onChange={(e) => setBuildingWidth(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+                className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Importance Factor</label>
+              <label className="block text-xs text-text-muted mb-1">Importance Factor</label>
               <input
                 type="number"
                 step="any"
                 value={importanceFactor}
                 onChange={(e) => setImportanceFactor(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+                className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Structure Type</label>
+              <label className="block text-xs text-text-muted mb-1">Structure Type</label>
               <select
                 value={structureType}
                 onChange={(e) => setStructureType(e.target.value as WindLoadInput["structureType"])}
-                className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+                className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
               >
                 <option value="rigid">Rigid</option>
                 <option value="flexible">Flexible</option>
@@ -126,48 +126,48 @@ export function WindLoadPanel() {
           </div>
 
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Number of Stories</label>
+            <label className="block text-xs text-text-muted mb-1">Number of Stories</label>
             <input
               type="number"
               value={numberOfStories}
               onChange={(e) => setNumberOfStories(e.target.value)}
-              className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+              className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
             />
           </div>
         </div>
       </div>
 
       {result && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1.5">
-          <p className="text-xs text-slate-400">
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1.5">
+          <p className="text-xs text-text-secondary">
             Velocity Pressure q<sub>z</sub>:{" "}
-            <span className="text-slate-200 font-medium">{result.velocityPressure.toFixed(3)} kN/m²</span>
+            <span className="text-text-primary font-medium">{result.velocityPressure.toFixed(3)} kN/m²</span>
           </p>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-text-secondary">
             Gust Effect Factor G:{" "}
-            <span className="text-slate-200 font-medium">{result.gustEffectFactor.toFixed(2)}</span>
+            <span className="text-text-primary font-medium">{result.gustEffectFactor.toFixed(2)}</span>
           </p>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-text-secondary">
             Design Wind Pressure p:{" "}
-            <span className="text-sky-300 font-semibold">
+            <span className="text-brand-700 font-semibold">
               {result.designWindPressure.toFixed(3)} kN/m²
             </span>
           </p>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-text-secondary">
             Total Base Shear (estimate):{" "}
-            <span className="text-sky-300 font-semibold">
+            <span className="text-brand-700 font-semibold">
               {result.totalBaseShearEstimate.toFixed(1)} kN
             </span>
           </p>
 
           {result.storyForces.length > 0 && (
-            <div className="pt-1.5 border-t border-slate-800">
-              <p className="text-xs text-slate-500 mb-1">Story Force Distribution (Windward)</p>
+            <div className="pt-1.5 border-t border-surface-border">
+              <p className="text-xs text-text-muted mb-1">Story Force Distribution (Windward)</p>
               <div className="max-h-40 overflow-y-auto space-y-0.5">
                 {[...result.storyForces].reverse().map((sf) => (
                   <div
                     key={sf.storyIndex}
-                    className="flex justify-between text-xs text-slate-400 px-1"
+                    className="flex justify-between text-xs text-text-secondary px-1"
                   >
                     <span>Story {sf.storyIndex}</span>
                     <span>{sf.force.toFixed(1)} kN</span>
@@ -178,7 +178,7 @@ export function WindLoadPanel() {
           )}
 
           {result.warnings.map((warning, i) => (
-            <p key={i} className="text-xs text-amber-400 pt-1 border-t border-slate-800 mt-1.5">
+            <p key={i} className="text-xs text-status-holdText pt-1 border-t border-surface-border mt-1.5">
               {warning}
             </p>
           ))}

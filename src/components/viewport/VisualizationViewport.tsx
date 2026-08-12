@@ -2,7 +2,7 @@
 
 import { Suspense, useMemo, useRef } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, GizmoHelper, GizmoViewport } from "@react-three/drei";
+import { OrbitControls, GizmoHelper, GizmoViewport, Grid } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { GridLines } from "./GridLines";
 import { StoryPlanes } from "./StoryPlanes";
@@ -294,6 +294,23 @@ export function VisualizationViewport() {
 
           <DeformationAnimator />
 
+          {/* Reference floor grid — StructuralViewport.tsx এর সাথে
+              consistency রাখতে একই span/color convention ব্যবহার করা। */}
+          <Grid
+            position={[0, -0.01, 0]}
+            args={[20, 20]}
+            cellSize={1}
+            cellThickness={0.5}
+            cellColor="#dde3ea"
+            sectionSize={5}
+            sectionThickness={1}
+            sectionColor="#c4ccd6"
+            fadeDistance={30}
+            fadeStrength={1}
+            followCamera={false}
+            infiniteGrid={false}
+          />
+
           <OriginMarker />
 
           <GridLines
@@ -385,7 +402,7 @@ export function VisualizationViewport() {
       )}
 
       {deformationEnabled && !activeNodalDisplacements && !isEmpty && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-amber-900/90 border border-amber-700 rounded px-3 py-1.5 text-xs text-amber-200 pointer-events-none">
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-status-holdBg border border-status-holdBorder rounded px-3 py-1.5 text-xs text-status-holdText pointer-events-none">
           {isRsaMagnitudeOnly
             ? "Response Spectrum displacement magnitude-only (CQC) — deformed shape দেখানো যাচ্ছে না।"
             : "কোনো displacement result নেই — আগে Analysis ট্যাবে Linear Static/P-Delta/Response Spectrum/Nonlinear Static চালান।"}
@@ -393,7 +410,7 @@ export function VisualizationViewport() {
       )}
 
       {diagramEnabled && (!elementEndForces || elementEndForces.length === 0) && !isEmpty && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-amber-900/90 border border-amber-700 rounded px-3 py-1.5 text-xs text-amber-200 pointer-events-none">
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-status-holdBg border border-status-holdBorder rounded px-3 py-1.5 text-xs text-status-holdText pointer-events-none">
           কোনো Element End Forces নেই — আগে Analysis ট্যাবে Linear Static/P-Delta/Response Spectrum/Nonlinear Static চালান (Modal/Buckling এ diagram নেই)।
         </div>
       )}
@@ -401,13 +418,13 @@ export function VisualizationViewport() {
       {reactionEnabled &&
         !isEmpty &&
         (activeAnalysisType !== "linear-static" || !linearStaticResult?.reactionForces?.length) && (
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-amber-900/90 border border-amber-700 rounded px-3 py-1.5 text-xs text-amber-200 pointer-events-none">
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-status-holdBg border border-status-holdBorder rounded px-3 py-1.5 text-xs text-status-holdText pointer-events-none">
             Reaction শুধু Linear Static এ পাওয়া যায় — আগে Analysis ট্যাবে Linear Static চালান।
           </div>
         )}
 
       {modeShapeEnabled && !isEmpty && !modeShapeLookup && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-amber-900/90 border border-amber-700 rounded px-3 py-1.5 text-xs text-amber-200 pointer-events-none">
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-status-holdBg border border-status-holdBorder rounded px-3 py-1.5 text-xs text-status-holdText pointer-events-none">
           {modeShapeSource === "modal"
             ? "কোনো Modal result নেই বা এই mode index এ ডেটা নেই — Analysis ট্যাবে Modal চালান।"
             : "কোনো Buckling result নেই বা এই mode index এ ডেটা নেই — Analysis ট্যাবে Buckling চালান।"}
@@ -415,13 +432,13 @@ export function VisualizationViewport() {
       )}
 
       {stressContourEnabled && !isEmpty && !stressContourLookup && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-amber-900/90 border border-amber-700 rounded px-3 py-1.5 text-xs text-amber-200 pointer-events-none">
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-status-holdBg border border-status-holdBorder rounded px-3 py-1.5 text-xs text-status-holdText pointer-events-none">
           কোনো shell (Slab/Wall) displacement result নেই — Analysis ট্যাবে Linear Static/P-Delta/Nonlinear Static চালান।
         </div>
       )}
 
       {hingeMarkersEnabled && !isEmpty && (!activeHingeStates || activeHingeStates.length === 0) && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-amber-900/90 border border-amber-700 rounded px-3 py-1.5 text-xs text-amber-200 pointer-events-none">
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-status-holdBg border border-status-holdBorder rounded px-3 py-1.5 text-xs text-status-holdText pointer-events-none">
           কোনো Hinge ফলাফল নেই — Analysis ট্যাবে Nonlinear Static/Pushover চালান (হিঞ্জ elastic analysis এ প্রযোজ্য না)।
         </div>
       )}

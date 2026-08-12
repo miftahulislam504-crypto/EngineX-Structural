@@ -258,14 +258,14 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
   return (
     <div className="space-y-4">
       <div>
-        <label className="block text-xs text-slate-500 mb-1.5">Analysis Type</label>
+        <label className="block text-xs text-text-muted mb-1.5">Analysis Type</label>
         <select
           value={analysisType}
           onChange={(e) => {
             setAnalysisType(e.target.value as AnalysisTypeOption);
             clearAllResults();
           }}
-          className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-sm px-2.5 py-2 mb-2"
+          className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-sm px-2.5 py-2 mb-2"
         >
           {(Object.keys(ANALYSIS_TYPE_LABELS) as AnalysisTypeOption[]).map((type) => (
             <option key={type} value={type}>
@@ -274,12 +274,12 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
           ))}
         </select>
 
-        <h3 className="text-sm font-medium text-slate-200 mb-1">{ANALYSIS_TYPE_LABELS[analysisType]}</h3>
-        <p className="text-xs text-slate-500 mb-3">{ANALYSIS_TYPE_DESCRIPTIONS[analysisType]}</p>
+        <h3 className="text-sm font-medium text-text-primary mb-1">{ANALYSIS_TYPE_LABELS[analysisType]}</h3>
+        <p className="text-xs text-text-muted mb-3">{ANALYSIS_TYPE_DESCRIPTIONS[analysisType]}</p>
 
         {(analysisType === "modal" || analysisType === "buckling" || analysisType === "response-spectrum") && (
           <div className="mb-3">
-            <label className="block text-xs text-slate-500 mb-1">Number of Modes: {numModes}</label>
+            <label className="block text-xs text-text-muted mb-1">Number of Modes: {numModes}</label>
             <input
               type="range"
               min={1}
@@ -294,11 +294,11 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
         {analysisType === "response-spectrum" && (
           <div className="grid grid-cols-3 gap-2 mb-3">
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Seismic Zone</label>
+              <label className="block text-xs text-text-muted mb-1">Seismic Zone</label>
               <select
                 value={seismicZone}
                 onChange={(e) => setSeismicZone(e.target.value as SeismicZone)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               >
                 {SEISMIC_ZONES.map((z) => (
                   <option key={z} value={z}>
@@ -308,11 +308,11 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
               </select>
             </div>
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Site Class</label>
+              <label className="block text-xs text-text-muted mb-1">Site Class</label>
               <select
                 value={siteClass}
                 onChange={(e) => setSiteClass(e.target.value as SiteClass)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               >
                 {SITE_CLASSES.map((s) => (
                   <option key={s} value={s}>
@@ -322,11 +322,11 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
               </select>
             </div>
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Direction</label>
+              <label className="block text-xs text-text-muted mb-1">Direction</label>
               <select
                 value={directionDof}
                 onChange={(e) => setDirectionDof(Number(e.target.value) as 0 | 1 | 2)}
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               >
                 <option value={0}>X</option>
                 <option value={1}>Y</option>
@@ -339,7 +339,7 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
         {analysisType === "nonlinear-static" && (
           <div className="mb-3 space-y-3">
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Load Steps: {numLoadSteps}</label>
+              <label className="block text-xs text-text-muted mb-1">Load Steps: {numLoadSteps}</label>
               <input
                 type="range"
                 min={2}
@@ -349,7 +349,7 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
                 className="w-full"
               />
             </div>
-            <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
+            <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
               <HingeEditor projectId={projectId} />
             </div>
           </div>
@@ -359,11 +359,11 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
           <div className="mb-3 space-y-3">
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs text-slate-500 mb-1">Control Point (push here)</label>
+                <label className="block text-xs text-text-muted mb-1">Control Point (push here)</label>
                 <select
                   value={controlPointKey}
                   onChange={(e) => setControlPointKey(e.target.value)}
-                  className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                  className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
                 >
                   <option value="">Select a node...</option>
                   {uniqueNodePoints.map(([key, p]) => (
@@ -374,11 +374,11 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-slate-500 mb-1">Push Direction</label>
+                <label className="block text-xs text-text-muted mb-1">Push Direction</label>
                 <select
                   value={controlDof}
                   onChange={(e) => setControlDof(Number(e.target.value) as 0 | 1 | 2)}
-                  className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                  className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
                 >
                   <option value={0}>X</option>
                   <option value={1}>Y</option>
@@ -387,7 +387,7 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
               </div>
             </div>
             <div>
-              <label className="block text-xs text-slate-500 mb-1">
+              <label className="block text-xs text-text-muted mb-1">
                 Target Displacement: {targetDisplacementMm} mm
               </label>
               <input
@@ -400,14 +400,14 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
                 className="w-full"
               />
             </div>
-            <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
+            <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
               <HingeEditor projectId={projectId} />
             </div>
           </div>
         )}
 
         {!canRun && (
-          <p className="text-xs text-amber-500 bg-amber-950/30 border border-amber-900 rounded-md px-2.5 py-2 mb-3">
+          <p className="text-xs text-status-holdText bg-status-holdBg border border-status-holdBorder rounded-md px-2.5 py-2 mb-3">
             {!REQUIRES_LOAD_CASE[analysisType]
               ? "No Beam/Column/Brace/Pile found, or no element is at the base level (Y≈0)."
               : analysisType === "pushover" && !runnableCheck.canRun
@@ -422,7 +422,7 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
           type="button"
           onClick={handleRunAnalysis}
           disabled={!canRun || isRunning}
-          className="w-full rounded-md bg-sky-700 hover:bg-sky-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium py-2 transition-colors"
+          className="w-full rounded-md bg-brand-600 hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium py-2 transition-colors"
         >
           {isRunning ? "Solving..." : "▶ Run Analysis"}
         </button>
@@ -458,16 +458,16 @@ function StatusBanner({
 }) {
   if (!success) {
     return (
-      <div className="rounded-md bg-red-950/30 border border-red-900 px-3 py-2.5">
-        <p className="text-xs text-red-400 font-medium">✗ Analysis failed</p>
-        <p className="text-xs text-slate-400 mt-1">{errorMessage}</p>
+      <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2.5">
+        <p className="text-xs text-red-600 font-medium">✗ Analysis failed</p>
+        <p className="text-xs text-text-secondary mt-1">{errorMessage}</p>
       </div>
     );
   }
   return (
-    <div className="rounded-md bg-emerald-950/30 border border-emerald-900 px-3 py-2.5">
-      <p className="text-xs text-emerald-400 font-medium mb-1">✓ Analysis complete</p>
-      <p className="text-xs text-slate-400">{summary}</p>
+    <div className="rounded-md bg-status-activeBg border border-status-activeBorder px-3 py-2.5">
+      <p className="text-xs text-status-activeText font-medium mb-1">✓ Analysis complete</p>
+      <p className="text-xs text-text-secondary">{summary}</p>
     </div>
   );
 }
@@ -475,10 +475,10 @@ function StatusBanner({
 function WarningsList({ warnings }: { warnings: string[] }) {
   if (warnings.length === 0) return null;
   return (
-    <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1.5">
-      <p className="text-xs text-slate-500 font-medium">Warnings:</p>
+    <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1.5">
+      <p className="text-xs text-text-muted font-medium">Warnings:</p>
       {warnings.map((warning, i) => (
-        <p key={i} className="text-xs text-amber-400">
+        <p key={i} className="text-xs text-status-holdText">
           {warning}
         </p>
       ))}
@@ -498,11 +498,11 @@ function LinearStaticResultView({ result }: { result: ParsedAnalysisResult }) {
       />
       <WarningsList warnings={result.warnings} />
       {result.success && result.nodalDisplacements && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
-          <p className="text-xs text-slate-500 font-medium mb-1.5">Nodal Displacements</p>
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+          <p className="text-xs text-text-muted font-medium mb-1.5">Nodal Displacements</p>
           <div className="max-h-40 overflow-y-auto space-y-1">
             {result.nodalDisplacements.map((d, i) => (
-              <div key={i} className="text-xs text-slate-400 font-mono">
+              <div key={i} className="text-xs text-text-secondary font-mono">
                 Node {i}: ux={(d.ux * 1000).toFixed(3)}mm, uy={(d.uy * 1000).toFixed(3)}mm, uz=
                 {(d.uz * 1000).toFixed(3)}mm
               </div>
@@ -535,11 +535,11 @@ function ModalResultView({ result }: { result: ParsedModalResult }) {
       />
       <WarningsList warnings={result.warnings} />
       {result.success && result.modes && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
-          <p className="text-xs text-slate-500 font-medium mb-1.5">Natural Frequencies</p>
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+          <p className="text-xs text-text-muted font-medium mb-1.5">Natural Frequencies</p>
           <div className="max-h-40 overflow-y-auto space-y-1">
             {result.modes.map((m, i) => (
-              <div key={i} className="text-xs text-slate-400 font-mono">
+              <div key={i} className="text-xs text-text-secondary font-mono">
                 Mode {i + 1}: {m.naturalFrequencyHz.toFixed(3)} Hz (T = {(1 / m.naturalFrequencyHz).toFixed(3)} s)
               </div>
             ))}
@@ -562,14 +562,14 @@ function BucklingResultView({ result }: { result: ParsedBucklingResult }) {
       />
       <WarningsList warnings={result.warnings} />
       {result.success && result.modes && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
-          <p className="text-xs text-slate-500 font-medium mb-1.5">Critical Load Factors</p>
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+          <p className="text-xs text-text-muted font-medium mb-1.5">Critical Load Factors</p>
           <div className="max-h-40 overflow-y-auto space-y-1">
             {result.modes.map((m, i) => (
-              <div key={i} className="text-xs text-slate-400 font-mono">
+              <div key={i} className="text-xs text-text-secondary font-mono">
                 Mode {i + 1}: λ = {m.criticalLoadFactor.toFixed(4)}
                 {m.criticalLoadFactor < 0 && (
-                  <span className="text-amber-500"> (negative — opposite load direction)</span>
+                  <span className="text-status-holdText"> (negative — opposite load direction)</span>
                 )}
               </div>
             ))}
@@ -592,17 +592,17 @@ function PDeltaResultView({ result }: { result: ParsedPDeltaResult }) {
       />
       <WarningsList warnings={result.warnings} />
       {result.success && result.maxDisplacementAmplificationRatio !== undefined && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
-          <p className="text-xs text-slate-500 font-medium mb-1">Max Displacement Amplification Ratio</p>
-          <p className="text-sm text-slate-300 font-mono">{result.maxDisplacementAmplificationRatio.toFixed(3)}x</p>
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+          <p className="text-xs text-text-muted font-medium mb-1">Max Displacement Amplification Ratio</p>
+          <p className="text-sm text-text-secondary font-mono">{result.maxDisplacementAmplificationRatio.toFixed(3)}x</p>
         </div>
       )}
       {result.success && result.nodalDisplacements && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
-          <p className="text-xs text-slate-500 font-medium mb-1.5">P-Delta Nodal Displacements</p>
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+          <p className="text-xs text-text-muted font-medium mb-1.5">P-Delta Nodal Displacements</p>
           <div className="max-h-40 overflow-y-auto space-y-1">
             {result.nodalDisplacements.map((d, i) => (
-              <div key={i} className="text-xs text-slate-400 font-mono">
+              <div key={i} className="text-xs text-text-secondary font-mono">
                 Node {i}: ux={(d.ux * 1000).toFixed(3)}mm, uy={(d.uy * 1000).toFixed(3)}mm, uz=
                 {(d.uz * 1000).toFixed(3)}mm
               </div>
@@ -635,16 +635,16 @@ function ResponseSpectrumResultView({ result }: { result: ParsedResponseSpectrum
       />
       <WarningsList warnings={result.warnings} />
       {result.success && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 grid grid-cols-2 gap-3">
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 grid grid-cols-2 gap-3">
           <div>
-            <p className="text-xs text-slate-500 font-medium mb-1">Base Shear</p>
-            <p className="text-sm text-slate-300 font-mono">{result.baseShear?.toFixed(3)} kN</p>
+            <p className="text-xs text-text-muted font-medium mb-1">Base Shear</p>
+            <p className="text-sm text-text-secondary font-mono">{result.baseShear?.toFixed(3)} kN</p>
           </div>
           <div>
-            <p className="text-xs text-slate-500 font-medium mb-1">Mass Participation</p>
+            <p className="text-xs text-text-muted font-medium mb-1">Mass Participation</p>
             <p
               className={`text-sm font-mono ${
-                (result.totalMassParticipationRatio ?? 0) < 0.9 ? "text-amber-400" : "text-slate-300"
+                (result.totalMassParticipationRatio ?? 0) < 0.9 ? "text-status-holdText" : "text-text-secondary"
               }`}
             >
               {((result.totalMassParticipationRatio ?? 0) * 100).toFixed(1)}%
@@ -653,13 +653,13 @@ function ResponseSpectrumResultView({ result }: { result: ParsedResponseSpectrum
         </div>
       )}
       {result.success && result.nodalDisplacements && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
-          <p className="text-xs text-slate-500 font-medium mb-1.5">
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+          <p className="text-xs text-text-muted font-medium mb-1.5">
             Peak Nodal Displacements (magnitude, CQC-combined)
           </p>
           <div className="max-h-40 overflow-y-auto space-y-1">
             {result.nodalDisplacements.map((d, i) => (
-              <div key={i} className="text-xs text-slate-400 font-mono">
+              <div key={i} className="text-xs text-text-secondary font-mono">
                 Node {i}: ux={(d.ux * 1000).toFixed(3)}mm, uy={(d.uy * 1000).toFixed(3)}mm, uz=
                 {(d.uz * 1000).toFixed(3)}mm
               </div>
@@ -700,31 +700,31 @@ function NonlinearStaticResultView({ result }: { result: ParsedNonlinearStaticRe
       />
       <WarningsList warnings={result.warnings} />
       {result.success && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 grid grid-cols-2 gap-3">
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 grid grid-cols-2 gap-3">
           <div>
-            <p className="text-xs text-slate-500 font-medium mb-1">Convergence</p>
-            <p className={`text-sm font-mono ${result.converged ? "text-emerald-400" : "text-amber-400"}`}>
+            <p className="text-xs text-text-muted font-medium mb-1">Convergence</p>
+            <p className={`text-sm font-mono ${result.converged ? "text-status-activeText" : "text-status-holdText"}`}>
               {result.converged ? "Converged" : "Not converged"}
             </p>
           </div>
           <div>
-            <p className="text-xs text-slate-500 font-medium mb-1">Displacement Amplification</p>
-            <p className="text-sm text-slate-300 font-mono">
+            <p className="text-xs text-text-muted font-medium mb-1">Displacement Amplification</p>
+            <p className="text-sm text-text-secondary font-mono">
               {result.maxDisplacementAmplificationRatio?.toFixed(3)}x
             </p>
           </div>
         </div>
       )}
       {result.success && result.hingeStates && result.hingeStates.length > 0 && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
-          <p className="text-xs text-slate-500 font-medium mb-1.5">Plastic Hinge States</p>
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+          <p className="text-xs text-text-muted font-medium mb-1.5">Plastic Hinge States</p>
           <div className="max-h-40 overflow-y-auto space-y-1">
             {result.hingeStates.map((h, i) => (
               <div key={i} className="text-xs font-mono flex items-center gap-2">
-                <span className={h.yielded ? "text-amber-400" : "text-slate-500"}>
+                <span className={h.yielded ? "text-status-holdText" : "text-text-muted"}>
                   {h.yielded ? "● Yielded" : "○ Elastic"}
                 </span>
-                <span className="text-slate-400">
+                <span className="text-text-secondary">
                   Element {h.elementIndex} ({h.isAtStartNode ? "start" : "end"}): M = {h.finalMomentKNm.toFixed(3)} kN·m
                 </span>
               </div>
@@ -733,11 +733,11 @@ function NonlinearStaticResultView({ result }: { result: ParsedNonlinearStaticRe
         </div>
       )}
       {result.success && result.nodalDisplacements && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
-          <p className="text-xs text-slate-500 font-medium mb-1.5">Final Nodal Displacements</p>
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+          <p className="text-xs text-text-muted font-medium mb-1.5">Final Nodal Displacements</p>
           <div className="max-h-40 overflow-y-auto space-y-1">
             {result.nodalDisplacements.map((d, i) => (
-              <div key={i} className="text-xs text-slate-400 font-mono">
+              <div key={i} className="text-xs text-text-secondary font-mono">
                 Node {i}: ux={(d.ux * 1000).toFixed(3)}mm, uy={(d.uy * 1000).toFixed(3)}mm, uz=
                 {(d.uz * 1000).toFixed(3)}mm
               </div>
@@ -821,45 +821,45 @@ function PushoverResultView({ result }: { result: ParsedPushoverResult }) {
       />
       <WarningsList warnings={result.warnings} />
       {result.success && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 grid grid-cols-2 gap-3">
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 grid grid-cols-2 gap-3">
           <div>
-            <p className="text-xs text-slate-500 font-medium mb-1">Status</p>
+            <p className="text-xs text-text-muted font-medium mb-1">Status</p>
             <p
               className={`text-sm font-mono ${
                 result.structureCollapsed
-                  ? "text-red-400"
+                  ? "text-red-600"
                   : result.reachedTargetDisplacement
-                    ? "text-emerald-400"
-                    : "text-amber-400"
+                    ? "text-status-activeText"
+                    : "text-status-holdText"
               }`}
             >
               {result.structureCollapsed ? "Collapsed" : result.reachedTargetDisplacement ? "Target reached" : "Incomplete"}
             </p>
           </div>
           <div>
-            <p className="text-xs text-slate-500 font-medium mb-1">Ultimate Base Shear</p>
-            <p className="text-sm text-slate-300 font-mono">{lastPoint?.baseShearKN.toFixed(3) ?? "—"} kN</p>
+            <p className="text-xs text-text-muted font-medium mb-1">Ultimate Base Shear</p>
+            <p className="text-sm text-text-secondary font-mono">{lastPoint?.baseShearKN.toFixed(3) ?? "—"} kN</p>
           </div>
         </div>
       )}
       {result.success && result.capacityCurve && result.capacityCurve.length > 1 && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
-          <p className="text-xs text-slate-500 font-medium mb-1.5 text-center">
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+          <p className="text-xs text-text-muted font-medium mb-1.5 text-center">
             Capacity Curve (Base Shear vs. Control Displacement)
           </p>
           <CapacityCurveChart curve={result.capacityCurve} />
         </div>
       )}
       {result.success && result.finalHingeStates && result.finalHingeStates.length > 0 && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5">
-          <p className="text-xs text-slate-500 font-medium mb-1.5">Final Plastic Hinge States</p>
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+          <p className="text-xs text-text-muted font-medium mb-1.5">Final Plastic Hinge States</p>
           <div className="max-h-40 overflow-y-auto space-y-1">
             {result.finalHingeStates.map((h, i) => (
               <div key={i} className="text-xs font-mono flex items-center gap-2">
-                <span className={h.yielded ? "text-amber-400" : "text-slate-500"}>
+                <span className={h.yielded ? "text-status-holdText" : "text-text-muted"}>
                   {h.yielded ? "● Yielded" : "○ Elastic"}
                 </span>
-                <span className="text-slate-400">
+                <span className="text-text-secondary">
                   Element {h.elementIndex} ({h.isAtStartNode ? "start" : "end"}): M = {h.finalMomentKNm.toFixed(3)} kN·m
                 </span>
               </div>

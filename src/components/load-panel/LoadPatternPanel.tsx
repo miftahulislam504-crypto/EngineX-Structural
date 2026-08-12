@@ -79,25 +79,25 @@ export function LoadPatternPanel({ onAddPattern, onDeletePattern }: LoadPatternP
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-2">Load Patterns</h3>
+        <h3 className="text-sm font-medium text-text-primary mb-2">Load Patterns</h3>
 
         {patterns.length === 0 ? (
-          <p className="text-xs text-slate-500">কোনো load pattern যোগ করা হয়নি।</p>
+          <p className="text-xs text-text-muted">কোনো load pattern যোগ করা হয়নি।</p>
         ) : (
           <ul className="space-y-1">
             {patterns.map((pattern) => (
               <li
                 key={pattern.patternId}
-                className="flex items-center justify-between rounded-md px-2.5 py-1.5 text-sm hover:bg-slate-800/60 text-slate-300"
+                className="flex items-center justify-between rounded-md px-2.5 py-1.5 text-sm hover:bg-surface-hover text-text-secondary"
               >
                 <span>
                   <span className="font-medium">{pattern.name}</span>
-                  <span className="text-slate-500 ml-1.5 text-xs">({pattern.category})</span>
+                  <span className="text-text-muted ml-1.5 text-xs">({pattern.category})</span>
                 </span>
                 <button
                   type="button"
                   onClick={() => onDeletePattern(pattern.patternId)}
-                  className="text-xs text-red-500/70 hover:text-red-400 px-1"
+                  className="text-xs text-red-500/70 hover:text-red-600 px-1"
                   title="ডিলিট করুন"
                 >
                   ✕
@@ -108,13 +108,13 @@ export function LoadPatternPanel({ onAddPattern, onDeletePattern }: LoadPatternP
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-2.5 border-t border-slate-800 pt-3">
+      <form onSubmit={handleSubmit} className="space-y-2.5 border-t border-surface-border pt-3">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">ক্যাটাগরি</label>
+          <label className="block text-xs text-text-muted mb-1">ক্যাটাগরি</label>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value as LoadCategory)}
-            className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+            className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
           >
             {CATEGORY_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -125,31 +125,31 @@ export function LoadPatternPanel({ onAddPattern, onDeletePattern }: LoadPatternP
         </div>
 
         <div>
-          <label className="block text-xs text-slate-500 mb-1">নাম</label>
+          <label className="block text-xs text-text-muted mb-1">নাম</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Dead Load (DL)"
-            className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+            className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
           />
         </div>
 
-        {formError && <p className="text-xs text-red-400">{formError}</p>}
+        {formError && <p className="text-xs text-red-600">{formError}</p>}
 
         <button
           type="submit"
-          className="w-full rounded-md bg-sky-700 hover:bg-sky-600 text-white text-sm font-medium py-1.5 transition-colors"
+          className="w-full rounded-md bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium py-1.5 transition-colors"
         >
           + Pattern যোগ করুন
         </button>
       </form>
 
-      <div className="text-xs text-slate-600 border-t border-slate-800 pt-3">
+      <div className="text-xs text-text-muted border-t border-surface-border pt-3">
         <p>
           ℹ️ Bridge Load, Vehicle/Moving Load, এবং Blast Load এখানে দেওয়া হয়নি — এগুলোর
           নির্ভরযোগ্য গণনা এখনো সাপোর্টেড না (কারণ বিস্তারিত{" "}
-          <code className="text-slate-500">src/lib/types/load.ts</code> এর হেডার মন্তব্যে)।
+          <code className="text-text-muted">src/lib/types/load.ts</code> এর হেডার মন্তব্যে)।
         </p>
       </div>
     </div>

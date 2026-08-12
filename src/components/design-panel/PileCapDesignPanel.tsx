@@ -106,23 +106,23 @@ export function PileCapDesignPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">Pile Cap + Pile Group Design</h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">Pile Cap + Pile Group Design</h3>
+        <p className="text-xs text-text-muted mb-3">
           Group efficiency (Converse-Labarre), rigid pile-cap load distribution, cap flexure/shear, punching shear.
         </p>
-        <p className="text-xs text-amber-500 bg-amber-950/30 border border-amber-900 rounded-md px-2.5 py-2 mb-2">
+        <p className="text-xs text-status-holdText bg-status-holdBg border border-status-holdBorder rounded-md px-2.5 py-2 mb-2">
           This app does not perform geotechnical analysis — enter unit skin friction and end bearing pressure from
           your geotechnical report.
         </p>
 
-        <label className="block text-xs text-slate-500 mb-1">Pile Cap</label>
+        <label className="block text-xs text-text-muted mb-1">Pile Cap</label>
         <select
           value={selectedId}
           onChange={(e) => {
             setSelectedId(e.target.value);
             setReport(null);
           }}
-          className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-sm px-2.5 py-2 mb-2"
+          className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-sm px-2.5 py-2 mb-2"
         >
           <option value="">Select a pile cap...</option>
           {pileCaps.map((c) => (
@@ -133,12 +133,12 @@ export function PileCapDesignPanel() {
         </select>
 
         {selectedCap && !linkedGroup && (
-          <p className="text-xs text-amber-500 bg-amber-950/30 border border-amber-900 rounded-md px-2.5 py-2 mb-2">
+          <p className="text-xs text-status-holdText bg-status-holdBg border border-status-holdBorder rounded-md px-2.5 py-2 mb-2">
             This pile cap&apos;s linked Pile Group could not be found — check the element&apos;s pile group reference.
           </p>
         )}
         {selectedCap && !isConcrete && (
-          <p className="text-xs text-amber-500 bg-amber-950/30 border border-amber-900 rounded-md px-2.5 py-2 mb-2">
+          <p className="text-xs text-status-holdText bg-status-holdBg border border-status-holdBorder rounded-md px-2.5 py-2 mb-2">
             This pile cap&apos;s material is not concrete — RC design does not apply.
           </p>
         )}
@@ -146,7 +146,7 @@ export function PileCapDesignPanel() {
 
       {selectedCap && linkedGroup && isConcrete && (
         <>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-text-muted">
             Cap: {selectedCap.width}×{selectedCap.length}×{selectedCap.thickness}mm · Group: {linkedGroup.numberOfRows}
             ×{linkedGroup.numberOfColumns} {linkedGroup.pileShape} piles, ⌀{linkedGroup.pileDiameterOrWidthMm}mm,
             spacing {linkedGroup.pileSpacingCenterToCenterMm}mm, embedded {linkedGroup.embeddedLengthMm}mm
@@ -154,42 +154,42 @@ export function PileCapDesignPanel() {
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Unit Skin Friction fs (kPa)</label>
+              <label className="block text-xs text-text-muted mb-1">Unit Skin Friction fs (kPa)</label>
               <input
                 type="number"
                 step="any"
                 value={unitSkinFrictionKPa}
                 onChange={(e) => setUnitSkinFrictionKPa(e.target.value)}
                 placeholder="from geotech report"
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-500 mb-1">End Bearing qp (kPa)</label>
+              <label className="block text-xs text-text-muted mb-1">End Bearing qp (kPa)</label>
               <input
                 type="number"
                 step="any"
                 value={endBearingPressureKPa}
                 onChange={(e) => setEndBearingPressureKPa(e.target.value)}
                 placeholder="from geotech report"
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Pile Factor of Safety</label>
+            <label className="block text-xs text-text-muted mb-1">Pile Factor of Safety</label>
             <input
               type="number"
               step="any"
               value={pileFactorOfSafety}
               onChange={(e) => setPileFactorOfSafety(e.target.value)}
-              className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+              className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
             />
           </div>
 
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-2">
-            <p className="text-xs text-slate-400 font-medium">Column</p>
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-2">
+            <p className="text-xs text-text-secondary font-medium">Column</p>
             <div className="grid grid-cols-2 gap-2">
               <input
                 type="number"
@@ -197,7 +197,7 @@ export function PileCapDesignPanel() {
                 value={servicePointLoadKN}
                 onChange={(e) => setServicePointLoadKN(e.target.value)}
                 placeholder="Pa (kN)"
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
               <input
                 type="number"
@@ -205,7 +205,7 @@ export function PileCapDesignPanel() {
                 value={factoredPointLoadKN}
                 onChange={(e) => setFactoredPointLoadKN(e.target.value)}
                 placeholder="Pu (kN)"
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -215,7 +215,7 @@ export function PileCapDesignPanel() {
                 value={momentXKNm}
                 onChange={(e) => setMomentXKNm(e.target.value)}
                 placeholder="Mx (kN·m)"
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
               <input
                 type="number"
@@ -223,7 +223,7 @@ export function PileCapDesignPanel() {
                 value={momentZKNm}
                 onChange={(e) => setMomentZKNm(e.target.value)}
                 placeholder="Mz (kN·m)"
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -233,7 +233,7 @@ export function PileCapDesignPanel() {
                 value={columnWidthMm}
                 onChange={(e) => setColumnWidthMm(e.target.value)}
                 placeholder="Width (mm)"
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
               <input
                 type="number"
@@ -241,13 +241,13 @@ export function PileCapDesignPanel() {
                 value={columnDepthMm}
                 onChange={(e) => setColumnDepthMm(e.target.value)}
                 placeholder="Depth (mm)"
-                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
               />
             </div>
             <select
               value={columnPosition}
               onChange={(e) => setColumnPosition(e.target.value as ColumnPosition)}
-              className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+              className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
             >
               <option value="interior">Interior</option>
               <option value="edge">Edge</option>
@@ -256,20 +256,20 @@ export function PileCapDesignPanel() {
           </div>
 
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Effective Cover (mm)</label>
+            <label className="block text-xs text-text-muted mb-1">Effective Cover (mm)</label>
             <input
               type="number"
               step="any"
               value={effectiveCoverMm}
               onChange={(e) => setEffectiveCoverMm(e.target.value)}
-              className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+              className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
             />
           </div>
 
           <button
             type="button"
             onClick={handleRunDesign}
-            className="w-full rounded-md bg-sky-700 hover:bg-sky-600 text-white text-sm font-medium py-2 transition-colors"
+            className="w-full rounded-md bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium py-2 transition-colors"
           >
             ▶ Run Pile Cap Design
           </button>
@@ -284,10 +284,10 @@ export function PileCapDesignPanel() {
 function PileCapDesignReportView({ report }: { report: PileCapDesignReport }) {
   const statusStyle =
     report.overallStatus === "ok"
-      ? "bg-emerald-950/30 border-emerald-900 text-emerald-400"
+      ? "bg-status-activeBg border-status-activeBorder text-status-activeText"
       : report.overallStatus === "warning"
-        ? "bg-amber-950/30 border-amber-900 text-amber-400"
-        : "bg-red-950/30 border-red-900 text-red-400";
+        ? "bg-status-holdBg border-status-holdBorder text-status-holdText"
+        : "bg-red-50 border-red-200 text-red-600";
   const statusIcon = report.overallStatus === "ok" ? "✓" : report.overallStatus === "warning" ? "⚠" : "✗";
 
   return (
@@ -298,56 +298,56 @@ function PileCapDesignReportView({ report }: { report: PileCapDesignReport }) {
         </p>
       </div>
 
-      <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-        <p className="text-xs text-slate-500 font-medium mb-1">Pile Group Capacity</p>
-        <p className="text-xs text-slate-300">
+      <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+        <p className="text-xs text-text-muted font-medium mb-1">Pile Group Capacity</p>
+        <p className="text-xs text-text-secondary">
           {report.numberOfPiles} piles · Group efficiency {fmt(report.groupEfficiency * 100, 0)}%
         </p>
-        <p className="text-xs text-slate-300">
+        <p className="text-xs text-text-secondary">
           Allowable capacity/pile: {fmt(report.allowableCapacityPerPileKN)} kN
         </p>
-        {report.isUplift && <p className="text-xs text-red-400">⚠ Uplift detected on one or more piles.</p>}
+        {report.isUplift && <p className="text-xs text-red-600">⚠ Uplift detected on one or more piles.</p>}
       </div>
 
-      <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-        <p className="text-xs text-slate-500 font-medium mb-1">Per-Pile Reactions</p>
+      <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+        <p className="text-xs text-text-muted font-medium mb-1">Per-Pile Reactions</p>
         {report.piles.map((p) => (
-          <p key={p.label} className={`text-xs ${p.adequate ? "text-slate-300" : "text-red-400"}`}>
+          <p key={p.label} className={`text-xs ${p.adequate ? "text-text-secondary" : "text-red-600"}`}>
             {p.label}: Pu = {fmt(p.factoredReactionKN)} kN, Pa = {fmt(p.serviceReactionKN)} kN (
             {fmt(p.utilizationRatio * 100, 0)}%) {p.adequate ? "" : "OVER"}
           </p>
         ))}
       </div>
 
-      <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-        <p className="text-xs text-slate-500 font-medium mb-1">Cap Flexural Reinforcement</p>
-        <p className="text-xs text-slate-300">
+      <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+        <p className="text-xs text-text-muted font-medium mb-1">Cap Flexural Reinforcement</p>
+        <p className="text-xs text-text-secondary">
           X-direction: As = {fmt(report.flexureX.governingAsMm2, 0)} mm²
         </p>
-        <p className="text-xs text-slate-300">
+        <p className="text-xs text-text-secondary">
           Z-direction: As = {fmt(report.flexureZ.governingAsMm2, 0)} mm²
         </p>
       </div>
 
-      <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-        <p className="text-xs text-slate-500 font-medium mb-1">Shear</p>
-        <p className="text-xs text-slate-300">
+      <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+        <p className="text-xs text-text-muted font-medium mb-1">Shear</p>
+        <p className="text-xs text-text-secondary">
           One-way X: {report.shearX.adequate ? "OK" : "NOT adequate"} — Vu = {fmt(report.shearX.factoredShearKN)} kN
         </p>
-        <p className="text-xs text-slate-300">
+        <p className="text-xs text-text-secondary">
           One-way Z: {report.shearZ.adequate ? "OK" : "NOT adequate"} — Vu = {fmt(report.shearZ.factoredShearKN)} kN
         </p>
-        <p className="text-xs text-slate-300">
+        <p className="text-xs text-text-secondary">
           Punching: {report.punchingShear.adequate ? "OK" : "NOT adequate"} — φVc ={" "}
           {fmt(report.punchingShear.phiVcKN)} kN
         </p>
       </div>
 
       {report.allWarnings.length > 0 && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1.5">
-          <p className="text-xs text-slate-500 font-medium">Warnings:</p>
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1.5">
+          <p className="text-xs text-text-muted font-medium">Warnings:</p>
           {report.allWarnings.map((w, i) => (
-            <p key={i} className="text-xs text-amber-400 leading-relaxed">
+            <p key={i} className="text-xs text-status-holdText leading-relaxed">
               {w}
             </p>
           ))}

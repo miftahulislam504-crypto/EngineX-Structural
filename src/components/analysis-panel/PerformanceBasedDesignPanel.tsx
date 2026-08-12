@@ -28,10 +28,10 @@ const PERFORMANCE_LEVEL_LABEL: Record<PerformanceLevel, string> = {
 };
 
 const PERFORMANCE_LEVEL_STYLE: Record<PerformanceLevel, string> = {
-  "immediate-occupancy": "text-emerald-400",
-  "life-safety": "text-amber-400",
+  "immediate-occupancy": "text-status-activeText",
+  "life-safety": "text-status-holdText",
   "collapse-prevention": "text-orange-400",
-  "beyond-collapse-prevention": "text-red-400",
+  "beyond-collapse-prevention": "text-red-600",
 };
 
 /**
@@ -88,7 +88,7 @@ export function PerformanceBasedDesignPanel({
 
   if (!modalResult.success || !pushoverResult.success) {
     return (
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-text-muted">
         Performance-Based Design এর জন্য একটা সফল Modal result ও একটা সফল Pushover result — দুটোই
         দরকার।
       </p>
@@ -96,12 +96,12 @@ export function PerformanceBasedDesignPanel({
   }
 
   return (
-    <div className="rounded-md border border-slate-800 bg-slate-900/40 px-3 py-3 space-y-3">
+    <div className="rounded-md border border-surface-border bg-surface-card/40 px-3 py-3 space-y-3">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">
+        <h3 className="text-sm font-medium text-text-primary mb-1">
           Performance-Based Design — ATC-40 / FEMA 356
         </h3>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-text-muted">
           Pushover capacity curve কে Modal mode 1 দিয়ে Sa-Sd spectrum-এ রূপান্তর করে BNBC 2020
           demand spectrum-এর সাথে ছেদবিন্দু (সরলীকৃত পদ্ধতি) বের করে।
         </p>
@@ -109,75 +109,75 @@ export function PerformanceBasedDesignPanel({
 
       <div className="grid grid-cols-3 gap-2">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Push Direction</label>
+          <label className="block text-xs text-text-muted mb-1">Push Direction</label>
           <select
             value={direction}
             onChange={(e) => setDirection(e.target.value as "X" | "Z")}
-            className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+            className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
           >
             <option value="X">X</option>
             <option value="Z">Z</option>
           </select>
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Total Weight (kN)</label>
+          <label className="block text-xs text-text-muted mb-1">Total Weight (kN)</label>
           <input
             type="number"
             step="any"
             value={totalSeismicWeightKN}
             onChange={(e) => setTotalSeismicWeightKN(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+            className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
           />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Height (m)</label>
+          <label className="block text-xs text-text-muted mb-1">Height (m)</label>
           <input
             type="number"
             step="any"
             value={buildingHeight}
             onChange={(e) => setBuildingHeight(e.target.value)}
-            className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-600"
+            className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
           />
         </div>
       </div>
 
       {participation && (
-        <div className="text-xs text-slate-500 flex gap-4">
+        <div className="text-xs text-text-muted flex gap-4">
           <span>PF1 = {participation.participationFactorPF1.toFixed(3)}</span>
           <span>α1 = {participation.modalMassCoefficientAlpha1.toFixed(3)}</span>
         </div>
       )}
 
       {performancePointResult?.found && (
-        <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1.5">
+        <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1.5">
           <div className="flex justify-between text-xs">
-            <span className="text-slate-500">Performance Point</span>
-            <span className="text-slate-300 font-mono">
+            <span className="text-text-muted">Performance Point</span>
+            <span className="text-text-secondary font-mono">
               Sd={performancePointResult.performancePoint?.spectralDisplacementM.toFixed(4)}m, Sa=
               {performancePointResult.performancePoint?.spectralAccelerationG.toFixed(3)}g
             </span>
           </div>
           <div className="flex justify-between text-xs">
-            <span className="text-slate-500">Roof Displacement</span>
-            <span className="text-slate-300 font-mono">
+            <span className="text-text-muted">Roof Displacement</span>
+            <span className="text-text-secondary font-mono">
               {((performancePointResult.roofDisplacementM ?? 0) * 1000).toFixed(1)} mm
             </span>
           </div>
           <div className="flex justify-between text-xs">
-            <span className="text-slate-500">Governing Drift Ratio</span>
-            <span className="text-slate-300 font-mono">
+            <span className="text-text-muted">Governing Drift Ratio</span>
+            <span className="text-text-secondary font-mono">
               {((performancePointResult.governingDriftRatio ?? 0) * 100).toFixed(2)}%
             </span>
           </div>
           {performancePointResult.performanceLevel && (
-            <div className="flex justify-between text-xs pt-1.5 border-t border-slate-800">
-              <span className="text-slate-500">Performance Level</span>
+            <div className="flex justify-between text-xs pt-1.5 border-t border-surface-border">
+              <span className="text-text-muted">Performance Level</span>
               <span className={`font-semibold ${PERFORMANCE_LEVEL_STYLE[performancePointResult.performanceLevel]}`}>
                 {PERFORMANCE_LEVEL_LABEL[performancePointResult.performanceLevel]}
               </span>
             </div>
           )}
-          <p className="text-xs text-slate-600 pt-1">
+          <p className="text-xs text-text-muted pt-1">
             সীমা (FEMA 356, RC Frame): IO ≤{" "}
             {(PERFORMANCE_LEVEL_DRIFT_LIMITS["immediate-occupancy"] * 100).toFixed(0)}%, LS ≤{" "}
             {(PERFORMANCE_LEVEL_DRIFT_LIMITS["life-safety"] * 100).toFixed(0)}%, CP ≤{" "}
@@ -187,12 +187,12 @@ export function PerformanceBasedDesignPanel({
       )}
 
       {(participation?.warnings ?? []).map((warning, i) => (
-        <p key={`p-${i}`} className="text-xs text-amber-400">
+        <p key={`p-${i}`} className="text-xs text-status-holdText">
           {warning}
         </p>
       ))}
       {(performancePointResult?.warnings ?? []).map((warning, i) => (
-        <p key={`pp-${i}`} className="text-xs text-amber-400">
+        <p key={`pp-${i}`} className="text-xs text-status-holdText">
           {warning}
         </p>
       ))}

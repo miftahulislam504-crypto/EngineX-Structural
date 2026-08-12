@@ -48,15 +48,15 @@ export function WorkflowSidebar({ onNavigate }: WorkflowSidebarProps) {
   }
 
   return (
-    <aside className="w-72 border-r border-slate-800 bg-slate-900/60 flex flex-col">
-      <div className="px-4 pt-4 pb-3 border-b border-slate-800">
+    <aside className="w-72 border-r border-surface-border bg-surface-card flex flex-col">
+      <div className="px-4 pt-4 pb-3 border-b border-surface-border">
         <div className="flex items-center justify-between mb-1.5">
-          <h2 className="text-sm font-medium text-slate-200">Design Workflow</h2>
-          <span className="text-xs text-slate-500">{overallPercent}%</span>
+          <h2 className="text-sm font-medium text-text-primary">Design Workflow</h2>
+          <span className="text-xs text-text-muted">{overallPercent}%</span>
         </div>
-        <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+        <div className="w-full h-1.5 rounded-full bg-surface-hover overflow-hidden">
           <div
-            className="h-full bg-sky-600 transition-all duration-300"
+            className="h-full bg-brand-600 transition-all duration-300"
             style={{ width: `${overallPercent}%` }}
           />
         </div>
@@ -117,12 +117,12 @@ function StageCard({
 
   const iconStyle =
     status === "complete"
-      ? "bg-emerald-600 text-white"
+      ? "bg-status-activeText text-white"
       : status === "in-progress"
-        ? "bg-sky-600 text-white"
+        ? "bg-brand-600 text-white"
         : status === "locked"
-          ? "bg-slate-800 text-slate-500"
-          : "bg-slate-800 text-slate-300";
+          ? "bg-surface-hover text-text-muted"
+          : "bg-surface-hover text-text-secondary";
 
   return (
     <button
@@ -131,10 +131,10 @@ function StageCard({
       disabled={isPlaceholder}
       className={`w-full text-left rounded-md border px-3 py-2.5 transition-colors ${
         isPlaceholder
-          ? "border-slate-850 bg-slate-950/40 cursor-not-allowed opacity-60"
+          ? "border-surface-border bg-surface cursor-not-allowed opacity-60"
           : status === "locked"
-            ? "border-slate-800 bg-slate-950/60 hover:border-slate-700"
-            : "border-slate-800 bg-slate-950 hover:border-sky-700"
+            ? "border-surface-border bg-surface hover:border-text-muted"
+            : "border-surface-border bg-surface-card hover:border-brand-300"
       }`}
     >
       <div className="flex items-start gap-2.5">
@@ -145,11 +145,11 @@ function StageCard({
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-1.5">
-            <p className="text-sm font-medium text-slate-200 truncate">{label}</p>
-            <span className="text-[11px] text-slate-500 truncate">{labelBn}</span>
+            <p className="text-sm font-medium text-text-primary truncate">{label}</p>
+            <span className="text-[11px] text-text-muted truncate">{labelBn}</span>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{description}</p>
-          <p className="text-[11px] text-slate-600 mt-1">{detail}</p>
+          <p className="text-xs text-text-muted mt-0.5 leading-relaxed">{description}</p>
+          <p className="text-[11px] text-text-muted mt-1">{detail}</p>
         </div>
       </div>
     </button>
@@ -167,22 +167,22 @@ function LockedStageConfirm({
 }) {
   const stage = STAGES.find((s) => s.id === stageId);
   return (
-    <div className="border-t border-slate-800 px-3 py-3 bg-slate-950/80">
-      <p className="text-xs text-amber-400 mb-2">
+    <div className="border-t border-surface-border px-3 py-3 bg-surface">
+      <p className="text-xs text-status-holdText mb-2">
         আগের ধাপ এখনো সম্পূর্ণ হয়নি। তবু &quot;{stage?.label}&quot;-এ যেতে চান?
       </p>
       <div className="flex gap-2">
         <button
           type="button"
           onClick={onConfirm}
-          className="flex-1 text-xs py-1.5 rounded-md bg-amber-700 hover:bg-amber-600 text-white transition-colors"
+          className="flex-1 text-xs py-1.5 rounded-md bg-status-holdText hover:opacity-90 text-white transition-colors"
         >
           হ্যাঁ, যাও
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 text-xs py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+          className="flex-1 text-xs py-1.5 rounded-md bg-surface-hover hover:bg-surface-border text-text-secondary transition-colors"
         >
           বাতিল
         </button>

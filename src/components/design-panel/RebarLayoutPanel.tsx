@@ -37,14 +37,14 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-[10px] text-slate-500 mb-0.5">
+      <label className="block text-[10px] text-text-muted mb-0.5">
         {label}
         {unit ? ` (${unit})` : ""}
       </label>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+        className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
       />
     </div>
   );
@@ -128,17 +128,17 @@ export function RebarLayoutPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-slate-200 mb-1">Rebar Layout (Auto Reinforcement)</h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <h3 className="text-sm font-medium text-text-primary mb-1">Rebar Layout (Auto Reinforcement)</h3>
+        <p className="text-xs text-text-muted mb-3">
           Phase 6-এর required steel area (As) নিয়ে বাস্তব bar diameter + count + layer arrangement বের করে,
           section width/perimeter-এর ভিতরে clear spacing মেনে ফিট করে কিনা যাচাই করে (ACI 318-19 §25.2.1)।
         </p>
 
-        <label className="block text-xs text-slate-500 mb-1">Element Type</label>
+        <label className="block text-xs text-text-muted mb-1">Element Type</label>
         <select
           value={mode}
           onChange={(e) => setMode(e.target.value as ElementMode)}
-          className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-sm px-2.5 py-2 mb-3"
+          className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-sm px-2.5 py-2 mb-3"
         >
           {(Object.keys(MODE_LABELS) as ElementMode[]).map((m) => (
             <option key={m} value={m}>
@@ -158,7 +158,7 @@ export function RebarLayoutPanel() {
               <Field label="Max Aggregate Size" value={beamMaxAggregateSizeMm} onChange={setBeamMaxAggregateSizeMm} unit="mm" />
             </div>
             <Field label="Tension As (governingAsMm2)" value={beamTensionAsMm2} onChange={setBeamTensionAsMm2} unit="mm²" />
-            <label className="flex items-center gap-2 text-xs text-slate-400">
+            <label className="flex items-center gap-2 text-xs text-text-secondary">
               <input type="checkbox" checked={hasCompression} onChange={(e) => setHasCompression(e.target.checked)} />
               Doubly-reinforced (compression steel)
             </label>
@@ -182,7 +182,7 @@ export function RebarLayoutPanel() {
               <Field label="Total As (totalAsMm2)" value={colTotalAsMm2} onChange={setColTotalAsMm2} unit="mm²" />
               <Field label="Bar Diameter" value={colBarDiameterMm} onChange={setColBarDiameterMm} unit="mm" />
             </div>
-            <p className="text-[10px] text-slate-600">
+            <p className="text-[10px] text-text-muted">
               Total As আর Bar Diameter Phase 6b (RC Column Design) বা 9b (Section Optimization)-এর already-validated
               রেজাল্ট থেকে আসে — এই panel শুধু perimeter-এ layout করে।
             </p>
@@ -195,17 +195,17 @@ export function RebarLayoutPanel() {
               <Field label="Required As" value={distAsPerMeterMm2} onChange={setDistAsPerMeterMm2} unit="mm²/m" />
               <Field label="Thickness" value={distThicknessMm} onChange={setDistThicknessMm} unit="mm" />
             </div>
-            <label className="block text-[10px] text-slate-500 mb-0.5">Reinforcement Role</label>
+            <label className="block text-[10px] text-text-muted mb-0.5">Reinforcement Role</label>
             <select
               value={distRole}
               onChange={(e) => setDistRole(e.target.value as DistributedReinforcementRole)}
-              className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+              className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
             >
               <option value="flexural">Flexural (main direction) — max 3×thickness</option>
               <option value="shrinkage-temperature">Shrinkage/Temperature (secondary) — max 5×thickness</option>
             </select>
             <Field label="Max Aggregate Size" value={distMaxAggregateSizeMm} onChange={setDistMaxAggregateSizeMm} unit="mm" />
-            <p className="text-[10px] text-slate-600">
+            <p className="text-[10px] text-text-muted">
               Required As Phase 6d (Slab/Wall Design) বা 6e (Footing Design)-এর per-meter-width রেজাল্ট থেকে আসে
               (positiveMomentDesign.governingAsMm2, minAsPerMeterMm2, ইত্যাদি) — প্রতি direction/role আলাদা রান লাগবে।
             </p>
@@ -215,7 +215,7 @@ export function RebarLayoutPanel() {
         <button
           type="button"
           onClick={handleRun}
-          className="w-full rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium py-2 transition-colors"
+          className="w-full rounded-md bg-surface-hover hover:bg-surface-border text-text-primary text-sm font-medium py-2 transition-colors"
         >
           Solve Layout
         </button>
@@ -225,38 +225,38 @@ export function RebarLayoutPanel() {
         <div className="space-y-3">
           <div
             className={`rounded-md border px-3 py-2.5 ${
-              beamResult.feasible ? "bg-emerald-950/30 border-emerald-900" : "bg-amber-950/30 border-amber-900"
+              beamResult.feasible ? "bg-status-activeBg border-status-activeBorder" : "bg-status-holdBg border-status-holdBorder"
             }`}
           >
-            <p className={`text-xs leading-relaxed ${beamResult.feasible ? "text-emerald-400" : "text-amber-500"}`}>
+            <p className={`text-xs leading-relaxed ${beamResult.feasible ? "text-status-activeText" : "text-status-holdText"}`}>
               {beamResult.feasible ? "Feasible layout পাওয়া গেছে।" : "কোনো feasible layout পাওয়া যায়নি।"}
             </p>
           </div>
 
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-            <p className="text-xs text-slate-500 font-medium mb-1">Tension</p>
-            <p className="text-xs text-slate-300">
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+            <p className="text-xs text-text-muted font-medium mb-1">Tension</p>
+            <p className="text-xs text-text-secondary">
               {beamResult.tension.barCount}-{beamResult.tension.barDiameterMm}mmØ (As provided ={" "}
               {fmt(beamResult.tension.providedAsMm2)} mm²)
             </p>
-            <p className="text-xs text-slate-500">Layers: {beamResult.tension.layers.join(" + ") || "—"}</p>
+            <p className="text-xs text-text-muted">Layers: {beamResult.tension.layers.join(" + ") || "—"}</p>
           </div>
 
           {beamResult.compression && (
-            <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-              <p className="text-xs text-slate-500 font-medium mb-1">Compression</p>
-              <p className="text-xs text-slate-300">
+            <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+              <p className="text-xs text-text-muted font-medium mb-1">Compression</p>
+              <p className="text-xs text-text-secondary">
                 {beamResult.compression.barCount}-{beamResult.compression.barDiameterMm}mmØ (As provided ={" "}
                 {fmt(beamResult.compression.providedAsMm2)} mm²)
               </p>
-              <p className="text-xs text-slate-500">Layers: {beamResult.compression.layers.join(" + ") || "—"}</p>
+              <p className="text-xs text-text-muted">Layers: {beamResult.compression.layers.join(" + ") || "—"}</p>
             </div>
           )}
 
           {beamResult.warnings.length > 0 && (
-            <div className="rounded-md bg-amber-950/20 border border-amber-900/60 px-3 py-2.5 space-y-1">
+            <div className="rounded-md bg-status-holdBg border border-status-holdBorder/60 px-3 py-2.5 space-y-1">
               {beamResult.warnings.map((w, i) => (
-                <p key={i} className="text-xs text-amber-500 leading-relaxed">
+                <p key={i} className="text-xs text-status-holdText leading-relaxed">
                   {w}
                 </p>
               ))}
@@ -269,29 +269,29 @@ export function RebarLayoutPanel() {
         <div className="space-y-3">
           <div
             className={`rounded-md border px-3 py-2.5 ${
-              columnResult.feasible ? "bg-emerald-950/30 border-emerald-900" : "bg-amber-950/30 border-amber-900"
+              columnResult.feasible ? "bg-status-activeBg border-status-activeBorder" : "bg-status-holdBg border-status-holdBorder"
             }`}
           >
-            <p className={`text-xs leading-relaxed ${columnResult.feasible ? "text-emerald-400" : "text-amber-500"}`}>
+            <p className={`text-xs leading-relaxed ${columnResult.feasible ? "text-status-activeText" : "text-status-holdText"}`}>
               {columnResult.feasible ? "Feasible layout পাওয়া গেছে।" : "Perimeter-এ ফিট নাও করতে পারে।"}
             </p>
           </div>
 
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-            <p className="text-xs text-slate-500 font-medium mb-1">Longitudinal Bars</p>
-            <p className="text-xs text-slate-300">
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+            <p className="text-xs text-text-muted font-medium mb-1">Longitudinal Bars</p>
+            <p className="text-xs text-text-secondary">
               {columnResult.barCount}-{columnResult.barDiameterMm}mmØ (As provided = {fmt(columnResult.providedAsMm2)}{" "}
               mm²)
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-text-muted">
               Corners: {columnResult.cornerBarCount} · Faces: {columnResult.faceBarCountEachFace.join(", ")}
             </p>
           </div>
 
           {columnResult.warnings.length > 0 && (
-            <div className="rounded-md bg-amber-950/20 border border-amber-900/60 px-3 py-2.5 space-y-1">
+            <div className="rounded-md bg-status-holdBg border border-status-holdBorder/60 px-3 py-2.5 space-y-1">
               {columnResult.warnings.map((w, i) => (
-                <p key={i} className="text-xs text-amber-500 leading-relaxed">
+                <p key={i} className="text-xs text-status-holdText leading-relaxed">
                   {w}
                 </p>
               ))}
@@ -304,31 +304,31 @@ export function RebarLayoutPanel() {
         <div className="space-y-3">
           <div
             className={`rounded-md border px-3 py-2.5 ${
-              distributedResult.feasible ? "bg-emerald-950/30 border-emerald-900" : "bg-amber-950/30 border-amber-900"
+              distributedResult.feasible ? "bg-status-activeBg border-status-activeBorder" : "bg-status-holdBg border-status-holdBorder"
             }`}
           >
             <p
               className={`text-xs leading-relaxed ${
-                distributedResult.feasible ? "text-emerald-400" : "text-amber-500"
+                distributedResult.feasible ? "text-status-activeText" : "text-status-holdText"
               }`}
             >
               {distributedResult.feasible ? "Feasible spacing পাওয়া গেছে।" : "Feasible spacing পাওয়া যায়নি।"}
             </p>
           </div>
 
-          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
-            <p className="text-xs text-slate-500 font-medium mb-1">Bar Spacing</p>
-            <p className="text-xs text-slate-300">
+          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
+            <p className="text-xs text-text-muted font-medium mb-1">Bar Spacing</p>
+            <p className="text-xs text-text-secondary">
               {distributedResult.layout.barDiameterMm}mmØ @ {distributedResult.layout.spacingMm}mm c/c (As provided ={" "}
               {fmt(distributedResult.layout.providedAsPerMeterMm2)} mm²/m)
             </p>
-            <p className="text-xs text-slate-500">Max allowed spacing: {fmt(distributedResult.maxAllowedSpacingMm)}mm</p>
+            <p className="text-xs text-text-muted">Max allowed spacing: {fmt(distributedResult.maxAllowedSpacingMm)}mm</p>
           </div>
 
           {distributedResult.warnings.length > 0 && (
-            <div className="rounded-md bg-amber-950/20 border border-amber-900/60 px-3 py-2.5 space-y-1">
+            <div className="rounded-md bg-status-holdBg border border-status-holdBorder/60 px-3 py-2.5 space-y-1">
               {distributedResult.warnings.map((w, i) => (
-                <p key={i} className="text-xs text-amber-500 leading-relaxed">
+                <p key={i} className="text-xs text-status-holdText leading-relaxed">
                   {w}
                 </p>
               ))}
