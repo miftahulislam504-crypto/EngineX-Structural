@@ -22,6 +22,7 @@
 export type SidebarTab =
   | "geometry"
   | "library"
+  | "import"
   | "elements"
   | "loads"
   | "analysis"
@@ -90,7 +91,8 @@ export const STAGES: StageDef[] = [
     order: 2,
     label: "Model",
     labelBn: "মডেল",
-    description: "Grid/Story জ্যামিতি বসান, তারপর Beam/Column/Slab/Wall/Footing এলিমেন্ট যোগ করুন।",
+    description:
+      "Grid/Story জ্যামিতি বসান, EngineXDraw থেকে architectural geometry আমদানি করুন, তারপর বাকি Beam/Column/Slab/Wall/Footing এলিমেন্ট যোগ করুন।",
     targetTab: "geometry",
   },
   {

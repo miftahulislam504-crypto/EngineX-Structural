@@ -69,6 +69,7 @@ import type { StageId } from "@/lib/workflow/types";
 const VALID_SIDEBAR_TABS: readonly SidebarTab[] = [
   "geometry",
   "library",
+  "import",
   "elements",
   "loads",
   "analysis",

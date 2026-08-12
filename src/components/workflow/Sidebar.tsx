@@ -3,6 +3,7 @@
 import {
   Grid3x3,
   Layers,
+  DownloadCloud,
   Boxes,
   ArrowDownToLine,
   Sigma,
@@ -57,6 +58,7 @@ interface SidebarItem {
 const SIDEBAR_ITEMS: SidebarItem[] = [
   { id: "geometry", label: "Geometry", icon: Grid3x3 },
   { id: "library", label: "Materials", icon: Layers },
+  { id: "import", label: "Import", icon: DownloadCloud },
   { id: "elements", label: "Elements", icon: Boxes },
   { id: "loads", label: "Loads", icon: ArrowDownToLine },
   { id: "analysis", label: "Analysis", icon: Sigma },
