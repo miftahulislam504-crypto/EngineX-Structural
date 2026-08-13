@@ -91,3 +91,59 @@ export async function ensureDependenciesLinked(projectId: string): Promise<Ensur
 
   return result;
 }
+
+/**
+ * ensureDependenciesLinked()-এর নিরাপদ সংস্করণ, শুধু analysis
+ * page mount-এ auto-call করার জন্য (Phase 5/7 wiring)।
+ *
+ * ⚠️ কেন ensureDependenciesLinked() নিজে mount-এ কল করা অনিরাপদ:
+ * সেই ফাংশনের নিজের লজিক অনুযায়ী — existing link থাকলেও
+ * upstreamVersionAtLink current version-এর সাথে না মিললে (মানে
+ * dependency আসলে OUTDATED), সেটা linkDependency() আবার কল করে নতুন
+ * version দিয়ে re-link করে দেয়। checkAndReanalyze() যদি ঠিক তার
+ * পরেই (বা আগে একই mount-effect-এ) কল হয়, race অনুযায়ী
+ * ensureDependenciesLinked() আগে চললে OUTDATED status প্রথম রেন্ডারেই
+ * silently CURRENT-এ রিসেট হয়ে যাবে — ইঞ্জিনিয়ার কখনো ব্যানার দেখার
+ * সুযোগই পাবেন না। EngineXEstimate-এর hub-module-import.ts এই একই
+ * ধরনের version-bump শুধু successful save-এর *পরে* কল করে
+ * (linkHubImportDependencies, tryProcess()-এর ভিতরে) — mount-এ না।
+ * Structural-এ কোনো "save/consume" মুহূর্ত নেই (re-derive pure/
+ * read-only, checkAndReanalyze.ts-এর হেডার কমেন্ট দেখুন), তাই সেই
+ * প্যাটার্ন সরাসরি এখানে বসে না — বদলে এই ফাংশন শুধু "link একেবারেই
+ * নেই" (upstreamMissing) সেই case-টা handle করে, existing-but-stale
+ * link কে কখনো touch করে না। Version bump (OUTDATED status ক্লিয়ার
+ * করা) শুধু ইঞ্জিনিয়ার re-derive suggestion সত্যিই "apply" করলে
+ * ঘটা উচিত — সেই acknowledgement এখনো এই সেশনে UI-তে বসানো হয়নি
+ * (নিচে useHubAnalysisSuggestions.ts-এর হেডার কমেন্ট দ্রষ্টব্য),
+ * তাই আপাতত link শুধু প্রথমবার তৈরি হয়, কখনো silently bump হয় না।
+ */
+export async function ensureDependenciesLinkedIfMissing(projectId: string): Promise<EnsureDependenciesLinkedResult> {
+  const result: EnsureDependenciesLinkedResult = { linked: [], alreadyLinkedAtCurrentVersion: [], upstreamMissing: [] };
+
+  const existingDeps = await getStructuralDependencyStatuses(projectId);
+  const existingByUpstream = new Map(existingDeps.map((d) => [d.upstreamModule, d]));
+
+  for (const upstreamModule of STRUCTURAL_UPSTREAM_MODULES) {
+    if (existingByUpstream.has(upstreamModule)) {
+      result.alreadyLinkedAtCurrentVersion.push(upstreamModule);
+      continue; // ⚠️ ensureDependenciesLinked() থেকে ইচ্ছাকৃত পার্থক্য — এখানে version মেলে কিনা চেক করা হয় না, শুধু link exist করে কিনা। stale হলেও bump করা হয় না (উপরের হেডার কমেন্ট দেখুন)।
+    }
+
+    const versionRecord = await getModuleVersion(projectId, upstreamModule);
+    if (!versionRecord) {
+      result.upstreamMissing.push(upstreamModule);
+      continue;
+    }
+
+    await linkDependency(
+      projectId,
+      "structural",
+      upstreamModule,
+      versionRecord.currentVersion,
+      `deriveSDC/deriveLiveLoad (Phase 3) এর ইনপুট — auto-registered by dependencyTracking.ts (first-link-only, mount-safe variant)`
+    );
+    result.linked.push(upstreamModule);
+  }
+
+  return result;
+}

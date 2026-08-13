@@ -12,6 +12,17 @@
  * এই ফাইল backend এর app/analysis_orchestration.py এর সাথে একটা
  * implicit contract শেয়ার করে — দুই পাশের shape mismatch হলে backend
  * "মডেল পার্স করতে ব্যর্থ" 422 error দেবে, silent ভুল ফলাফল না।
+ *
+ * supportOverrides (Phase 5, ecosystem sync plan) — প্রতিটা run*Analysis
+ * ফাংশন এখন এই ঐচ্ছিক parameter নেয় (AnalysisJobRequest এ আগে থেকেই
+ * client.ts এ সংজ্ঞায়িত ছিল, কিন্তু এই ফাইলের কোনো function সেটা
+ * কখনো pass-through করত না — grep করে যাচাই করা হয়েছিল কোনো caller
+ * ছিল না)। না দিলে (undefined) backend এর পুরনো hardcoded "base =
+ * fixed" (Y≈0) heuristic অপরিবর্তিতভাবে চলবে — backward compatible,
+ * কোনো existing caller ভাঙে না। useSupportOverrideStore.ts এ থাকা
+ * override গুলো AnalysisPanel.tsx থেকে এখানে পাস করা হয়
+ * (deriveSupportOverrideSuggestion.ts এর suggestion থেকে ইঞ্জিনিয়ার
+ * explicit "Apply" করলে সেই store এ যোগ হয়)।
  */
 
 import type { StructuralElement } from "@/lib/types/element";
@@ -19,7 +30,7 @@ import type { StructuralMaterial } from "@/lib/types/material";
 import type { StructuralSection } from "@/lib/types/section";
 import { computeSectionProperties } from "@/lib/types/section";
 import type { LoadCase } from "@/lib/types/load";
-import { submitAndAwaitJob, type JobStatusResponse } from "@/lib/compute/client";
+import { submitAndAwaitJob, type JobStatusResponse, type SupportOverride } from "@/lib/compute/client";
 
 const LINE_ELEMENT_CATEGORIES = new Set(["beam", "column", "brace", "pile"]);
 
@@ -384,14 +395,15 @@ export async function runLinearStaticAnalysis(
   elements: StructuralElement[],
   materials: StructuralMaterial[],
   sections: StructuralSection[],
-  loadCases: LoadCase[]
+  loadCases: LoadCase[],
+  supportOverrides?: SupportOverride[]
 ): Promise<ParsedAnalysisResult> {
   const payload = buildAnalysisPayload(elements, materials, sections, loadCases);
 
   let jobStatus: JobStatusResponse;
   try {
     jobStatus = await submitAndAwaitJob(
-      { projectId, analysisType: "linear-static", modelPayload: payload },
+      { projectId, analysisType: "linear-static", modelPayload: payload, supportOverrides },
       { timeoutMs: 30000 }
     );
   } catch (error) {
@@ -440,14 +452,15 @@ export async function runModalAnalysis(
   materials: StructuralMaterial[],
   sections: StructuralSection[],
   loadCases: LoadCase[],
-  numModes: number = 12
+  numModes: number = 12,
+  supportOverrides?: SupportOverride[]
 ): Promise<ParsedModalResult> {
   const payload = buildAnalysisPayload(elements, materials, sections, loadCases);
 
   let jobStatus: JobStatusResponse;
   try {
     jobStatus = await submitAndAwaitJob(
-      { projectId, analysisType: "modal", modelPayload: payload, numModes },
+      { projectId, analysisType: "modal", modelPayload: payload, numModes, supportOverrides },
       { timeoutMs: 30000 }
     );
   } catch (error) {
@@ -497,14 +510,15 @@ export async function runBucklingAnalysis(
   materials: StructuralMaterial[],
   sections: StructuralSection[],
   loadCases: LoadCase[],
-  numModes: number = 6
+  numModes: number = 6,
+  supportOverrides?: SupportOverride[]
 ): Promise<ParsedBucklingResult> {
   const payload = buildAnalysisPayload(elements, materials, sections, loadCases);
 
   let jobStatus: JobStatusResponse;
   try {
     jobStatus = await submitAndAwaitJob(
-      { projectId, analysisType: "buckling", modelPayload: payload, numModes },
+      { projectId, analysisType: "buckling", modelPayload: payload, numModes, supportOverrides },
       { timeoutMs: 30000 }
     );
   } catch (error) {
@@ -549,14 +563,15 @@ export async function runPDeltaAnalysis(
   elements: StructuralElement[],
   materials: StructuralMaterial[],
   sections: StructuralSection[],
-  loadCases: LoadCase[]
+  loadCases: LoadCase[],
+  supportOverrides?: SupportOverride[]
 ): Promise<ParsedPDeltaResult> {
   const payload = buildAnalysisPayload(elements, materials, sections, loadCases);
 
   let jobStatus: JobStatusResponse;
   try {
     jobStatus = await submitAndAwaitJob(
-      { projectId, analysisType: "pdelta", modelPayload: payload },
+      { projectId, analysisType: "pdelta", modelPayload: payload, supportOverrides },
       { timeoutMs: 30000 }
     );
   } catch (error) {
@@ -615,6 +630,7 @@ export async function runResponseSpectrumAnalysis(
     directionDof?: number;
     dampingRatio?: number;
     numModes?: number;
+    supportOverrides?: SupportOverride[];
   }
 ): Promise<ParsedResponseSpectrumResult> {
   const payload = buildAnalysisPayload(elements, materials, sections, loadCases);
@@ -631,6 +647,7 @@ export async function runResponseSpectrumAnalysis(
         directionDof: options.directionDof ?? 0,
         dampingRatio: options.dampingRatio ?? 0.05,
         numModes: options.numModes ?? 12,
+        supportOverrides: options.supportOverrides,
       },
       { timeoutMs: 30000 }
     );
@@ -690,6 +707,7 @@ export async function runNonlinearStaticAnalysis(
     numLoadSteps?: number;
     maxIterationsPerStep?: number;
     convergenceTolerance?: number;
+    supportOverrides?: SupportOverride[];
   } = {}
 ): Promise<ParsedNonlinearStaticResult> {
   const payload = buildAnalysisPayload(elements, materials, sections, loadCases);
@@ -704,6 +722,7 @@ export async function runNonlinearStaticAnalysis(
         numLoadSteps: options.numLoadSteps ?? 10,
         maxIterationsPerStep: options.maxIterationsPerStep ?? 30,
         convergenceTolerance: options.convergenceTolerance ?? 1e-4,
+        supportOverrides: options.supportOverrides,
       },
       { timeoutMs: 45000 } // iterative solve, Linear Static/Modal এর চেয়ে বেশি সময় লাগতে পারে
     );
@@ -770,6 +789,7 @@ export async function runPushoverAnalysis(
     maxPushSteps?: number;
     maxIterationsPerStep?: number;
     convergenceTolerance?: number;
+    supportOverrides?: SupportOverride[];
   }
 ): Promise<ParsedPushoverResult> {
   const payload = buildAnalysisPayload(elements, materials, sections, loadCases);
@@ -790,6 +810,7 @@ export async function runPushoverAnalysis(
         maxPushSteps: options.maxPushSteps ?? 200,
         maxIterationsPerStep: options.maxIterationsPerStep ?? 30,
         convergenceTolerance: options.convergenceTolerance ?? 1e-4,
+        supportOverrides: options.supportOverrides,
       },
       { timeoutMs: 60000 } // adaptive push, up to maxPushSteps Newton-Raphson solves — Nonlinear Static এর চেয়েও বেশি সময় লাগতে পারে
     );

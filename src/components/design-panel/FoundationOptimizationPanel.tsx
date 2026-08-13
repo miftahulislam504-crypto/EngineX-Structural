@@ -8,6 +8,16 @@ import {
   type FoundationOptimizationResult,
   type FoundationOptimizationVariable,
 } from "@/lib/design/foundationOptimization";
+import {
+  deriveFoundationTypeSuggestion,
+  type FoundationTypeSuggestion,
+} from "@/lib/derive/deriveFoundationTypeSuggestion";
+import {
+  deriveSupportOverrideSuggestion,
+  type SupportOverrideSuggestion,
+} from "@/lib/derive/deriveSupportOverrideSuggestion";
+import { useSupportOverrideStore } from "@/lib/analysis/useSupportOverrideStore";
+import { useElementsStore } from "@/lib/elements/useElementsStore";
 
 const FOUNDATION_TYPE_LABELS: Record<FoundationType, string> = {
   "isolated-footing": "Isolated Footing",
@@ -32,31 +42,31 @@ function VariableRangeInputs({
 }) {
   return (
     <div className="space-y-2.5">
-      <p className="text-xs text-text-muted font-medium">Search Variables</p>
+      <p className="text-xs text-slate-500 font-medium">Search Variables</p>
       {variables.map((v) => (
         <div key={v.name} className="grid grid-cols-3 gap-2">
           <div>
-            <label className="block text-[10px] text-text-muted mb-0.5">{v.name} min (mm)</label>
+            <label className="block text-[10px] text-slate-500 mb-0.5">{v.name} min (mm)</label>
             <input
               value={values[v.name]?.min ?? String(v.minValue)}
               onChange={(e) => onChange(v.name, "min", e.target.value)}
-              className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
+              className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
             />
           </div>
           <div>
-            <label className="block text-[10px] text-text-muted mb-0.5">max (mm)</label>
+            <label className="block text-[10px] text-slate-500 mb-0.5">max (mm)</label>
             <input
               value={values[v.name]?.max ?? String(v.maxValue)}
               onChange={(e) => onChange(v.name, "max", e.target.value)}
-              className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
+              className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
             />
           </div>
           <div>
-            <label className="block text-[10px] text-text-muted mb-0.5">step (mm)</label>
+            <label className="block text-[10px] text-slate-500 mb-0.5">step (mm)</label>
             <input
               value={values[v.name]?.step ?? String(v.stepSize ?? 50)}
               onChange={(e) => onChange(v.name, "step", e.target.value)}
-              className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
+              className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
             />
           </div>
         </div>
@@ -78,14 +88,14 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-[10px] text-text-muted mb-0.5">
+      <label className="block text-[10px] text-slate-500 mb-0.5">
         {label}
         {unit ? ` (${unit})` : ""}
       </label>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
+        className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
       />
     </div>
   );
@@ -156,6 +166,71 @@ export function FoundationOptimizationPanel() {
   const [pcNumberOfColumns, setPcNumberOfColumns] = useState("2");
 
   const problem = FOUNDATION_OPTIMIZATION_TEMPLATES[foundationType];
+
+  // ─── Phase 5 (ecosystem sync plan) — Foundation type suggestion ──────
+  // deriveFoundationTypeSuggestion() এর multi-column ইনপুট
+  // (columnServiceLoadsKN: number[], typicalColumnSpacingM) এই panel-এর
+  // per-foundation-type single-load field গুলোর সাথে হুবহু মেলে না —
+  // পুরো model-এর সব column reaction সংগ্রহ করা (analysis result থেকে)
+  // এই wiring-এর স্কোপের বাইরে একটা বড় আলাদা কাজ। তাই এখানে ইচ্ছাকৃতভাবে
+  // সীমিত: বর্তমানে সক্রিয় foundation-type tab-এর representative load
+  // (একটা single column, "typical" ধরে) ব্যবহার করা হয় — এই সীমাবদ্ধতা
+  // suggestion box-এই স্পষ্টভাবে লেখা থাকে, silently hide করা হয় না।
+  const [numberOfStories, setNumberOfStories] = useState("5");
+  const [typicalColumnSpacingM, setTypicalColumnSpacingM] = useState("5");
+  const [foundationSuggestion, setFoundationSuggestion] = useState<FoundationTypeSuggestion | null>(null);
+  const [supportSuggestion, setSupportSuggestion] = useState<SupportOverrideSuggestion | null>(null);
+  const [overrideNodeKey, setOverrideNodeKey] = useState<string>("");
+  const addOrReplaceOverride = useSupportOverrideStore((s) => s.addOrReplaceOverride);
+  const elements = useElementsStore((s) => s.elements);
+
+  // AnalysisPanel.tsx এর uniqueNodePoints এর একই "x,y,z" 3-decimal-rounded
+  // key কনভেনশন (backend NodeGraph.index_of() এর সাথে সামঞ্জস্যপূর্ণ,
+  // client.ts এর SupportOverride কমেন্টেও এই coordinate-matching এর
+  // কথা বলা আছে) — কিন্তু এখানে শুধু base-level (Y≈0) node, কারণ
+  // support override ধারণাগতভাবে শুধু foundation/base support-এ প্রযোজ্য,
+  // upper-floor node এ না।
+  const baseLevelNodePoints = (() => {
+    const seen = new Map<string, { x: number; y: number; z: number }>();
+    for (const e of elements) {
+      if (!("startPoint" in e)) continue;
+      for (const p of [e.startPoint, e.endPoint]) {
+        if (p.y > 1e-3) continue;
+        const key = `${p.x.toFixed(3)},${p.y.toFixed(3)},${p.z.toFixed(3)}`;
+        if (!seen.has(key)) seen.set(key, p);
+      }
+    }
+    return Array.from(seen.entries());
+  })();
+
+  /** বর্তমান foundation-type tab এর representative service load —
+   * suggestion এর জন্য (উপরের কমেন্ট দেখুন, single-column সীমাবদ্ধতা)। */
+  function representativeServiceLoadKN(): number {
+    if (foundationType === "isolated-footing") return Number(isoServiceLoadKN) || 0;
+    if (foundationType === "combined-footing")
+      return (Number(cfServiceLoadAKN) || 0) + (Number(cfServiceLoadBKN) || 0);
+    if (foundationType === "mat-foundation") return Number(matColumnLoadKN) || 0;
+    if (foundationType === "pile-cap") return Number(pcServiceLoadKN) || 0;
+    return 0; // strip-footing এ কোনো single point load field নেই (linear load), suggestion এখানে প্রযোজ্য না
+  }
+
+  function handleSuggestFoundationType() {
+    const suggestion = deriveFoundationTypeSuggestion({
+      allowableBearingPressureKPa: Number(allowableBearingPressureKPa) || 0,
+      columnServiceLoadsKN: [representativeServiceLoadKN()],
+      typicalColumnSpacingM: Number(typicalColumnSpacingM) || 0,
+      numberOfStories: Number(numberOfStories) || 0,
+    });
+    setFoundationSuggestion(suggestion);
+    setSupportSuggestion(deriveSupportOverrideSuggestion(suggestion));
+  }
+
+  function handleApplySupportOverride() {
+    if (!supportSuggestion || !overrideNodeKey) return;
+    const [x, y, z] = overrideNodeKey.split(",").map(Number);
+    if ([x, y, z].some((v) => Number.isNaN(v))) return;
+    addOrReplaceOverride({ x, y, z, supportType: supportSuggestion.suggestedSupportType });
+  }
 
   function updateRange(name: string, field: "min" | "max" | "step", value: string) {
     setRangeOverrides((prev) => ({
@@ -293,13 +368,13 @@ export function FoundationOptimizationPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-text-primary mb-1">Foundation Optimization</h3>
-        <p className="text-xs text-text-muted mb-3">
+        <h3 className="text-sm font-medium text-slate-200 mb-1">Foundation Optimization</h3>
+        <p className="text-xs text-slate-500 mb-3">
           প্রতিটা variable range-এর মধ্যে candidate dimension sweep করে, Phase 6e/7a-7d এর design module দিয়ে
           feasibility চেক করে, এবং সর্বনিম্ন concrete volume-এর feasible candidate বেছে নেয়।
         </p>
 
-        <label className="block text-xs text-text-muted mb-1">Foundation Type</label>
+        <label className="block text-xs text-slate-500 mb-1">Foundation Type</label>
         <select
           value={foundationType}
           onChange={(e) => {
@@ -307,7 +382,7 @@ export function FoundationOptimizationPanel() {
             setResult(null);
             setRangeOverrides({});
           }}
-          className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-sm px-2.5 py-2 mb-3"
+          className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-sm px-2.5 py-2 mb-3"
         >
           {(Object.keys(FOUNDATION_TYPE_LABELS) as FoundationType[]).map((type) => (
             <option key={type} value={type}>
@@ -333,6 +408,107 @@ export function FoundationOptimizationPanel() {
           </div>
         )}
 
+        {/* Phase 5 (ecosystem sync plan) — Foundation Type + Support Override suggestion */}
+        <div className="mb-3 rounded-md border border-slate-800 bg-slate-950/60 px-3 py-2.5 space-y-2">
+          <p className="text-xs text-slate-400 font-medium">Foundation Type Suggestion (preliminary)</p>
+          <p className="text-[10px] text-slate-500 leading-relaxed">
+            উপরের Allowable Bearing Pressure ও এই tab-এর load field থেকে একটা প্রাথমিক foundation type ও base
+            support-condition suggestion বের করে — চূড়ান্ত geotechnical সিদ্ধান্ত না, শুধু একটা starting point।
+            {foundationType === "strip-footing" &&
+              " স্ট্রিপ ফুটিং-এ কোনো single point-load field নেই বলে এই suggestion এখানে প্রযোজ্য না।"}
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Number of Stories" value={numberOfStories} onChange={setNumberOfStories} />
+            <Field
+              label="Typical Column Spacing"
+              value={typicalColumnSpacingM}
+              onChange={setTypicalColumnSpacingM}
+              unit="m"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleSuggestFoundationType}
+            disabled={foundationType === "strip-footing"}
+            className="w-full rounded-md bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 text-xs font-medium py-1.5 transition-colors"
+          >
+            Suggest Foundation Type
+          </button>
+
+          {foundationSuggestion && (
+            <div className="rounded-md bg-slate-900 border border-slate-800 px-2.5 py-2 space-y-1">
+              <p className="text-xs text-slate-300">
+                Suggested: <span className="font-medium">{FOUNDATION_TYPE_LABELS[foundationSuggestion.suggestedType]}</span>{" "}
+                <span className="text-slate-500">({foundationSuggestion.confidence} confidence)</span>
+              </p>
+              {foundationSuggestion.reasoning.map((r, i) => (
+                <p key={i} className="text-[10px] text-slate-500 leading-relaxed">
+                  {r}
+                </p>
+              ))}
+              {foundationSuggestion.warnings.map((w, i) => (
+                <p key={i} className="text-[10px] text-amber-500/80 leading-relaxed">
+                  ⚠ {w}
+                </p>
+              ))}
+            </div>
+          )}
+
+          {supportSuggestion && (
+            <div className="rounded-md bg-slate-900 border border-slate-800 px-2.5 py-2 space-y-1.5">
+              <p className="text-xs text-slate-300">
+                Suggested base support:{" "}
+                <span className="font-medium">{supportSuggestion.suggestedSupportType}</span>
+              </p>
+              {supportSuggestion.reasoning.map((r, i) => (
+                <p key={i} className="text-[10px] text-slate-500 leading-relaxed">
+                  {r}
+                </p>
+              ))}
+              {supportSuggestion.warnings.map((w, i) => (
+                <p key={i} className="text-[10px] text-amber-500/80 leading-relaxed">
+                  ⚠ {w}
+                </p>
+              ))}
+
+              {baseLevelNodePoints.length === 0 ? (
+                <p className="text-[10px] text-slate-500">
+                  কোনো base-level (Y≈0) node পাওয়া যায়নি — Geometry/Elements tab এ model বানানো আছে কিনা যাচাই
+                  করুন।
+                </p>
+              ) : (
+                <>
+                  <label className="block text-[10px] text-slate-500 mb-0.5">Base Node</label>
+                  <select
+                    value={overrideNodeKey}
+                    onChange={(e) => setOverrideNodeKey(e.target.value)}
+                    className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
+                  >
+                    <option value="">— নির্বাচন করুন —</option>
+                    {baseLevelNodePoints.map(([key, p]) => (
+                      <option key={key} value={key}>
+                        x={fmt(p.x, 2)}, z={fmt(p.z, 2)}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={handleApplySupportOverride}
+                    disabled={!overrideNodeKey}
+                    className="w-full rounded-md bg-emerald-900/40 hover:bg-emerald-900/60 disabled:opacity-40 disabled:cursor-not-allowed border border-emerald-800 text-emerald-400 text-xs font-medium py-1.5 transition-colors"
+                  >
+                    Apply as Support Override
+                  </button>
+                  <p className="text-[10px] text-slate-500 leading-relaxed">
+                    Analysis tab-এ Response Spectrum/Linear Static ইত্যাদি চালালে এই override স্বয়ংক্রিয়ভাবে
+                    ব্যবহৃত হবে (analysis panel নিজে থেকে কিছু bypass/mutate করে না — শুধু backend-কে জানায়)।
+                  </p>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
         {foundationType === "isolated-footing" && (
           <div className="space-y-2 mb-3">
             <div className="grid grid-cols-2 gap-2">
@@ -343,7 +519,7 @@ export function FoundationOptimizationPanel() {
               <Field label="Column Width" value={isoColumnWidthMm} onChange={setIsoColumnWidthMm} unit="mm" />
               <Field label="Column Depth" value={isoColumnDepthMm} onChange={setIsoColumnDepthMm} unit="mm" />
             </div>
-            <label className="flex items-center gap-2 text-xs text-text-secondary">
+            <label className="flex items-center gap-2 text-xs text-slate-400">
               <input type="checkbox" checked={isoIsSquare} onChange={(e) => setIsoIsSquare(e.target.checked)} />
               Square footing
             </label>
@@ -386,7 +562,7 @@ export function FoundationOptimizationPanel() {
 
         {foundationType === "mat-foundation" && (
           <div className="space-y-2 mb-3">
-            <p className="text-[10px] text-text-muted">
+            <p className="text-[10px] text-slate-500">
               এই optimizer panel সরলীকৃত rectangular mat plan ব্যবহার করে (একটা প্রতিনিধিত্বমূলক interior কলাম
               সহ) — জটিল polygon plan/multi-column mat-এর জন্য Mat Foundation Design panel-এই ম্যানুয়ালি iterate
               করুন।
@@ -424,11 +600,11 @@ export function FoundationOptimizationPanel() {
               <Field label="Factored Load" value={pcFactoredLoadKN} onChange={setPcFactoredLoadKN} unit="kN" />
             </div>
             <div>
-              <label className="block text-[10px] text-text-muted mb-0.5">Pile Shape</label>
+              <label className="block text-[10px] text-slate-500 mb-0.5">Pile Shape</label>
               <select
                 value={pcPileShape}
                 onChange={(e) => setPcPileShape(e.target.value as "circular" | "square")}
-                className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
+                className="w-full rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-xs px-2 py-1.5"
               >
                 <option value="circular">Circular</option>
                 <option value="square">Square</option>
@@ -466,7 +642,7 @@ export function FoundationOptimizationPanel() {
         <button
           type="button"
           onClick={handleRunOptimization}
-          className="w-full rounded-md bg-surface-hover hover:bg-surface-border text-text-primary text-sm font-medium py-2 transition-colors"
+          className="w-full rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium py-2 transition-colors"
         >
           Run Optimization
         </button>
@@ -477,32 +653,32 @@ export function FoundationOptimizationPanel() {
           <div
             className={`rounded-md border px-3 py-2.5 ${
               result.best
-                ? "bg-status-activeBg border-status-activeBorder"
-                : "bg-status-holdBg border-status-holdBorder"
+                ? "bg-emerald-950/30 border-emerald-900"
+                : "bg-amber-950/30 border-amber-900"
             }`}
           >
-            <p className={`text-xs leading-relaxed ${result.best ? "text-status-activeText" : "text-status-holdText"}`}>
+            <p className={`text-xs leading-relaxed ${result.best ? "text-emerald-400" : "text-amber-500"}`}>
               {result.message}
             </p>
           </div>
 
-          <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1">
-            <p className="text-xs text-text-muted">
-              Candidates evaluated: <span className="text-text-secondary">{result.candidatesEvaluated}</span> · Feasible:{" "}
-              <span className="text-text-secondary">{result.feasibleCandidatesFound}</span>
+          <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1">
+            <p className="text-xs text-slate-500">
+              Candidates evaluated: <span className="text-slate-300">{result.candidatesEvaluated}</span> · Feasible:{" "}
+              <span className="text-slate-300">{result.feasibleCandidatesFound}</span>
             </p>
           </div>
 
           {result.best && (
-            <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1.5">
-              <p className="text-xs text-text-muted font-medium mb-1">Best Candidate</p>
+            <div className="rounded-md bg-slate-950 border border-slate-800 px-3 py-2.5 space-y-1.5">
+              <p className="text-xs text-slate-500 font-medium mb-1">Best Candidate</p>
               {Object.entries(result.best.variableValues).map(([k, v]) => (
-                <p key={k} className="text-xs text-text-secondary">
+                <p key={k} className="text-xs text-slate-300">
                   {k}: {fmt(v, 1)}
                 </p>
               ))}
-              <p className="text-xs text-text-secondary">Concrete volume: {fmt(result.best.concreteVolumeM3, 3)} m³</p>
-              <p className="text-xs text-text-secondary">Status: {result.best.overallStatus}</p>
+              <p className="text-xs text-slate-300">Concrete volume: {fmt(result.best.concreteVolumeM3, 3)} m³</p>
+              <p className="text-xs text-slate-300">Status: {result.best.overallStatus}</p>
             </div>
           )}
         </div>
