@@ -15,8 +15,13 @@ import {
   FileText,
   ListTree,
   X,
+  FolderOpen,
+  LogOut,
 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { SidebarTab } from "@/lib/workflow/stageTabs";
+import { useAuthStore } from "@/lib/auth/useAuthStore";
 
 /**
  * Main Navigation Sidebar (Phase 0.5; Phase 2-তে URL-sync; Phase 4-এ
@@ -85,15 +90,25 @@ interface SidebarProps {
 }
 
 export function Sidebar({ activeTab, onSelectTab, onOpenWorkflow, onClose }: SidebarProps) {
+  const router = useRouter();
+  const signOut = useAuthStore((s) => s.signOut);
+
+  async function handleSignOut() {
+    await signOut();
+    router.replace("/login");
+  }
+
   return (
     <aside className="flex h-full w-56 flex-col border-r border-surface-border bg-surface-card">
       <div className="flex items-start justify-between gap-2 border-b border-surface-border px-4 py-4">
-        <div className="min-w-0">
-          <div className="font-mono text-[11px] uppercase tracking-wider text-brand-600">
+        <Link href="/" className="min-w-0 group">
+          <div className="font-mono text-[11px] uppercase tracking-wider text-brand-600 group-hover:text-brand-700">
             CivilOS
           </div>
-          <div className="text-base font-semibold text-text-primary">Structural</div>
-        </div>
+          <div className="text-base font-semibold text-text-primary group-hover:text-brand-800 transition-colors">
+            Structural
+          </div>
+        </Link>
         {onClose && (
           <button
             type="button"
@@ -132,10 +147,25 @@ export function Sidebar({ activeTab, onSelectTab, onOpenWorkflow, onClose }: Sid
         <button
           type="button"
           onClick={onOpenWorkflow}
-          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-text-secondary hover:bg-surface-hover hover:text-text-primary transition-colors"
+          className="mb-0.5 flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-text-secondary hover:bg-surface-hover hover:text-text-primary transition-colors"
         >
           <ListTree size={16} className="flex-shrink-0" />
           Workflow
+        </button>
+        <Link
+          href="/"
+          className="mb-0.5 flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-text-secondary hover:bg-surface-hover hover:text-text-primary transition-colors"
+        >
+          <FolderOpen size={16} className="flex-shrink-0" />
+          প্রজেক্ট লিস্ট
+        </Link>
+        <button
+          type="button"
+          onClick={handleSignOut}
+          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-text-secondary hover:bg-surface-hover hover:text-red-600 transition-colors"
+        >
+          <LogOut size={16} className="flex-shrink-0" />
+          সাইন-আউট
         </button>
       </div>
     </aside>
