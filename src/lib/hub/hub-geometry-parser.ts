@@ -403,11 +403,23 @@ export function parseArchitecturalExport(data: DrawArchitecturalExport): ParseGe
 
   const { grids, stories } = mapArchitecturalGeometry(data, nowIso);
 
-  const elevationByLevelId = new Map<string, number>(data.levels.map((lvl) => [lvl.id, lvl.elevation]));
+  // ⚠️ বাগফিক্স: আগে data.levels/data.elements সরাসরি non-null array
+  // ধরে নেওয়া হতো, কিন্তু mapArchitecturalGeometry() (hub-module-
+  // mapper.ts) নিজে ইতিমধ্যেই data?.grids/data?.levels defensive
+  // (undefined/আংশিক document safely handle করে) — এই ফাংশনেও একই
+  // defensive practice মেলানো হলো। moduleData/architectural document
+  // এ কখনো আংশিক/পুরনো shape থাকতে পারে (যেমন Draw-এর প্রথম কয়েকটা
+  // sync attempt ব্যর্থ হলে, বা কেউ ম্যানুয়ালি Firestore console থেকে
+  // partial edit করলে) — সেক্ষেত্রে ক্র্যাশ না করে "কিছু element
+  // পাওয়া যায়নি" হিসেবে আচরণ করা উচিত, error UI না।
+  const levels = data.levels ?? [];
+  const elements = data.elements ?? [];
 
-  const elements: StructuralElement[] = [];
+  const elevationByLevelId = new Map<string, number>(levels.map((lvl) => [lvl.id, lvl.elevation]));
 
-  for (const ref of data.elements) {
+  const mappedElements: StructuralElement[] = [];
+
+  for (const ref of elements) {
     const baseElevationM = elevationByLevelId.get(ref.levelId);
     if (baseElevationM === undefined) {
       warnSkipped(issues, ref, `levelId "${ref.levelId}" এই export-এর levels তালিকায় নেই — কোন floor-এ এটা বসবে জানা যাচ্ছে না`);
@@ -436,10 +448,10 @@ export function parseArchitecturalExport(data: DrawArchitecturalExport): ParseGe
         continue;
     }
 
-    if (mapped) elements.push(mapped);
+    if (mapped) mappedElements.push(mapped);
   }
 
-  return { elements, grids, stories, issues };
+  return { elements: mappedElements, grids, stories, issues };
 }
 
 /**
