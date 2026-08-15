@@ -8,11 +8,16 @@
  * @deprecated (Hub-Structural Integration Phase 0) — pushHubOutgoingPackage()
  * in src/lib/hub/sync.ts, the only function that writes an
  * OutgoingHubPackage, writes to projects/{id}/hubSync/outgoing, which
- * nothing downstream reads. The real outgoing path (Phase 6) is
- * uploadModuleData() in src/lib/hub/module-data.firestore.ts, writing
- * quantities/BBS/results as StructuralModuleData through the same
- * moduleMetadata + Storage pattern EngineXEstimate already uses
- * successfully. See the deprecation note at the top of sync.ts.
+ * nothing downstream reads. The Phase 6 outgoing path was planned as
+ * uploadModuleData() (src/lib/hub/module-data.firestore.ts, Storage-
+ * backed) — but Firebase's free plan has no Storage bucket, so that
+ * mechanism was never actually usable (see hub-geometry-parser.ts's
+ * file comment for the parallel incoming-side bugfix, and Draw's
+ * hub-write.ts publishArchitecturalToHub() for how the equivalent
+ * outgoing path was fixed there: pure Firestore, no Storage). Any
+ * future outgoing implementation here should follow that same
+ * pure-Firestore pattern rather than uploadModuleData(). See the
+ * deprecation note at the top of sync.ts.
  */
 
 export type SyncStatus = "not-started" | "in-progress" | "synced" | "failed";

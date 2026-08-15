@@ -11,11 +11,11 @@
  * (missing field, ভুল type) পুরো conversion না ভেঙে সেই item স্কিপ করে,
  * console.warn করে, বাকি item গুলো process করতে থাকে।
  *
- * এই ফাইল Firestore/Storage ছোঁয় না (কোনো read/write/fetch নেই) — শুধু
- * pure data transformation, যাতে unit test করা সহজ হয় এবং
- * hub-geometry-parser.ts (যেটা আসল Storage fetch করে, hub-sdk-client.ts
- * এর getModuleDataFile() দিয়ে) থেকে ডেটা পাওয়ার পর এই ফাংশনগুলো কল করা
- * যায়।
+ * এই ফাইল Firestore ছোঁয় না (কোনো read/write নেই) — শুধু pure data
+ * transformation, যাতে unit test করা সহজ হয় এবং hub-geometry-parser.ts
+ * (যেটা আসল Firestore fetch করে, hub-sdk-client.ts এর getModuleData()/
+ * subscribeToModuleData() দিয়ে — pure-Firestore moduleData/architectural
+ * path, Storage না) থেকে ডেটা পাওয়ার পর এই ফাংশনগুলো কল করা যায়।
  */
 
 import type { StructuralGrid, StructuralStory } from "@/lib/types/geometry";

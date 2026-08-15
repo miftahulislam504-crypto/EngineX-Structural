@@ -7,13 +7,21 @@
  *
  * ⚠️ সংশোধনী নোট (hub-module-shapes.ts এর file comment-এ বিস্তারিত):
  * `referenceGeometryUrl` নামটা আসলে পুরনো, dead `types/hub.ts` schema
- * থেকে এসেছিল (hubSync/incoming path, Phase 0-এ deprecated)। বাস্তবে
- * verified mechanism হলো Phase 0-এর `getModuleDataFile()`
- * (module-data.firestore.ts) — Draw-এর `uploadModuleData()` যা আপলোড
- * করে তার Firestore metadata pointer (`fileUrl`) থেকে JSON fetch করা।
- * ধারণাটা প্ল্যানের সাথে হুবহু মেলে (Storage-এ থাকা geometry JSON parse
- * করা), শুধু নির্দিষ্ট field/mechanism নাম ভিন্ন — নিচের কোড আসল,
- * verified মেকানিজম ব্যবহার করে।
+ * থেকে এসেছিল (hubSync/incoming path, Phase 0-এ deprecated)।
+ *
+ * ⚠️ দ্বিতীয় সংশোধনী নোট (Hub-Structural integration bugfix, Phase 7-এর
+ * আগে): এই ফাইলের একটা আগের সংস্করণে fetch mechanism হিসেবে
+ * getModuleDataFile() (Phase 0, module-data.firestore.ts) ব্যবহার করা
+ * হতো — Draw-এর uploadModuleData() যা Firebase Storage-এ আপলোড করতো তার
+ * Firestore metadata pointer (fileUrl) থেকে JSON fetch করা। কিন্তু
+ * Firebase free plan-এ Storage bucket তৈরি করা যায় না, তাই এই path
+ * (দুই দিকেই — Draw-এর আপলোড আর এই App-এর ডাউনলোড) কখনোই বাস্তবে সফল
+ * হতো না। বর্তমান, verified mechanism হলো Phase 0-এর pure-Firestore
+ * getModuleData()/subscribeToModuleData() (hub-sdk-client.ts) —
+ * projects/{id}/moduleData/architectural document সরাসরি পড়া, কোনো
+ * Storage/fetch() ছাড়াই। নিচের কোড এই আসল, verified মেকানিজম ব্যবহার
+ * করে (fetchLatestArchitecturalExport()/subscribeToLatestArchitecturalExport()
+ * এর file comment দ্রষ্টব্য)।
  *
  * ═══════════════════════════════════════════════════════════════════
  * কোঅর্ডিনেট সিস্টেম রূপান্তর — গুরুত্বপূর্ণ, ভুল হলে পুরো মডেল ভুল বসবে
@@ -75,7 +83,7 @@ import type {
   DrawColumnGeometry,
   DrawBeamGeometry,
 } from "./hub-module-shapes";
-import { getModuleDataFile } from "./module-data.firestore";
+import { getModuleData, subscribeToModuleData } from "./hub-sdk-client";
 import { mapArchitecturalGeometry } from "./hub-module-mapper";
 
 // ─── Fetch ────────────────────────────────────────────────────────────
@@ -87,37 +95,67 @@ export interface FetchArchitecturalExportResult {
 }
 
 /**
- * Draw-এর সর্বশেষ প্রকাশিত architectural model Storage থেকে fetch করে।
- * getModuleDataFile() (Phase 0) Firestore metadata document পড়ে
- * fileUrl বের করে; এই ফাংশন সেই URL থেকে আসল JSON content fetch করে।
- * কোনো model প্রকাশিত না থাকলে (Draw এখনো কিছু publish করেনি) null —
- * এটা error না, শুধু "এখনো কিছু নেই" অবস্থা।
+ * Draw-এর সর্বশেষ প্রকাশিত architectural model fetch করে।
+ *
+ * ⚠️ সংশোধনী নোট: আগে এই ফাংশন getModuleDataFile() (Phase 0,
+ * module-data.firestore.ts) দিয়ে Firestore metadata document পড়ে
+ * fileUrl বের করে সেই URL থেকে Firebase Storage-এ রাখা JSON file fetch
+ * করতো — কিন্তু Firebase free plan-এ Storage bucket তৈরি করা যায় না,
+ * তাই এই path কখনোই সফল হতো না (Draw-এর দিকে uploadModuleData()-ও একই
+ * কারণে কখনো কাজ করেনি, দেখুন Draw-এর hub-write.ts এর
+ * publishArchitecturalToHub() এর file comment)।
+ *
+ * এখন Draw pure-Firestore moduleData/architectural document-এ schedule
+ * (floorAreas/roomSchedule/...) ও পূর্ণ geometry (levels/grids/
+ * elements/...) দুটোই একসাথে লেখে (একই data object-এর top-level key
+ * হিসেবে — merge:true নেস্টেড object-এর ভেতরের key merge করে না বলে
+ * দুটো আলাদা document-এ পাঠানো যায়নি)। এই App শুধু geometry অংশ নিয়ে
+ * কাজ করে, schedule field (floorAreas ইত্যাদি) ignore করে — সেগুলো
+ * Estimate-এর জন্য, একই document-এ থাকলেও এই App-এর জন্য নিরীহ।
+ *
+ * getModuleData() (hub-sdk-client.ts, Phase 0) generic upstream-module
+ * reader — এটাই এখন এই ফাংশনের একমাত্র নির্ভরতা, কোনো Storage/fetch()
+ * লাগে না। কোনো model প্রকাশিত না থাকলে (Draw এখনো কিছু publish করেনি)
+ * null — এটা error না, শুধু "এখনো কিছু নেই" অবস্থা।
  */
 export async function fetchLatestArchitecturalExport(
   projectId: string,
 ): Promise<FetchArchitecturalExportResult | null> {
-  const file = await getModuleDataFile(projectId, "architectural");
-  if (!file) return null;
+  const record = await getModuleData(projectId, "architectural");
+  if (!record) return null;
 
-  const response = await fetch(file.fileUrl);
-  if (!response.ok) {
-    throw new Error(
-      `Architectural model ফাইল fetch ব্যর্থ (${response.status}) — Storage-এ ফাইলটা মুছে গেছে বা access সমস্যা হতে পারে। Draw অ্যাপ থেকে আবার publish করার অনুরোধ করুন।`,
-    );
-  }
-
-  // এই ফাইলের content ContractEnvelope<ArchitecturalExport> — envelope
-  // wrapper (schemaVersion/sourceApp/data ইত্যাদি) খুলে শুধু .data নেওয়া
-  // হচ্ছে, কারণ এই parser শুধু geometry নিয়ে কাজ করে, envelope metadata
-  // না। schemaVersion যাচাই করা হচ্ছে না (v1 এই মুহূর্তে একটাই ভার্সন
-  // আছে) — ভবিষ্যতে একাধিক schema version এলে এখানে branch করা লাগবে।
-  const envelope = (await response.json()) as { data: DrawArchitecturalExport };
+  // record.data তে schedule ও geometry দুটোই একসাথে থাকে (Draw-এর
+  // combined write) — এই App শুধু geometry key গুলো (DrawArchitecturalExport
+  // shape) তুলে নেয়, floorAreas/roomSchedule/... ignore করে।
+  const data = record.data as unknown as DrawArchitecturalExport;
 
   return {
-    data: envelope.data,
-    moduleVersion: file.moduleVersion,
-    fetchedAt: file.uploadedAt,
+    data,
+    moduleVersion: record.version,
+    fetchedAt: record.updatedAt,
   };
+}
+
+/**
+ * fetchLatestArchitecturalExport()-এর real-time সংস্করণ — Draw নতুন
+ * করে publish করলে (bumpModuleVersion সহ) স্বয়ংক্রিয়ভাবে callback
+ * ট্রিগার করে (Phase 7 — Real-time Listener + Auto Reanalysis Loop এর
+ * ভিত্তি, ঠিক useHubSiteInfo/useHubBnbcSettings/useHubBuildingInfo এর
+ * একই auto-sync নীতি, useHubModuleSubscriptions.ts দ্রষ্টব্য)। Caller-
+ * কে unsubscribe cleanup-এ কল করতে হবে।
+ */
+export function subscribeToLatestArchitecturalExport(
+  projectId: string,
+  onUpdate: (result: FetchArchitecturalExportResult | null) => void,
+) {
+  return subscribeToModuleData(projectId, "architectural", (record) => {
+    if (!record) {
+      onUpdate(null);
+      return;
+    }
+    const data = record.data as unknown as DrawArchitecturalExport;
+    onUpdate({ data, moduleVersion: record.version, fetchedAt: record.updatedAt });
+  });
 }
 
 // ─── Coordinate conversion ──────────────────────────────────────────────

@@ -13,20 +13,33 @@
  * ⚠️ Architectural section — সংশোধনী ইতিহাস: এই ফাইলের প্রথম সংস্করণে
  * (Phase 1) architectural module কে `moduleData/architectural`
  * structured-sync mechanism (module-data-sync.firestore.ts) থেকে আসবে
- * ধরে নেওয়া হয়েছিল, CPMS/Estimate-এর প্যাটার্ন অনুসরণ করে। কিন্তু
- * EngineXDraw-এর আসল hub-write.ts যাচাই করে দেখা গেছে Draw architectural
- * data এই mechanism দিয়ে পাঠায় না — বরং Phase 0-এ পোর্ট করা পুরনো
- * `uploadModuleData()` (module-data.firestore.ts, Storage-file + Firestore
- * metadata pointer) ব্যবহার করে, ঠিক Hub-এর নিজের document upload-এর
- * প্যাটার্নে। তাই নিচের architectural shape এখন Draw-এর প্রকৃত
- * `ArchitecturalExport` JSON (Firebase Storage-এ আপলোড করা ফাইলের
- * content, contract.types.ts এর ContractEnvelope দিয়ে wrap করা) থেকে
- * হুবহু verified — অনুমান না।
+ * ধরে নেওয়া হয়েছিল, CPMS/Estimate-এর প্যাটার্ন অনুসরণ করে। দ্বিতীয়
+ * সংস্করণে (তখনকার EngineXDraw hub-write.ts যাচাই করে) দেখা গিয়েছিল
+ * Draw আসলে পুরনো `uploadModuleData()` (module-data.firestore.ts,
+ * Storage-file + Firestore metadata pointer) ব্যবহার করছে।
+ *
+ * তৃতীয়, বর্তমান সংশোধনী (Hub-Structural integration bugfix, Phase 7-এর
+ * আগে): Firebase free plan-এ Storage bucket তৈরি করা যায় না বলে সেই
+ * Storage-based mechanism বাস্তবে কখনো কাজ করতো না (দুই দিকেই — Draw-এর
+ * আপলোড আর এই App-এর ডাউনলোড)। Draw-এর হালনাগাদ hub-write.ts
+ * (publishArchitecturalToHub()) এখন schedule ও পূর্ণ geometry দুটোই
+ * একসাথে pure-Firestore `moduleData/architectural` document-এ লেখে —
+ * অর্থাৎ প্রথম সংস্করণের অনুমান (moduleData mechanism) সঠিক দিক ছিল,
+ * শুধু document-এর `data` object-এর ভেতরের key গুলো এখন schedule
+ * (floorAreas/roomSchedule/...) ও geometry (levels/grids/elements/...)
+ * দুটোই একসাথে ধারণ করে (একই document, দুই ভিন্ন consumer)। নিচের
+ * architectural shape এখনো Draw-এর প্রকৃত `ArchitecturalExport` shape
+ * থেকে হুবহু verified (apps/web/src/lib/hub/hub-write.ts) — শুধু এখন
+ * সেই shape Storage JSON file-এর content না, বরং moduleData/architectural
+ * document-এর `data` object-এর geometry-সংশ্লিষ্ট key গুলো (schedule key
+ * গুলো এই App প্রয়োজন হয় না, ignore করে)।
  */
 
 // ═══════════════════════════════════════════════════════════════════════
-// Architectural (EngineXDraw → moduleMetadata/architectural এর
-// ModuleDataFile.fileUrl এ থাকা Storage JSON ফাইলের content)
+// Architectural (EngineXDraw → moduleData/architectural document-এর
+// data object-এর geometry key গুলো — levels/grids/elements/shafts/
+// siteBoundary/sheets/materials, schedule key গুলোর পাশাপাশি একই
+// document-এ)
 // ═══════════════════════════════════════════════════════════════════════
 // contract.types.ts এর ProjectLevel/ProjectGrid/BuildingElementRef এর
 // ওপর ভিত্তি করে — Draw-এর হুবহু ArchitecturalExport shape

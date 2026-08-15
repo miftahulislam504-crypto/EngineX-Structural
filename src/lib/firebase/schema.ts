@@ -36,6 +36,23 @@
  *   projects/{projectId}/approvals/{moduleId}                       ← current approval status per module
  *   projects/{projectId}/approvals/{moduleId}/history/{historyId}   ← approval audit trail
  *   projects/{projectId}/moduleMetadata/{moduleId}                  ← heavy file metadata (Storage-backed module data, e.g. BBS xlsx/pdf)
+ *
+ *   --- Hub's own native documents (Hub-Structural Integration Phase 7 bugfix) ---
+ *   এই তিনটা path moduleData/{moduleId} mechanism এর অংশ না — Hub এর
+ *   নিজস্ব site-info.firestore.ts/building.firestore.ts/bnbc.firestore.ts
+ *   সরাসরি projects/{projectId}/ এর নিচে এই document গুলোতে লেখে
+ *   (moduleData/siteInfo না)। character-for-character verified against
+ *   the Hub_com zip (see hub-module-shapes.ts's file comment) — এবং
+ *   EngineXDraw এর hub-read.ts ও EngineXProject এর hub-native-paths.ts
+ *   এর সাথেও মেলানো (তিনটা App একই path ব্যবহার করে)। version এই
+ *   document গুলোর ভেতরে নেই — Hub এর saveSiteInfo()/saveBuildingInfo()/
+ *   saveBnbcSettings() প্রতিবার bumpModuleVersion() কল করে versions/
+ *   {siteInfo|buildingInfo|bnbcSettings} এ আলাদাভাবে version রাখে, তাই
+ *   version এর জন্য hubModuleVersion() ব্যবহার করতে হবে, এই path গুলোর
+ *   ডকুমেন্ট থেকে না।
+ *   projects/{projectId}/site_information/data
+ *   projects/{projectId}/building_information/data
+ *   projects/{projectId}/bnbc_settings/data
  */
 
 export const firestorePaths = {
@@ -122,4 +139,13 @@ export const firestorePaths = {
   // actually uses.
   hubModuleData: (projectId: string, moduleId: string) =>
     `projects/${projectId}/moduleData/${moduleId}`,
+
+  // ─── Hub's own native documents (NOT moduleData-backed — see the file
+  // header comment above for why these are separate) ───
+  hubSiteInfo: (projectId: string) =>
+    `projects/${projectId}/site_information/data`,
+  hubBuildingInfo: (projectId: string) =>
+    `projects/${projectId}/building_information/data`,
+  hubBnbcSettings: (projectId: string) =>
+    `projects/${projectId}/bnbc_settings/data`,
 } as const;
