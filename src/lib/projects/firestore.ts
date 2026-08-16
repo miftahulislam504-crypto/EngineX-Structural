@@ -1,6 +1,6 @@
 "use client";
 
-import { collection, query, where, orderBy, onSnapshot, Timestamp } from "firebase/firestore";
+import { collection, doc, query, where, orderBy, onSnapshot, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import type { Project } from "@/lib/types/project";
 
@@ -65,6 +65,43 @@ export function subscribeToMyProjects(
     (err) => {
       console.error("subscribeToMyProjects: query failed", err);
       onChange([]);
+      onError?.(err.message);
+    }
+  );
+}
+
+/**
+ * Redesign (২০২৬-০৮) — একটা নির্দিষ্ট projects/{id} ডকুমেন্ট real-time
+ * subscribe করে। এতদিন এই ফাইলে শুধু পুরো লিস্ট subscribe করার ফাংশন
+ * ছিল (subscribeToMyProjects) — কিন্তু model shell (Sidebar header,
+ * mobile top bar, ViewportStatusChip) এ শুধু বর্তমান projectId এর
+ * projectName/projectCode দরকার, পুরো লিস্ট আনার দরকার নেই। তাই এই
+ * হালকা single-doc subscription — docToProject() একই হেল্পার পুনরায়
+ * ব্যবহার করে, যাতে দুই ফাংশনের ডেটা shape সবসময় মেলে।
+ *
+ * ডকুমেন্ট না থাকলে (deleted/ভুল id) onChange(null) কল হয় — caller
+ * (useProjectInfoCore) সেটাকে "প্রজেক্ট পাওয়া যায়নি" হিসেবে ধরে raw
+ * projectId তেই fallback করে, ক্র্যাশ করে না।
+ */
+export function subscribeToProject(
+  projectId: string,
+  onChange: (project: Project | null) => void,
+  onError?: (message: string) => void
+) {
+  const projectRef = doc(db(), "projects", projectId);
+
+  return onSnapshot(
+    projectRef,
+    (snap) => {
+      if (!snap.exists()) {
+        onChange(null);
+        return;
+      }
+      onChange(docToProject(snap.id, snap.data()));
+    },
+    (err) => {
+      console.error("subscribeToProject: query failed", err);
+      onChange(null);
       onError?.(err.message);
     }
   );

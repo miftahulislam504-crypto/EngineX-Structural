@@ -5,10 +5,9 @@ import { GridPanel } from "@/components/geometry-panel/GridPanel";
 import { StoryPanel } from "@/components/geometry-panel/StoryPanel";
 import { useGeometryCore } from "@/lib/geometry/useGeometryCore";
 import { useGeometryStore } from "@/lib/geometry/useGeometryStore";
-import { useShellUiStore } from "@/lib/workflow/useShellUiStore";
 
 /**
- * Geometry route — Phase 4 (Panel Migration)।
+ * Geometry route — Redesign (২০২৬-০৮)।
  *
  * এটাই root/default tab (path: /model/[projectId], কোনো suffix
  * নেই) — layout.tsx এর tabFromPathname() এই convention জানে, Sidebar
@@ -20,13 +19,13 @@ import { useShellUiStore } from "@/lib/workflow/useShellUiStore";
  * mutation callback (addGrid/updateGrid/... ) এই hook এর return
  * value থেকেই আসে, ঠিক আগে page.tsx এ যেভাবে আসত।
  *
- * showFullWidthPanel ক্যাটেগরির tab (আগে page.tsx এর
- * showFullWidthPanel বুলিয়ানে গোষ্ঠীভুক্ত ছিল — geometry/library/
- * validation/design/optimization/documentation, dual-panel viewport
- * (elements/analysis) বা single-panel viewport (visualization/
- * detailing) না) — তাই এই page এর নিজস্ব কোনো viewport/3D canvas
- * নেই, শুধু max-w-3xl কেন্দ্রীভূত ফর্ম কলাম (desktop) + full-screen
- * sheet (mobile, mobilePanelOpen true হলে)।
+ * ⚠️ Redesign (২০২৬-০৮): এই tab আগে mobile-এ একটা ⚙ ফ্লোটিং বাটনের
+ * পেছনে ফর্ম লুকিয়ে রাখত (আলাদা mobilePanelOpen sheet খুলতে হতো) —
+ * ব্যবহারকারীর স্পষ্ট নির্দেশ অনুযায়ী এই full-width-form ক্যাটেগরির
+ * tab (geometry/library/import/loads/validation) থেকে সেই অতিরিক্ত
+ * ধাপ সরানো হলো: ট্যাব ক্লিক করলেই এখন সরাসরি ফর্ম দেখা যায়, mobile
+ * আর desktop উভয় viewport-এই একই layout (শুধু max-width container,
+ * কোনো hidden/lg:block split না)।
  */
 export default function GeometryPage({ params }: PageProps<"/model/[projectId]">) {
   const { projectId } = use(params);
@@ -35,49 +34,18 @@ export default function GeometryPage({ params }: PageProps<"/model/[projectId]">
 
   const isGeometryLoading = useGeometryStore((s) => s.isLoading);
 
-  const mobilePanelOpen = useShellUiStore((s) => s.mobilePanelOpen);
-  const setMobilePanelOpen = useShellUiStore((s) => s.setMobilePanelOpen);
-
-  const content = isGeometryLoading ? (
-    <p className="text-sm text-text-muted">লোড হচ্ছে...</p>
-  ) : (
-    <div className="space-y-6">
-      <GridPanel onAddGrid={addGrid} onUpdateGrid={updateGrid} onDeleteGrid={deleteGrid} />
-      <StoryPanel onAddStory={addStory} onUpdateStory={updateStory} onDeleteStory={deleteStory} />
-    </div>
-  );
-
   return (
-    <>
-      <div className="hidden lg:block h-full overflow-y-auto">
-        <div className="max-w-3xl mx-auto p-4 lg:p-6">{content}</div>
-      </div>
-
-      <button
-        type="button"
-        onClick={() => setMobilePanelOpen(true)}
-        className="lg:hidden fixed bottom-5 right-5 z-20 w-14 h-14 rounded-full bg-brand-600 hover:bg-brand-700 text-white shadow-xl flex items-center justify-center text-xl transition-colors"
-        aria-label="Panel খুলুন"
-      >
-        ⚙
-      </button>
-
-      {mobilePanelOpen && (
-        <div className="lg:hidden fixed inset-0 z-40 flex flex-col bg-surface">
-          <div className="flex items-center justify-between border-b border-surface-border bg-surface-card px-3 py-2 flex-shrink-0">
-            <span className="text-sm font-medium text-text-primary">Panel</span>
-            <button
-              type="button"
-              onClick={() => setMobilePanelOpen(false)}
-              className="text-text-muted hover:text-text-primary text-lg px-2"
-              aria-label="বন্ধ করুন"
-            >
-              ✕
-            </button>
+    <div className="h-full overflow-y-auto">
+      <div className="max-w-3xl mx-auto p-4 lg:p-6">
+        {isGeometryLoading ? (
+          <p className="text-sm text-text-muted">লোড হচ্ছে...</p>
+        ) : (
+          <div className="space-y-6">
+            <GridPanel onAddGrid={addGrid} onUpdateGrid={updateGrid} onDeleteGrid={deleteGrid} />
+            <StoryPanel onAddStory={addStory} onUpdateStory={updateStory} onDeleteStory={deleteStory} />
           </div>
-          <div className="flex-1 overflow-y-auto p-4">{content}</div>
-        </div>
-      )}
-    </>
+        )}
+      </div>
+    </div>
   );
 }

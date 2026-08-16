@@ -4,7 +4,8 @@ import { Suspense, use, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useEnsureAuth } from "@/lib/firebase/useEnsureAuth";
 import { useProjectIdStore } from "@/lib/projects/useProjectIdStore";
-import { useStructuralAutoSync } from "@/lib/hub/useStructuralAutoSync";
+import { useProjectInfoCore } from "@/lib/projects/useProjectInfoCore";
+import { useProjectInfoStore } from "@/lib/projects/useProjectInfoStore";
 import { WorkflowSidebar } from "@/components/workflow/WorkflowSidebar";
 import { Sidebar } from "@/components/workflow/Sidebar";
 import { ListTree } from "lucide-react";
@@ -83,6 +84,20 @@ const VALID_SIDEBAR_TABS: readonly SidebarTab[] = [
 ];
 
 /**
+ * Redesign (২০২৬-০৮) — যে ৪টা ট্যাবের এখনো viewport + mobile ⚙/sheet
+ * প্যাটার্ন আছে (elements/analysis/visualization/detailing — 2D/3D
+ * canvas এর উপর form overlay হিসেবে বসে)। বাকি সব ট্যাব এখন হয়
+ * full-width-form (geometry/library/import/loads/validation, mobile
+ * এ সরাসরি ফর্ম, কোনো sheet নেই) অথবা hub (design/optimization/
+ * documentation, card-grid থেকে নিজস্ব sub-route এ navigate করে,
+ * সেই sub-route নিজেও full-width-form)। handleMobileSelectTab এই
+ * তালিকা দিয়ে ঠিক করে mobilePanelOpen auto-open করা উচিত কিনা —
+ * viewport ট্যাব না হলে sheet খোলার কোনো মানে নেই (সেই পেজ
+ * useShellUiStore.mobilePanelOpen পড়েই না)।
+ */
+const VIEWPORT_TABS: readonly SidebarTab[] = ["elements", "analysis", "visualization", "detailing"];
+
+/**
  * বর্তমান pathname থেকে active SidebarTab বের করে — Sidebar এর
  * active-state highlighting এর জন্য দরকার। geometry route এর pathname
  * /model/[projectId] দিয়েই শেষ হয় (কোনো /geometry suffix নেই — geometry
@@ -116,14 +131,13 @@ function ModelLayoutInner({ children, params }: LayoutProps<"/model/[projectId]"
     }
   }, [isAuthReady, user, router]);
 
-  // Structural -> Hub auto-sync (useStructuralAutoSync.ts) — এই layout
-  // এখানেই mount করা হলো ঠিক useEnsureAuth-এর একই যুক্তিতে (উপরের file
-  // comment দেখুন): এটাও একটা cross-cutting top-level concern, কোনো
-  // নির্দিষ্ট panel-এর UI state না, তাই tab পাল্টালেও (elements/design/
-  // documentation যেকোনো route-এ থাকা অবস্থায়) চালু থাকা দরকার — Draw-এর
-  // useArchitecturalAutoSync ঠিক এভাবেই design page-এ (সেই app-এর
-  // building-level persistent scope) mount করা।
-  useStructuralAutoSync(projectId);
+  // Redesign (২০২৬-০৮) — projectId → projectName resolve (Sidebar
+  // header, mobile top bar, ViewportStatusChip — সব জায়গায় raw id এর
+  // বদলে মানুষের-পড়ার-উপযোগী নাম দেখাতে)। layout.tsx-এই একবার কল করা
+  // হচ্ছে, isAuthReady এখান থেকেই পাস করা হয় (useProjectInfoCore.ts এর
+  // নিজের কমেন্টে বিস্তারিত কারণ)।
+  useProjectInfoCore(projectId, isAuthReady);
+  const projectName = useProjectInfoStore((s) => s.projectName);
 
   const mobileSidebarOpen = useShellUiStore((s) => s.mobileSidebarOpen);
   const setMobileSidebarOpen = useShellUiStore((s) => s.setMobileSidebarOpen);
@@ -154,7 +168,9 @@ function ModelLayoutInner({ children, params }: LayoutProps<"/model/[projectId]"
   function handleMobileSelectTab(tab: SidebarTab) {
     navigateToTab(tab);
     setMobileSidebarOpen(false);
-    setMobilePanelOpen(true);
+    if (VIEWPORT_TABS.includes(tab)) {
+      setMobilePanelOpen(true);
+    }
   }
 
   /**
@@ -174,7 +190,9 @@ function ModelLayoutInner({ children, params }: LayoutProps<"/model/[projectId]"
     router.replace(`${path}${query}`);
 
     setWorkflowPanelOpen(false);
-    setMobilePanelOpen(true);
+    if (VIEWPORT_TABS.includes(stage.targetTab)) {
+      setMobilePanelOpen(true);
+    }
   }
 
   if (!isAuthReady || !user) {
@@ -192,6 +210,7 @@ function ModelLayoutInner({ children, params }: LayoutProps<"/model/[projectId]"
           activeTab={activeTab}
           onSelectTab={handleSelectTab}
           onOpenWorkflow={() => setWorkflowPanelOpen(true)}
+          projectName={projectName}
         />
       </div>
       {mobileSidebarOpen && (
@@ -205,6 +224,7 @@ function ModelLayoutInner({ children, params }: LayoutProps<"/model/[projectId]"
                 setWorkflowPanelOpen(true);
               }}
               onClose={() => setMobileSidebarOpen(false)}
+              projectName={projectName}
             />
           </div>
           <button
@@ -240,7 +260,9 @@ function ModelLayoutInner({ children, params }: LayoutProps<"/model/[projectId]"
           >
             ☰
           </button>
-          <span className="text-xs text-text-muted truncate">{projectId}</span>
+          <span className="text-xs font-medium text-text-primary truncate px-2">
+            {projectName ?? projectId}
+          </span>
           <button
             type="button"
             onClick={() => setWorkflowPanelOpen(true)}

@@ -4,6 +4,7 @@ import { useGeometryStore } from "@/lib/geometry/useGeometryStore";
 import { useLibraryStore } from "@/lib/library/useLibraryStore";
 import { useElementsStore } from "@/lib/elements/useElementsStore";
 import { useLoadStore } from "@/lib/loads/useLoadStore";
+import { useProjectInfoStore } from "@/lib/projects/useProjectInfoStore";
 
 /**
  * Phase 4 (Panel Migration) — মূল page.tsx এ isSaving/loadError ৪টা
@@ -22,6 +23,11 @@ import { useLoadStore } from "@/lib/loads/useLoadStore";
  * layout.tsx এর মন্তব্যে বিস্তারিত।
  */
 export function ViewportStatusChip({ projectId }: { projectId: string }) {
+  // Redesign (২০২৬-০৮) — raw projectId এর বদলে মানুষের-পড়ার-উপযোগী
+  // projectName দেখানো (layout.tsx এর useProjectInfoCore populate করে)।
+  // এখনো লোড না হলে বা ডকুমেন্ট না পাওয়া গেলে projectId তেই fallback।
+  const projectName = useProjectInfoStore((s) => s.projectName);
+
   const isGeometrySaving = useGeometryStore((s) => s.isSaving);
   const isLibrarySaving = useLibraryStore((s) => s.isSaving);
   const isElementsSaving = useElementsStore((s) => s.isSaving);
@@ -37,7 +43,7 @@ export function ViewportStatusChip({ projectId }: { projectId: string }) {
   return (
     <div className="absolute bottom-3 left-3 flex items-center gap-2 flex-wrap">
       <span className="hidden sm:inline text-xs text-text-muted bg-surface-card/90 backdrop-blur rounded-md px-2.5 py-1 border border-surface-border">
-        Project: {projectId}
+        Project: {projectName ?? projectId}
       </span>
       {isSaving && (
         <span className="text-xs text-status-holdText bg-surface-card/90 backdrop-blur rounded-md px-2.5 py-1 border border-surface-border">

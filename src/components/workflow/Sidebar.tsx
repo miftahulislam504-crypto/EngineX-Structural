@@ -87,9 +87,18 @@ interface SidebarProps {
    * থাকে — বন্ধ করার কোনো concept নেই সেখানে, তাই বাটনও দেখায় না।
    */
   onClose?: () => void;
+  /**
+   * Redesign (২০২৬-০৮) — বর্তমান প্রজেক্টের নাম, layout.tsx এর
+   * useProjectInfoCore থেকে আসে। Firestore থেকে এখনো না এলে বা
+   * ডকুমেন্ট না পাওয়া গেলে null/undefined — তখন এই header আগের মতোই
+   * "CivilOS / Structural" ব্র্যান্ড লেবেল দেখায় (raw projectId কখনোই
+   * এখানে fallback হিসেবে দেখানো হয় না, কারণ এই সময়টুকু সংক্ষিপ্ত আর
+   * ব্র্যান্ড লেবেল ইতিমধ্যেই একটা যুক্তিসঙ্গত neutral placeholder)।
+   */
+  projectName?: string | null;
 }
 
-export function Sidebar({ activeTab, onSelectTab, onOpenWorkflow, onClose }: SidebarProps) {
+export function Sidebar({ activeTab, onSelectTab, onOpenWorkflow, onClose, projectName }: SidebarProps) {
   const router = useRouter();
   const signOut = useAuthStore((s) => s.signOut);
 
@@ -105,9 +114,18 @@ export function Sidebar({ activeTab, onSelectTab, onOpenWorkflow, onClose }: Sid
           <div className="font-mono text-[11px] uppercase tracking-wider text-brand-600 group-hover:text-brand-700">
             CivilOS
           </div>
-          <div className="text-base font-semibold text-text-primary group-hover:text-brand-800 transition-colors">
-            Structural
-          </div>
+          {projectName ? (
+            <div
+              className="text-base font-semibold text-text-primary group-hover:text-brand-800 transition-colors truncate"
+              title={projectName}
+            >
+              {projectName}
+            </div>
+          ) : (
+            <div className="text-base font-semibold text-text-primary group-hover:text-brand-800 transition-colors">
+              Structural
+            </div>
+          )}
         </Link>
         {onClose && (
           <button

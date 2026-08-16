@@ -9,7 +9,6 @@ import { ElementLoadPanel } from "@/components/load-panel/ElementLoadPanel";
 import { LoadCombinationPanel } from "@/components/load-panel/LoadCombinationPanel";
 import { useLoadCore } from "@/lib/loads/useLoadCore";
 import { useLoadStore } from "@/lib/loads/useLoadStore";
-import { useShellUiStore } from "@/lib/workflow/useShellUiStore";
 import { useInitialFromSearchParams } from "@/lib/workflow/useInitialFromSearchParams";
 import { SubTabBar } from "@/components/workflow/SubTabBar";
 import { LOAD_SUB_TABS } from "@/lib/workflow/subTabLabels";
@@ -24,23 +23,26 @@ const VALID_LOAD_SUB_TABS: readonly LoadSubTab[] = [
 ];
 
 /**
- * Loads route — Phase 4 (Panel Migration)।
+ * Loads route — Redesign (২০২৬-০৮)।
  *
- * showFullWidthPanel ক্যাটেগরি, কিন্তু geometry/library এর থেকে
- * ভিন্ন — এর নিজস্ব ৫টা sub-tab আছে (LoadSubTab), যা মূল page.tsx এ
- * activeLoadSubTab local useState ছিল। এখন এই page নিজেই সেই state
- * রাখে, কিন্তু URL এর সাথে সিঙ্ক করে (?subtab=) — top-level tab
- * page.tsx (Phase 2) যেভাবে ?tab দিয়ে সিঙ্ক করত, একই প্যাটার্ন এখানে
- * extend করা হলো, দুই কারণে: (১) layout.tsx এর handleStageNavigate
- * "loads" stage এ নেভিগেট করার সময় sub-tab "patterns" এ রিসেট করে
- * ?subtab=patterns দিয়ে (দেখুন layout.tsx এর মন্তব্য) — সেটা এখানে
- * পড়া দরকার; (২) deep-link/share/refresh-safe করার একই সুবিধা যা
- * top-level tab পেয়েছে।
+ * full-width-form ক্যাটেগরি, কিন্তু geometry/library এর থেকে
+ * ভিন্ন — এর নিজস্ব ৫টা sub-tab আছে (LoadSubTab)। এই sub-tab pill bar
+ * ইচ্ছাকৃতভাবে রাখা হয়েছে (design/optimization/documentation এর
+ * মতো আলাদা "option list → নিজস্ব পেজ" এ ভাঙা হয়নি) — Loads এর ৫টা
+ * sub-tab একটা tightly-related single workflow (pattern → wind/seismic
+ * calc → apply → combine), যেখানে Design এর ১৭টা বা Documentation এর
+ * ৯টা সম্পূর্ণ স্বতন্ত্র calculator/tool, প্রতিটার নিজের বিস্তারিত
+ * ফর্ম — সেই কারণেই user স্পষ্টভাবে শুধু design/optimization/
+ * documentation কে দুই-ধাপ প্যাটার্নে ভাঙতে বলেছেন।
  *
- * SubTabBar এখানে content wrapper এর বাইরে, উপরে বসানো হয়েছে (মূল
- * page.tsx এ যেমন ছিল — flex-1 wrapper এর আগে, mobilePanelOpen sheet
- * এর ভেতরে না) — অর্থাৎ মোবাইলেও এই বার সবসময় দৃশ্যমান, sheet বন্ধ
- * থাকা অবস্থাতেও।
+ * URL সিঙ্ক (?subtab=) আগের মতোই বহাল — layout.tsx এর
+ * handleStageNavigate "loads" stage এ নেভিগেট করলে ?subtab=patterns
+ * দিয়ে রিসেট করে (layout.tsx এর মন্তব্য দেখুন), আর deep-link/share/
+ * refresh-safe রাখতে।
+ *
+ * mobile ⚙/sheet প্যাটার্ন সরানো হলো — root page.tsx এর মন্তব্যে
+ * বিস্তারিত কারণ। SubTabBar এখন সবসময় content এর ঠিক উপরে, mobile ও
+ * desktop উভয়ে একই layout।
  */
 function LoadsPageInner({ projectId }: { projectId: string }) {
   const router = useRouter();
@@ -54,9 +56,6 @@ function LoadsPageInner({ projectId }: { projectId: string }) {
     useLoadCore(projectId);
   const isLoadsLoading = useLoadStore((s) => s.isLoading);
 
-  const mobilePanelOpen = useShellUiStore((s) => s.mobilePanelOpen);
-  const setMobilePanelOpen = useShellUiStore((s) => s.setMobilePanelOpen);
-
   const [activeLoadSubTab, setActiveLoadSubTabState] = useState<LoadSubTab>(initialSubTab);
 
   function setActiveLoadSubTab(tab: LoadSubTab) {
@@ -64,60 +63,34 @@ function LoadsPageInner({ projectId }: { projectId: string }) {
     router.replace(`/model/${projectId}/loads?subtab=${tab}`);
   }
 
-  const content = isLoadsLoading ? (
-    <p className="text-sm text-text-muted">লোড হচ্ছে...</p>
-  ) : (
-    <>
-      {activeLoadSubTab === "patterns" && (
-        <LoadPatternPanel onAddPattern={addPattern} onDeletePattern={deletePattern} />
-      )}
-      {activeLoadSubTab === "wind" && <WindLoadPanel />}
-      {activeLoadSubTab === "seismic" && <SeismicLoadPanel />}
-      {activeLoadSubTab === "apply" && (
-        <ElementLoadPanel onAddLoadCase={addLoadCase} onDeleteLoadCase={removeLoadCase} />
-      )}
-      {activeLoadSubTab === "combinations" && (
-        <LoadCombinationPanel
-          onToggleCombination={toggleCombination}
-          onAddCustomCombination={addCustomCombination}
-        />
-      )}
-    </>
-  );
-
   return (
     <>
       <SubTabBar<LoadSubTab> active={activeLoadSubTab} onChange={setActiveLoadSubTab} tabs={LOAD_SUB_TABS} />
 
-      <div className="hidden lg:block h-full overflow-y-auto">
-        <div className="max-w-3xl mx-auto p-4 lg:p-6">{content}</div>
-      </div>
-
-      <button
-        type="button"
-        onClick={() => setMobilePanelOpen(true)}
-        className="lg:hidden fixed bottom-5 right-5 z-20 w-14 h-14 rounded-full bg-brand-600 hover:bg-brand-700 text-white shadow-xl flex items-center justify-center text-xl transition-colors"
-        aria-label="Panel খুলুন"
-      >
-        ⚙
-      </button>
-
-      {mobilePanelOpen && (
-        <div className="lg:hidden fixed inset-0 z-40 flex flex-col bg-surface">
-          <div className="flex items-center justify-between border-b border-surface-border bg-surface-card px-3 py-2 flex-shrink-0">
-            <span className="text-sm font-medium text-text-primary">Panel</span>
-            <button
-              type="button"
-              onClick={() => setMobilePanelOpen(false)}
-              className="text-text-muted hover:text-text-primary text-lg px-2"
-              aria-label="বন্ধ করুন"
-            >
-              ✕
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-4">{content}</div>
+      <div className="h-full overflow-y-auto">
+        <div className="max-w-3xl mx-auto p-4 lg:p-6">
+          {isLoadsLoading ? (
+            <p className="text-sm text-text-muted">লোড হচ্ছে...</p>
+          ) : (
+            <>
+              {activeLoadSubTab === "patterns" && (
+                <LoadPatternPanel onAddPattern={addPattern} onDeletePattern={deletePattern} />
+              )}
+              {activeLoadSubTab === "wind" && <WindLoadPanel />}
+              {activeLoadSubTab === "seismic" && <SeismicLoadPanel />}
+              {activeLoadSubTab === "apply" && (
+                <ElementLoadPanel onAddLoadCase={addLoadCase} onDeleteLoadCase={removeLoadCase} />
+              )}
+              {activeLoadSubTab === "combinations" && (
+                <LoadCombinationPanel
+                  onToggleCombination={toggleCombination}
+                  onAddCustomCombination={addCustomCombination}
+                />
+              )}
+            </>
+          )}
         </div>
-      )}
+      </div>
     </>
   );
 }

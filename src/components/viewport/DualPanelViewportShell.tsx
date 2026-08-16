@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { SlidersHorizontal, X, Layout, Boxes } from "lucide-react";
 import { StructuralViewport } from "@/components/viewport/StructuralViewport";
 import { PlanView2D } from "@/components/viewport/PlanView2D";
 import { DrawModeToolbar } from "@/components/viewport/DrawModeToolbar";
@@ -110,30 +111,32 @@ export function DualPanelViewportShell({ projectId, panelOverlay }: DualPanelVie
       </div>
 
       {/* মোবাইলে 2D/3D টগল — dual-panel tab এই শুধু দৃশ্যমান */}
-      <div className="lg:hidden absolute top-3 right-3 flex items-center rounded-md border border-surface-border bg-surface-card/95 backdrop-blur p-0.5 shadow-card">
+      <div className="lg:hidden absolute top-3 right-3 flex items-center gap-0.5 rounded-lg border border-surface-border bg-surface-card/95 backdrop-blur p-1 shadow-card">
         <button
           type="button"
           onClick={() => setMobileViewMode("2d")}
-          className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${
-            mobileViewMode === "2d" ? "bg-brand-600 text-white" : "text-text-secondary"
+          className={`flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+            mobileViewMode === "2d" ? "bg-brand-600 text-white" : "text-text-secondary hover:text-text-primary"
           }`}
         >
+          <Layout size={13} />
           2D
         </button>
         <button
           type="button"
           onClick={() => setMobileViewMode("3d")}
-          className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${
-            mobileViewMode === "3d" ? "bg-brand-600 text-white" : "text-text-secondary"
+          className={`flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+            mobileViewMode === "3d" ? "bg-brand-600 text-white" : "text-text-secondary hover:text-text-primary"
           }`}
         >
+          <Boxes size={13} />
           3D
         </button>
       </div>
 
       {/* --- ডান overlay: elements/page.tsx বা analysis/page.tsx থেকে
           panelOverlay prop দিয়ে আসা content (form/controls) --- */}
-      <div className="hidden lg:block absolute top-3 right-3 w-80 max-h-[calc(100%-1.5rem)] overflow-y-auto card p-4">
+      <div className="hidden lg:block absolute top-3 right-3 w-80 max-h-[calc(100%-1.5rem)] overflow-y-auto rounded-xl border border-surface-border bg-surface-card/95 backdrop-blur shadow-card p-4">
         {panelOverlay}
       </div>
 
@@ -143,23 +146,23 @@ export function DualPanelViewportShell({ projectId, panelOverlay }: DualPanelVie
       <button
         type="button"
         onClick={() => setMobilePanelOpen(true)}
-        className="lg:hidden fixed bottom-5 right-5 z-20 w-14 h-14 rounded-full bg-brand-600 hover:bg-brand-700 text-white shadow-xl flex items-center justify-center text-xl transition-colors"
+        className="lg:hidden fixed bottom-5 right-5 z-20 w-14 h-14 rounded-full bg-brand-600 hover:bg-brand-700 text-white shadow-xl flex items-center justify-center transition-colors"
         aria-label="Panel খুলুন"
       >
-        ⚙
+        <SlidersHorizontal size={20} />
       </button>
 
       {mobilePanelOpen && (
         <div className="lg:hidden fixed inset-0 z-40 flex flex-col bg-surface">
-          <div className="flex items-center justify-between border-b border-surface-border bg-surface-card px-3 py-2 flex-shrink-0">
-            <span className="text-sm font-medium text-text-primary">Panel</span>
+          <div className="flex items-center justify-between border-b border-surface-border bg-surface-card px-4 py-3 flex-shrink-0">
+            <span className="text-sm font-semibold text-text-primary">Panel</span>
             <button
               type="button"
               onClick={() => setMobilePanelOpen(false)}
-              className="text-text-muted hover:text-text-primary text-lg px-2"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted hover:bg-surface-hover hover:text-text-primary transition-colors"
               aria-label="বন্ধ করুন"
             >
-              ✕
+              <X size={16} />
             </button>
           </div>
           <div className="flex-1 overflow-y-auto p-4">{panelOverlay}</div>

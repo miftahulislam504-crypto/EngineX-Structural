@@ -8,15 +8,13 @@ import { useElementsCore } from "@/lib/elements/useElementsCore";
 import { useElementsStore } from "@/lib/elements/useElementsStore";
 import { useMaterialSectionLibrary } from "@/lib/library/useMaterialSectionLibrary";
 import { useLibraryStore } from "@/lib/library/useLibraryStore";
-import { useShellUiStore } from "@/lib/workflow/useShellUiStore";
 
 /**
- * Import route — Phase 6.5 (Architectural Import & Review UI)।
+ * Import route — Redesign (২০২৬-০৮; মূলত Phase 6.5)।
  *
- * geometry/page.tsx ও library/page.tsx এর মতোই showFullWidthPanel
+ * geometry/page.tsx ও library/page.tsx এর মতোই full-width-form
  * ক্যাটেগরি (কোনো viewport/3D canvas নেই, শুধু max-w-3xl কেন্দ্রীভূত
- * কলাম + mobile full-screen sheet) — সেই একই layout shape এখানে
- * পুনরাবৃত্তি করা হয়েছে।
+ * কলাম — এখন mobile-এ আলাদা sheet ছাড়াই সরাসরি)।
  *
  * এই page তিনটা orchestration hook একসাথে কল করে — useGeometryCore
  * (merge করার জন্য geometry state ও এই route ছাড়া callback দরকার নেই,
@@ -43,46 +41,15 @@ export default function ImportPage({ params }: PageProps<"/model/[projectId]/imp
   const isLibraryLoading = useLibraryStore((s) => s.isLoading);
   const isLoading = isGeometryLoading || isElementsLoading || isLibraryLoading;
 
-  const mobilePanelOpen = useShellUiStore((s) => s.mobilePanelOpen);
-  const setMobilePanelOpen = useShellUiStore((s) => s.setMobilePanelOpen);
-
-  const content = isLoading ? (
-    <p className="text-sm text-text-muted">লোড হচ্ছে...</p>
-  ) : (
-    <ArchitecturalImportPanel projectId={projectId} onAddElement={addElement} />
-  );
-
   return (
-    <>
-      <div className="hidden lg:block h-full overflow-y-auto">
-        <div className="max-w-3xl mx-auto p-4 lg:p-6">{content}</div>
+    <div className="h-full overflow-y-auto">
+      <div className="max-w-3xl mx-auto p-4 lg:p-6">
+        {isLoading ? (
+          <p className="text-sm text-text-muted">লোড হচ্ছে...</p>
+        ) : (
+          <ArchitecturalImportPanel projectId={projectId} onAddElement={addElement} />
+        )}
       </div>
-
-      <button
-        type="button"
-        onClick={() => setMobilePanelOpen(true)}
-        className="lg:hidden fixed bottom-5 right-5 z-20 w-14 h-14 rounded-full bg-brand-600 hover:bg-brand-700 text-white shadow-xl flex items-center justify-center text-xl transition-colors"
-        aria-label="Panel খুলুন"
-      >
-        ⚙
-      </button>
-
-      {mobilePanelOpen && (
-        <div className="lg:hidden fixed inset-0 z-40 flex flex-col bg-surface">
-          <div className="flex items-center justify-between border-b border-surface-border bg-surface-card px-3 py-2 flex-shrink-0">
-            <span className="text-sm font-medium text-text-primary">Panel</span>
-            <button
-              type="button"
-              onClick={() => setMobilePanelOpen(false)}
-              className="text-text-muted hover:text-text-primary text-lg px-2"
-              aria-label="বন্ধ করুন"
-            >
-              ✕
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-4">{content}</div>
-        </div>
-      )}
-    </>
+    </div>
   );
 }
