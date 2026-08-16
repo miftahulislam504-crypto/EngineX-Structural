@@ -4,6 +4,7 @@ import { Suspense, use, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useEnsureAuth } from "@/lib/firebase/useEnsureAuth";
 import { useProjectIdStore } from "@/lib/projects/useProjectIdStore";
+import { useStructuralAutoSync } from "@/lib/hub/useStructuralAutoSync";
 import { WorkflowSidebar } from "@/components/workflow/WorkflowSidebar";
 import { Sidebar } from "@/components/workflow/Sidebar";
 import { ListTree } from "lucide-react";
@@ -114,6 +115,15 @@ function ModelLayoutInner({ children, params }: LayoutProps<"/model/[projectId]"
       router.replace("/login");
     }
   }, [isAuthReady, user, router]);
+
+  // Structural -> Hub auto-sync (useStructuralAutoSync.ts) — এই layout
+  // এখানেই mount করা হলো ঠিক useEnsureAuth-এর একই যুক্তিতে (উপরের file
+  // comment দেখুন): এটাও একটা cross-cutting top-level concern, কোনো
+  // নির্দিষ্ট panel-এর UI state না, তাই tab পাল্টালেও (elements/design/
+  // documentation যেকোনো route-এ থাকা অবস্থায়) চালু থাকা দরকার — Draw-এর
+  // useArchitecturalAutoSync ঠিক এভাবেই design page-এ (সেই app-এর
+  // building-level persistent scope) mount করা।
+  useStructuralAutoSync(projectId);
 
   const mobileSidebarOpen = useShellUiStore((s) => s.mobileSidebarOpen);
   const setMobileSidebarOpen = useShellUiStore((s) => s.setMobileSidebarOpen);
