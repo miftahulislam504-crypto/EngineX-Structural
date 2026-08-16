@@ -62,6 +62,7 @@ export function ElementsLayer({
               <LineElementMesh
                 key={element.elementId}
                 elementId={element.elementId}
+                category={element.category}
                 startPoint={element.startPoint}
                 endPoint={element.endPoint}
                 color={isSelected ? COLOR_SELECTED : getLineElementColor(element.category)}
@@ -211,6 +212,7 @@ function getAreaElementColor(category: "slab" | "wall" | "shear-wall" | "core-wa
 
 interface LineElementMeshProps {
   elementId: string;
+  category: "beam" | "column" | "brace" | "pile";
   startPoint: { x: number; y: number; z: number };
   endPoint: { x: number; y: number; z: number };
   color: string;
@@ -220,6 +222,7 @@ interface LineElementMeshProps {
 }
 
 function LineElementMesh({
+  category,
   startPoint,
   endPoint,
   color,
@@ -234,9 +237,9 @@ function LineElementMesh({
     const len = direction.length();
     const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
 
-    // CylinderGeometry ডিফল্টভাবে Y-অক্ষ বরাবর দাঁড়ানো থাকে; আমাদের
-    // দরকার start→end দিক বরাবর ঘোরানো। এই quaternion সেই rotation
-    // হিসাব করে (Y-axis থেকে direction-এর দিকে)।
+    // CylinderGeometry/BoxGeometry ডিফল্টভাবে Y-অক্ষ বরাবর দাঁড়ানো
+    // থাকে; আমাদের দরকার start→end দিক বরাবর ঘোরানো। এই quaternion
+    // সেই rotation হিসাব করে (Y-axis থেকে direction-এর দিকে)।
     const quat = new THREE.Quaternion().setFromUnitVectors(
       new THREE.Vector3(0, 1, 0),
       direction.clone().normalize()
@@ -245,25 +248,34 @@ function LineElementMesh({
     return { midpoint: mid, length: len, quaternion: quat };
   }, [startPoint, endPoint]);
 
-  // পাতলা cylinder — প্রকৃত section dimension (Phase 2a তে sectionId
-  // রেফারেন্স আছে কিন্তু viewport এ এখনো actual cross-section shape
-  // render করা হচ্ছে না, এটা একটা schematic representation, Phase 10
-  // এর Results Visualization এ আরও বাস্তবসম্মত রেন্ডারিং আসবে)।
-  const radius = 0.06;
+  // প্রকৃত section dimension (sectionId রেফারেন্স আছে) এখনো viewport-এ
+  // ধরা হয় না, এটা schematic representation। Column-কে ইচ্ছাকৃতভাবে
+  // একটা ছোট box (cylinder না) হিসেবে দেখানো হয় — উপর থেকে (plan view,
+  // PlanView2D) তাকালে ETABS-এর মতো একটা স্পষ্ট বর্গাকার আউটলাইন
+  // দেখায়, cylinder-এর ক্ষেত্রে যা প্রায় অদৃশ্য বিন্দুর মতো হয়ে যেত।
+  // Beam/Brace/Pile আগের মতোই পাতলা cylinder — সেগুলো লাইন-সদৃশ member,
+  // প্ল্যান-ভিউতে তাদের length-ই মূল identifiable বৈশিষ্ট্য।
+  const clickHandler = interactionDisabled
+    ? undefined
+    : (e: { stopPropagation: () => void }) => {
+        e.stopPropagation();
+        onSelect();
+      };
+
+  if (category === "column") {
+    const COLUMN_SIZE = 0.28; // মিটার — schematic square, plan-view এ সহজে চোখে পড়ে এমন সাইজ
+    return (
+      <mesh position={midpoint} quaternion={quaternion} onClick={clickHandler}>
+        <boxGeometry args={[COLUMN_SIZE, length, COLUMN_SIZE]} />
+        <meshStandardMaterial color={color} />
+      </mesh>
+    );
+  }
+
+  const radius = category === "pile" ? 0.15 : 0.06; // pile সাধারণত beam/brace-এর চেয়ে মোটা হয়, schematic-এও তা প্রতিফলিত
 
   return (
-    <mesh
-      position={midpoint}
-      quaternion={quaternion}
-      onClick={
-        interactionDisabled
-          ? undefined
-          : (e) => {
-              e.stopPropagation();
-              onSelect();
-            }
-      }
-    >
+    <mesh position={midpoint} quaternion={quaternion} onClick={clickHandler}>
       <cylinderGeometry args={[radius, radius, length, 12]} />
       <meshStandardMaterial color={color} />
     </mesh>

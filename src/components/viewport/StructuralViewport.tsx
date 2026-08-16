@@ -19,6 +19,10 @@ import { useDetailingStore } from "@/lib/detailing/useDetailingStore";
 import { useStructuralCameraStore } from "@/lib/viewport/useStructuralCameraStore";
 import { snapToNearestGrid } from "@/lib/viewport/gridSnap";
 import type { Point3D } from "@/lib/types/element";
+import {
+  deriveGridsFromElements,
+  computeModelExtent,
+} from "@/lib/geometry/deriveGridsFromElements";
 
 /**
  * Structural Model 3D Viewport।
@@ -113,8 +117,28 @@ export function StructuralViewport({
   const isEmpty =
     geometry.grids.length === 0 && geometry.stories.length === 0 && elements.length === 0;
 
+  // Auto-derived grid — element geometry (column/beam/slab/...) থেকে
+  // manual grid এর পাশাপাশি বের করা হয়। দ্র. deriveGridsFromElements.ts
+  // এর টপ-লেভেল doc-comment ও PlanView2D.tsx এর একই প্যাটার্ন।
+  const autoGrids = useMemo(
+    () => deriveGridsFromElements(elements, geometry.grids),
+    [elements, geometry.grids]
+  );
+  const allGrids = useMemo(
+    () => [...geometry.grids, ...autoGrids],
+    [geometry.grids, autoGrids]
+  );
+  const modelExtent = useMemo(
+    () => computeModelExtent(elements, allGrids),
+    [elements, allGrids]
+  );
+  const groundGridSpan = Math.ceil(modelExtent.span + 4);
+
   function handleDrawPlaneClick(rawPoint: Point3D) {
-    const snapped = snapToNearestGrid(rawPoint, geometry.grids);
+    // snap এখন auto-derived grid সহ সব গ্রিডের বিরুদ্ধে হয় — ব্যবহারকারী
+    // draw mode এ existing column-এর লাইনে snap করতে পারবেন, শুধু
+    // manually বসানো grid না।
+    const snapped = snapToNearestGrid(rawPoint, allGrids);
     addDrawPoint(snapped);
   }
 
@@ -168,17 +192,19 @@ export function StructuralViewport({
               মতো একটা হালকা ground-plane grid, শুধু spatial depth/scale
               cue হিসেবে। GridLines.tsx এর structural grid থেকে আলাদা —
               এটা কোনো ডেটা রাখে না, ক্লিক-নিষ্ক্রিয়, শুধু visual। span
-              অন্য কম্পোনেন্টে ব্যবহৃত ২০মি convention এর সাথে মেলানো। */}
+              এখন মডেলের bounding box (groundGridSpan) অনুযায়ী dynamic,
+              যাতে বড় মডেলে ground grid ছোট না পড়ে যায় এবং ছোট মডেলে
+              অকারণ বড় না হয়। */}
           <Grid
             position={[0, -0.01, 0]}
-            args={[20, 20]}
+            args={[groundGridSpan, groundGridSpan]}
             cellSize={1}
             cellThickness={0.5}
             cellColor="#dde3ea"
             sectionSize={5}
             sectionThickness={1}
             sectionColor="#c4ccd6"
-            fadeDistance={30}
+            fadeDistance={Math.max(groundGridSpan * 1.5, 30)}
             fadeStrength={1}
             followCamera={false}
             infiniteGrid={false}
@@ -187,11 +213,12 @@ export function StructuralViewport({
           <OriginMarker />
 
           <GridLines
-            grids={geometry.grids}
+            grids={allGrids}
             stories={geometry.stories}
             selectedGridId={selectedGridId}
             onSelectGrid={(gridId) => setSelection({ type: "grid", gridId })}
             interactionDisabled={isDrawing}
+            extent={modelExtent}
           />
 
           <StoryPlanes
@@ -199,6 +226,7 @@ export function StructuralViewport({
             selectedStoryId={selectedStoryId}
             onSelectStory={(storyId) => setSelection({ type: "story", storyId })}
             interactionDisabled={isDrawing}
+            extent={modelExtent}
           />
 
           <ElementsLayer

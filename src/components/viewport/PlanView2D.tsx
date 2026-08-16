@@ -9,6 +9,10 @@ import { ElementsLayer } from "./ElementsLayer";
 import { useGeometryStore } from "@/lib/geometry/useGeometryStore";
 import { useElementsStore } from "@/lib/elements/useElementsStore";
 import { useSelectionStore } from "@/lib/viewport/useSelectionStore";
+import {
+  deriveGridsFromElements,
+  computeModelExtent,
+} from "@/lib/geometry/deriveGridsFromElements";
 
 /**
  * Plan View (2D) — Phase 0.4।
@@ -36,6 +40,15 @@ import { useSelectionStore } from "@/lib/viewport/useSelectionStore";
  * ঘন হয়ে যায় (superimposed), তাই একটা story dropdown দিয়ে single-floor
  * isolate করার সুযোগ রাখা হয়েছে — "সব" অপশনে সব floor একসাথেও দেখা
  * যায়।
+ *
+ * Auto-grid: geometry.grids এ থাকা manual grid এর পাশাপাশি,
+ * deriveGridsFromElements() visible element গুলোর (isolate করা থাকলে
+ * শুধু সেই story-র element) X/Z কোঅর্ডিনেট থেকে grid line বের করে
+ * merge করে দেয় — তাই ইঞ্জিনিয়ার আগে grid না বসিয়ে সরাসরি column/beam/
+ * slab এঁকে ফেললেও ETABS-এর মতো grid+dimension সহ plan view পাওয়া
+ * যায়। Camera extent-ও (modelExtent) এখন এই merge করা grid+element
+ * সেট থেকে হিসাব হয়, শুধু manual grid থেকে না — নাহলে auto-derive করা
+ * দূরের element camera-র বাইরে থেকে যেত।
  */
 export function PlanView2D() {
   const geometry = useGeometryStore((s) => s.geometry);
@@ -68,19 +81,26 @@ export function PlanView2D() {
     return elements.filter((el) => el.storyId === isolatedStoryId);
   }, [elements, isolatedStoryId]);
 
-  // ক্যামেরার zoom/bound — মডেলের extent থেকে একটা যুক্তিসঙ্গত ডিফল্ট।
-  // খুব ছোট মডেলেও (একটা মাত্র grid) কিছু padding রাখা হয়েছে যাতে
-  // camera একদম ক্লোজ-আপ না হয়ে যায়।
-  const modelExtent = useMemo(() => {
-    const xs = geometry.grids.filter((g) => g.direction === "Y").map((g) => g.coordinate);
-    const ys = geometry.grids.filter((g) => g.direction === "X").map((g) => g.coordinate);
-    // StoryPlanes.tsx এর PLANE_SPAN (20m) এর সাথে ডিফল্ট মিলিয়ে রাখা
-    // হলো, যাতে খালি/ছোট মডেলে 2D আর 3D ভিউয়ের প্রাথমিক zoom level
-    // কাছাকাছি অনুভূত হয়।
-    const maxX = xs.length ? Math.max(...xs.map(Math.abs)) : 10;
-    const maxY = ys.length ? Math.max(...ys.map(Math.abs)) : 10;
-    return Math.max(maxX, maxY, 10) * 1.4;
-  }, [geometry.grids]);
+  // Auto-derived grid — visible element (isolate করা থাকলে সেই
+  // story-রই) geometry থেকে বের করে manual grid এর সাথে merge। দ্র.
+  // deriveGridsFromElements.ts এর টপ-লেভেল doc-comment।
+  const autoGrids = useMemo(
+    () => deriveGridsFromElements(visibleElements, geometry.grids),
+    [visibleElements, geometry.grids]
+  );
+  const allGrids = useMemo(
+    () => [...geometry.grids, ...autoGrids],
+    [geometry.grids, autoGrids]
+  );
+
+  // ক্যামেরার zoom/bound — merge করা (manual+auto) grid ও element
+  // bounding box থেকে হিসাব করা, যাতে auto-derive করা দূরের element ও
+  // camera-র আওতায় থাকে। খুব ছোট মডেলেও (একটা মাত্র element) কিছু
+  // padding রাখা হয়েছে যাতে camera একদম ক্লোজ-আপ না হয়ে যায়।
+  const modelExtent = useMemo(
+    () => computeModelExtent(visibleElements, allGrids),
+    [visibleElements, allGrids]
+  );
 
   return (
     <div className="relative w-full h-full bg-surface">
@@ -107,11 +127,11 @@ export function PlanView2D() {
         onPointerMissed={() => setSelection({ type: "none" })}
       >
         <Suspense fallback={null}>
-          {/* উপর থেকে সরাসরি নিচে — zoom মডেলের extent অনুযায়ী */}
+          {/* উপর থেকে সরাসরি নিচে — zoom মডেলের extent (padding সহ) অনুযায়ী */}
           <OrthographicCamera
             makeDefault
             position={[0, 50, 0]}
-            zoom={300 / modelExtent}
+            zoom={300 / (modelExtent.span * 0.7)}
             near={0.1}
             far={200}
           />
@@ -120,11 +140,12 @@ export function PlanView2D() {
           <directionalLight position={[0, 20, 0]} intensity={0.4} />
 
           <GridLines
-            grids={geometry.grids}
+            grids={allGrids}
             stories={geometry.stories}
             selectedGridId={selectedGridId}
             onSelectGrid={(gridId) => setSelection({ type: "grid", gridId })}
             interactionDisabled={false}
+            extent={modelExtent}
           />
 
           <StoryPlanes

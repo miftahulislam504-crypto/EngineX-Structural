@@ -3,6 +3,7 @@
 import { Text } from "@react-three/drei";
 import { DoubleSide } from "three";
 import type { StructuralStory } from "@/lib/types/geometry";
+import type { ModelExtent } from "@/lib/geometry/deriveGridsFromElements";
 
 interface StoryPlanesProps {
   stories: StructuralStory[];
@@ -16,9 +17,11 @@ interface StoryPlanesProps {
    * পর্যন্ত পৌঁছাতোই না (GridLines.tsx এর কমেন্টে বিস্তারিত কারণ)।
    */
   interactionDisabled?: boolean;
+  /** মডেল bounding box — না দিলে পুরনো ২০মি ডিফল্ট span বজায় থাকে (দ্র. GridLines.tsx) */
+  extent?: ModelExtent;
 }
 
-const PLANE_SPAN = 20;
+const DEFAULT_PLANE_SPAN = 20;
 
 /**
  * প্রতিটা story কে একটা অর্ধ-স্বচ্ছ অনুভূমিক প্লেন হিসেবে দেখায়,
@@ -30,8 +33,10 @@ export function StoryPlanes({
   selectedStoryId,
   onSelectStory,
   interactionDisabled = false,
+  extent,
 }: StoryPlanesProps) {
   const visibleStories = stories.filter((s) => s.visible);
+  const planeSpan = extent ? extent.span + 4 : DEFAULT_PLANE_SPAN;
 
   return (
     <group>
@@ -53,7 +58,7 @@ export function StoryPlanes({
                     }
               }
             >
-              <planeGeometry args={[PLANE_SPAN, PLANE_SPAN]} />
+              <planeGeometry args={[planeSpan, planeSpan]} />
               <meshBasicMaterial
                 color={color}
                 transparent
@@ -62,7 +67,7 @@ export function StoryPlanes({
               />
             </mesh>
             <Text
-              position={[-PLANE_SPAN / 2 - 1.2, 0, -PLANE_SPAN / 2]}
+              position={[-planeSpan / 2 - 1.2, 0, -planeSpan / 2]}
               fontSize={0.32}
               color={color}
               anchorX="left"
