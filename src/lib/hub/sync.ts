@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * @deprecated (Hub-Structural Integration Phase 0)
  *
@@ -22,6 +20,17 @@
  * once there's a mapper that can turn Hub's actual fields into something
  * shaped like HubIncomingPackage — or once reportContext.ts is updated to
  * consume the new contract shapes directly.
+ *
+ * NOTE: this file was previously marked "use client", but it exports only
+ * plain async functions (no hooks/components) and is called from
+ * reportContext.ts, which runs server-side inside the Documentation API
+ * route (app/api/documentation/[projectId]/[document]/route.tsx). Marking
+ * it "use client" made Next.js reject that server-side call
+ * ("fetchHubIncomingPackage is on the client... cannot invoke a client
+ * function from the server"), which broke every PDF download. The
+ * directive has been removed — the firebase/firestore client SDK calls
+ * inside this file (getDoc/setDoc) work fine when run from a server
+ * context (API route), so no other change was needed.
  */
 
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";

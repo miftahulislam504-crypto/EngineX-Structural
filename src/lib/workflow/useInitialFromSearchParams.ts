@@ -8,10 +8,11 @@ import { useSearchParams } from "next/navigation";
  * ছিল (শুধু SidebarTab এর জন্য, সেই ফাইলেই ইনলাইন)। এখন geometry
  * বাদে loads/design/optimization/documentation — এই ৪টা route page
  * এরও নিজস্ব sub-tab আছে যেটা একই কারণে (deep-link/share/refresh-safe
- * করতে, আর WorkflowSidebar এর handleStageNavigate এর "loads stage এ
- * গেলে sub-tab প্রথম ধাপে রিসেট করা" আচরণ বজায় রাখতে — উপরের
- * ModelLayout দেখুন) query param থেকে সিড হওয়া দরকার। তাই generic
- * করে এখানে বের করে আনা হলো, একই লজিক ৫ জায়গায় কপি-পেস্ট না করে।
+ * করতে) query param থেকে সিড হওয়া দরকার। তাই generic করে এখানে বের
+ * করে আনা হলো, একই লজিক ৫ জায়গায় কপি-পেস্ট না করে। (আগে এখানে
+ * WorkflowSidebar-এর একটা stage-navigate আচরণও উল্লেখ ছিল — সেই
+ * wizard ফিচার এখন সম্পূর্ণ সরানো হয়েছে, এই hook-এর কার্যকারিতা
+ * অপরিবর্তিত।)
  *
  * useSearchParams() একটা Client Component hook — prerendered/dynamic
  * route এ এটা কল করা component কে <Suspense> এর ভেতরে রাখা Next.js

@@ -25,19 +25,17 @@ interface ShellUiState {
  * useState ছিল, কারণ Sidebar/WorkflowSidebar ও panel content — দুটোই
  * একই component এর ভেতরে ছিল, prop pass করার দরকার হতো না।
  *
- * Phase 4-এ Sidebar/WorkflowSidebar layout.tsx-এ সরে যাচ্ছে (persistent
- * shell, route change এ remount হবে না), কিন্তু এই দুই বুলিয়ান
- * open/close হয় দুই জায়গা থেকেই — layout-level ট্রিগার (Sidebar এ tab
- * ক্লিক, WorkflowSidebar এ stage সিলেক্ট) আর page-level ট্রিগার (প্রতিটা
- * route page এর নিজস্ব ⚙ ফ্লোটিং বাটন, sheet এর ভেতরের ✕)। তাই এটা আর
- * কোনো একটা single component এর local state হতে পারে না — ঠিক
- * useWorkflowUiStore.workflowPanelOpen যে একই সমস্যার সমাধান করেছিল,
- * সেই একই প্যাটার্নে এই ছোট sibling store।
+ * Phase 4-এ Sidebar layout.tsx-এ সরে যাচ্ছে (persistent shell, route
+ * change এ remount হবে না), কিন্তু এই দুই বুলিয়ান open/close হয় দুই
+ * জায়গা থেকেই — layout-level ট্রিগার (Sidebar এ tab ক্লিক) আর
+ * page-level ট্রিগার (প্রতিটা route page এর নিজস্ব ⚙ ফ্লোটিং বাটন,
+ * sheet এর ভেতরের ✕)। তাই এটা আর কোনো একটা single component এর local
+ * state হতে পারে না — একটা ছোট shared store।
  *
- * useWorkflowUiStore এ যোগ না করে আলাদা ফাইলে রাখা হলো কারণ ওটা
- * নির্দিষ্টভাবে workflow-wizard state (activeStage, workflowPanelOpen)
- * ধরে রাখে — এই দুটো সাধারণ shell-chrome state (কোনো workflow-নির্দিষ্ট
- * অর্থ নেই), আলাদা concern।
+ * (আগে এখানে একটা sibling useWorkflowUiStore ছিল, যেটা একই প্যাটার্নে
+ * ৯-Stage Workflow Wizard panel এর open/close state ধরে রাখত —
+ * ব্যবহারকারীর নির্দেশে সেই পুরো wizard ফিচার সরানো হয়েছে, এই store
+ * অপরিবর্তিত।)
  */
 export const useShellUiStore = create<ShellUiState>((set) => ({
   mobileSidebarOpen: false,

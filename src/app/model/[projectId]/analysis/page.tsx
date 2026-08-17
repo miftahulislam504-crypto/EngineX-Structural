@@ -13,6 +13,12 @@ import { DualPanelViewportShell } from "@/components/viewport/DualPanelViewportS
  * showDualPanel ক্যাটেগরি (elements এর সাথে shared shell — দেখুন
  * DualPanelViewportShell.tsx)।
  *
+ * Redesign (২০২৬-০৮) — DualPanelViewportShell এর `topBar` prop
+ * ব্যবহার করা হয়েছে (`panelOverlay` না) — AnalysisPanel এখন viewport-
+ * এর উপরে একটা horizontal option bar হিসেবে বসে, কোনো ভাসমান card/
+ * sheet নেই (Elements ট্যাব থেকে ভিন্ন, যেটা এখনো panelOverlay/⚙-sheet
+ * প্যাটার্ন ব্যবহার করে — কারণ বলা আছে DualPanelViewportShell.tsx-এ)।
+ *
  * ⚠️ এই page useElementsCore/useMaterialSectionLibrary/useLoadCore —
  * তিনটাই কল করে, কিন্তু তাদের return করা mutation action (addElement/
  * addMaterial/addLoadCase ইত্যাদি) কোনোটাই ব্যবহার করে না — শুধু hook
@@ -53,6 +59,6 @@ export default function AnalysisPage({ params }: PageProps<"/model/[projectId]/a
   useLoadCore(projectId);
 
   return (
-    <DualPanelViewportShell projectId={projectId} panelOverlay={<AnalysisPanel projectId={projectId} />} />
+    <DualPanelViewportShell projectId={projectId} topBar={<AnalysisPanel projectId={projectId} />} />
   );
 }

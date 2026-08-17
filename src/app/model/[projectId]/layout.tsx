@@ -6,20 +6,18 @@ import { useEnsureAuth } from "@/lib/firebase/useEnsureAuth";
 import { useProjectIdStore } from "@/lib/projects/useProjectIdStore";
 import { useProjectInfoCore } from "@/lib/projects/useProjectInfoCore";
 import { useProjectInfoStore } from "@/lib/projects/useProjectInfoStore";
-import { WorkflowSidebar } from "@/components/workflow/WorkflowSidebar";
 import { Sidebar } from "@/components/workflow/Sidebar";
-import { ListTree } from "lucide-react";
-import { useWorkflowUiStore } from "@/lib/workflow/useWorkflowUiStore";
 import { useShellUiStore } from "@/lib/workflow/useShellUiStore";
-import { STAGES, type SidebarTab } from "@/lib/workflow/stageTabs";
-import type { StageId } from "@/lib/workflow/types";
+import type { SidebarTab } from "@/lib/workflow/stageTabs";
 
 /**
  * Phase 4 (Panel Migration) — persistent shell।
  *
  * Phase 1 এ এই layout.tsx ইচ্ছাকৃতভাবে pure pass-through রাখা হয়েছিল।
- * এখন Sidebar/WorkflowSidebar এখানে (layout-level) তুলে আনা হলো —
- * নাহলে tab পাল্টানো মানেই পুরো shell (Sidebar সহ) remount।
+ * এখন Sidebar এখানে (layout-level) তুলে আনা হলো — নাহলে tab পাল্টানো
+ * মানেই পুরো shell (Sidebar সহ) remount। (আগে এখানে WorkflowSidebar
+ * নামে একটা ৯-Stage guided wizard panel-ও ছিল — ব্যবহারকারীর নির্দেশে
+ * সম্পূর্ণ সরানো হয়েছে, মূল flat Sidebar navigation অপরিবর্তিত।)
  *
  * ⚠️ গুরুত্বপূর্ণ ডিজাইন সিদ্ধান্ত (একটা ভুল ধারণা সংশোধন করে): এই
  * layout geometry/library/elements/loads এর ৪টা orchestration hook
@@ -143,10 +141,6 @@ function ModelLayoutInner({ children, params }: LayoutProps<"/model/[projectId]"
   const setMobileSidebarOpen = useShellUiStore((s) => s.setMobileSidebarOpen);
   const setMobilePanelOpen = useShellUiStore((s) => s.setMobilePanelOpen);
 
-  const workflowPanelOpen = useWorkflowUiStore((s) => s.workflowPanelOpen);
-  const setWorkflowPanelOpen = useWorkflowUiStore((s) => s.setWorkflowPanelOpen);
-  const setActiveStage = useWorkflowUiStore((s) => s.setActiveStage);
-
   const activeTab = tabFromPathname(pathname);
 
   /**
@@ -173,28 +167,6 @@ function ModelLayoutInner({ children, params }: LayoutProps<"/model/[projectId]"
     }
   }
 
-  /**
-   * Loads stage এ যাওয়ার সময় sub-tab "patterns" এ রিসেট করার পুরনো
-   * আচরণ (আগে setActiveLoadSubTab সরাসরি কল করত) এখন ?subtab= query
-   * param দিয়ে হয় — loads/page.tsx নিজে এটা useInitialFromSearchParams
-   * দিয়ে পড়ে initial sub-tab ঠিক করবে।
-   */
-  function handleStageNavigate(stageId: StageId) {
-    setActiveStage(stageId);
-    const stage = STAGES.find((s) => s.id === stageId);
-    if (!stage) return;
-
-    const path =
-      stage.targetTab === "geometry" ? `/model/${projectId}` : `/model/${projectId}/${stage.targetTab}`;
-    const query = stageId === "loads" ? "?subtab=patterns" : "";
-    router.replace(`${path}${query}`);
-
-    setWorkflowPanelOpen(false);
-    if (VIEWPORT_TABS.includes(stage.targetTab)) {
-      setMobilePanelOpen(true);
-    }
-  }
-
   if (!isAuthReady || !user) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-surface">
@@ -206,12 +178,7 @@ function ModelLayoutInner({ children, params }: LayoutProps<"/model/[projectId]"
   return (
     <main className="h-screen w-screen flex bg-surface text-text-primary overflow-hidden">
       <div className="hidden lg:block">
-        <Sidebar
-          activeTab={activeTab}
-          onSelectTab={handleSelectTab}
-          onOpenWorkflow={() => setWorkflowPanelOpen(true)}
-          projectName={projectName}
-        />
+        <Sidebar activeTab={activeTab} onSelectTab={handleSelectTab} projectName={projectName} />
       </div>
       {mobileSidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-40 flex">
@@ -219,10 +186,6 @@ function ModelLayoutInner({ children, params }: LayoutProps<"/model/[projectId]"
             <Sidebar
               activeTab={activeTab}
               onSelectTab={handleMobileSelectTab}
-              onOpenWorkflow={() => {
-                setMobileSidebarOpen(false);
-                setWorkflowPanelOpen(true);
-              }}
               onClose={() => setMobileSidebarOpen(false)}
               projectName={projectName}
             />
@@ -231,21 +194,7 @@ function ModelLayoutInner({ children, params }: LayoutProps<"/model/[projectId]"
             type="button"
             aria-label="বন্ধ করুন"
             onClick={() => setMobileSidebarOpen(false)}
-            className="flex-1 bg-black/60 backdrop-blur-sm"
-          />
-        </div>
-      )}
-
-      {workflowPanelOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          <div className="w-full max-w-xs h-full shadow-2xl [&>aside]:w-full [&>aside]:h-full">
-            <WorkflowSidebar onNavigate={handleStageNavigate} />
-          </div>
-          <button
-            type="button"
-            aria-label="বন্ধ করুন"
-            onClick={() => setWorkflowPanelOpen(false)}
-            className="flex-1 bg-black/60 backdrop-blur-sm"
+            className="flex-1 bg-white/60 backdrop-blur-sm"
           />
         </div>
       )}
@@ -263,14 +212,7 @@ function ModelLayoutInner({ children, params }: LayoutProps<"/model/[projectId]"
           <span className="text-xs font-medium text-text-primary truncate px-2">
             {projectName ?? projectId}
           </span>
-          <button
-            type="button"
-            onClick={() => setWorkflowPanelOpen(true)}
-            className="text-text-secondary hover:text-text-primary px-1"
-            aria-label="Workflow খুলুন"
-          >
-            <ListTree size={18} />
-          </button>
+          <span className="w-6" aria-hidden="true" />
         </div>
 
         {children}

@@ -21,9 +21,23 @@ import { useShellUiStore } from "@/lib/workflow/useShellUiStore";
  * overlay এ কী panelContent দেখাবে সেটাই আলাদা)। এখন এই দুটো আলাদা
  * route page — যদি এই ~৬৫ লাইন JSX দুই জায়গায় কপি করা হতো, ভবিষ্যতে
  * viewport/toolbar এ কোনো পরিবর্তন লাগলে দুই ফাইলে মেলাতে হতো (drift
- * এর ঝুঁকি)। তাই একটা reusable shell — `panelOverlay` prop দিয়ে
- * ভিন্ন content নেয় (elements/page.tsx থেকে ElementPanel/
+ * এর ঝুঁকি)। তাই একটা reusable shell — `panelOverlay`/`topBar` prop
+ * দিয়ে ভিন্ন content নেয় (elements/page.tsx থেকে ElementPanel/
  * AreaElementPanel/ইত্যাদি, analysis/page.tsx থেকে AnalysisPanel)।
+ *
+ * Redesign (২০২৬-০৮) — ব্যবহারকারীর স্পষ্ট নির্দেশ দুই ট্যাবের জন্য
+ * দুই রকম: Elements-এ ফর্ম অনেক বড় (Beam/Column/Slab/Wall/Footing
+ * ইত্যাদি) বলে সেখানে quick draw icon (top bar) + ⚙ বাটনে sheet/
+ * drawer এই পুরনো `panelOverlay` প্যাটার্নই থাকবে। কিন্তু Analysis-এ
+ * অপশন কম বলে সেখানে ভাসমান card/sheet সম্পূর্ণ বাদ, viewport-এর
+ * উপরে একটা সবসময়-দৃশ্যমান horizontal option bar (top bar) — কোনো
+ * floating card না, mobile/desktop একই লেআউট।
+ *
+ * তাই এই shell এখন `topBar` prop (ঐচ্ছিক ReactNode) নেয় — দেওয়া হলে
+ * shell সেটা viewport-এর উপরে বসায় আর পুরনো `panelOverlay` ভাসমান
+ * card/sheet সম্পূর্ণ বাদ দেয় (analysis/page.tsx এই মোড ব্যবহার
+ * করে)। না দিলে (topBar undefined) আগের floating card + mobile ⚙
+ * sheet আচরণ অপরিবর্তিত থাকে (elements/page.tsx)।
  *
  * showDetailing সবসময় false (dual-panel tab এ detailing overlay কখনো
  * দেখানো হয় না — মূল page.tsx এও তাই ছিল)। showStirrups/showMesh/
@@ -45,18 +59,21 @@ import { useShellUiStore } from "@/lib/workflow/useShellUiStore";
  * (route অপরিবর্তিত), অন্য কোথাও থেকে draw শেষ করলে সঠিক জায়গায় নিয়ে
  * যায়।
  * এই shell এ ViewportStatusChip (Project id + saving/error) আর মোবাইল
- * panel sheet (⚙ বাটন + fixed full-screen overlay)ও bundled আছে —
- * এই দুটোও elements/analysis উভয়েরই হুবহু একই প্যাটার্ন ছিল মূল
- * page.tsx এ (showDualPanel || showSinglePanel gate এ), তাই একই
- * extraction-যুক্তিতে এখানেই রাখা হলো।
+ * panel sheet (⚙ বাটন + fixed full-screen overlay, শুধু panelOverlay
+ * মোডে)ও bundled আছে — এই দুটোও elements/analysis উভয়েরই হুবহু একই
+ * প্যাটার্ন ছিল মূল page.tsx এ (showDualPanel || showSinglePanel
+ * gate এ), তাই একই extraction-যুক্তিতে এখানেই রাখা হলো।
  */
 
 interface DualPanelViewportShellProps {
   projectId: string;
-  panelOverlay: React.ReactNode;
+  /** পুরনো floating-card/⚙-sheet মোড (Elements ট্যাব)। `topBar` দেওয়া থাকলে উপেক্ষিত হয়। */
+  panelOverlay?: React.ReactNode;
+  /** নতুন horizontal top-bar মোড (Analysis ট্যাব) — viewport-এর উপরে বসে, কোনো floating card/sheet তৈরি হয় না। */
+  topBar?: React.ReactNode;
 }
 
-export function DualPanelViewportShell({ projectId, panelOverlay }: DualPanelViewportShellProps) {
+export function DualPanelViewportShell({ projectId, panelOverlay, topBar }: DualPanelViewportShellProps) {
   const router = useRouter();
   const [mobileViewMode, setMobileViewMode] = useState<"2d" | "3d">("3d");
 
@@ -77,8 +94,8 @@ export function DualPanelViewportShell({ projectId, panelOverlay }: DualPanelVie
     router.push(`/model/${projectId}/elements`);
   }
 
-  return (
-    <div className="flex flex-col h-full lg:flex-row">
+  const viewportArea = (
+    <div className="relative flex flex-col h-full lg:flex-row flex-1 min-h-0">
       <div
         className={`relative flex-1 min-h-0 lg:block ${
           mobileViewMode === "2d" ? "block" : "hidden"
@@ -134,13 +151,30 @@ export function DualPanelViewportShell({ projectId, panelOverlay }: DualPanelVie
         </button>
       </div>
 
-      {/* --- ডান overlay: elements/page.tsx বা analysis/page.tsx থেকে
-          panelOverlay prop দিয়ে আসা content (form/controls) --- */}
+      <ViewportStatusChip projectId={projectId} />
+    </div>
+  );
+
+  // --- topBar মোড (Analysis) — কোনো floating card/sheet নেই, top bar
+  // viewport-এর উপরে, mobile/desktop একই লেআউট।
+  if (topBar) {
+    return (
+      <div className="flex flex-col h-full">
+        {topBar}
+        {viewportArea}
+      </div>
+    );
+  }
+
+  // --- panelOverlay মোড (Elements) — আগের floating card + মোবাইল ⚙ sheet।
+  return (
+    <div className="flex flex-col h-full lg:flex-row">
+      {viewportArea}
+
+      {/* --- ডান overlay: elements/page.tsx থেকে panelOverlay prop দিয়ে আসা content (form/controls) --- */}
       <div className="hidden lg:block absolute top-3 right-3 w-80 max-h-[calc(100%-1.5rem)] overflow-y-auto rounded-xl border border-surface-border bg-surface-card/95 backdrop-blur shadow-card p-4">
         {panelOverlay}
       </div>
-
-      <ViewportStatusChip projectId={projectId} />
 
       {/* মোবাইলে ডান panel বন্ধ থাকলে এই floating বাটন দিয়ে খোলা যায় */}
       <button

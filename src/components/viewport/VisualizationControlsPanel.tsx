@@ -8,6 +8,7 @@ import { useAnalysisVisualizationStore } from "@/lib/analysis/useAnalysisVisuali
 import { useAnalysisResultStore } from "@/lib/analysis/useAnalysisResultStore";
 import { useDcrStore } from "@/lib/design/useDcrStore";
 import type { ElementCategory } from "@/lib/types/element";
+import { ViewportTopBar, type ViewportTopBarItem } from "@/components/viewport/ViewportTopBar";
 
 const CATEGORY_LABELS: { category: ElementCategory; label: string }[] = [
   { category: "beam", label: "Beam" },
@@ -51,8 +52,16 @@ const DISPLACEMENT_CAPABLE_TYPES = new Set([
 ]);
 
 /**
- * Phase 10i — VisualizationViewport এর নিয়ন্ত্রণ প্যানেল (ডান sidebar,
- * page.tsx এর নতুন "visualization" top-level ট্যাবে বসবে)।
+ * Phase 10i — VisualizationViewport এর নিয়ন্ত্রণ (top horizontal bar
+ * এ dropdown popup হিসেবে, visualization/page.tsx এ)।
+ *
+ * Redesign (২০২৬-০৮) — আগে এই প্যানেলটা viewport-এর উপরে ভাসমান একটা
+ * ডান-পাশের card এ বসত (`<div className="space-y-6">` এর ভেতরে সব
+ * section একটার নিচে একটা)। ব্যবহারকারীর নির্দেশে সেই floating card
+ * সরিয়ে top bar + full-width viewport লেআউটে আনা হয়েছে — প্রতিটা
+ * `<section>` এখন একটা `ViewportTopBarItem` (bar-এ একটা বাটন, ক্লিক
+ * করলে popup dropdown এ সেই section-এর পুরনো content)। কোনো hook বা
+ * state logic বদলায়নি, শুধু JSX-এর wrapper (section → dropdown item)।
  *
  * এই প্যানেলটা 10j+ এর সব sub-phase এর জন্য একটা shared "toolbar"
  * হিসেবে থাকবে — story isolation ও render mode toggle প্রতিটা
@@ -141,546 +150,525 @@ export function VisualizationControlsPanel() {
 
   const categoriesPresent = new Set(elements.map((e) => e.category));
 
-  return (
-    <div className="space-y-6">
-      <section>
-        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
-          Story Isolation
-        </h3>
-        <select
-          value={isolatedStoryId ?? ""}
-          onChange={(e) => setIsolatedStoryId(e.target.value === "" ? null : e.target.value)}
-          className="w-full bg-surface-hover border border-surface-border rounded px-2 py-1.5 text-sm text-text-primary"
-        >
-          <option value="">All Stories</option>
-          {sortedStories.map((story) => (
-            <option key={story.storyId} value={story.storyId}>
-              {story.name}
-            </option>
-          ))}
-        </select>
+  const storyIsolationContent = (
+    <div>
+      <select
+        value={isolatedStoryId ?? ""}
+        onChange={(e) => setIsolatedStoryId(e.target.value === "" ? null : e.target.value)}
+        className="w-full bg-surface-hover border border-surface-border rounded px-2 py-1.5 text-sm text-text-primary"
+      >
+        <option value="">All Stories</option>
+        {sortedStories.map((story) => (
+          <option key={story.storyId} value={story.storyId}>
+            {story.name}
+          </option>
+        ))}
+      </select>
 
-        {isolatedStoryId && (
-          <label className="flex items-center gap-2 mt-2 text-xs text-text-muted">
+      {isolatedStoryId && (
+        <label className="flex items-center gap-2 mt-2 text-xs text-text-muted">
+          <input
+            type="checkbox"
+            checked={fadeNonIsolated}
+            onChange={(e) => setFadeNonIsolated(e.target.checked)}
+            className="accent-brand-600"
+          />
+          Fade other stories (instead of hiding)
+        </label>
+      )}
+    </div>
+  );
+
+  const renderModeContent = (
+    <div className="flex gap-1">
+      {RENDER_MODES.map((rm) => (
+        <button
+          key={rm.mode}
+          onClick={() => setRenderMode(rm.mode)}
+          className={`flex-1 text-xs py-1.5 rounded transition-colors ${
+            renderMode === rm.mode
+              ? "bg-brand-600 text-white"
+              : "bg-surface-hover text-text-muted hover:text-text-primary"
+          }`}
+        >
+          {rm.label}
+        </button>
+      ))}
+    </div>
+  );
+
+  const deformationContent = (
+    <div>
+      {activeAnalysisType ? (
+        <p className="text-xs text-text-muted mb-2">
+          Active result: <span className="text-text-primary">{ANALYSIS_TYPE_LABELS[activeAnalysisType]}</span>
+        </p>
+      ) : (
+        <p className="text-xs text-text-secondary mb-2">
+          কোনো Analysis result নেই — Analysis ট্যাবে একটা run করুন।
+        </p>
+      )}
+
+      {activeAnalysisType && !DISPLACEMENT_CAPABLE_TYPES.has(activeAnalysisType) && (
+        <p className="text-[11px] text-status-holdText/90 mb-2">
+          {ANALYSIS_TYPE_LABELS[activeAnalysisType]} এ সরাসরি deformable displacement নেই (Modal/
+          Buckling/Pushover এর mode shape animation পরবর্তী sub-phase এ যোগ হবে)।
+        </p>
+      )}
+
+      <label className="flex items-center gap-2 text-xs text-text-secondary mb-3">
+        <input
+          type="checkbox"
+          checked={deformationEnabled}
+          onChange={(e) => setDeformationEnabled(e.target.checked)}
+          disabled={!activeAnalysisType}
+          className="accent-brand-600"
+        />
+        Show deformed shape
+      </label>
+
+      {deformationEnabled && (
+        <div className="space-y-3">
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[11px] text-text-muted">Scale factor</span>
+              <span className="text-[11px] text-text-secondary">{deformationScale}×</span>
+            </div>
+            <input
+              type="range"
+              min={1}
+              max={500}
+              step={1}
+              value={deformationScale}
+              onChange={(e) => setDeformationScale(Number(e.target.value))}
+              className="w-full accent-brand-600"
+            />
+          </div>
+
+          <button
+            onClick={() => setIsAnimating(!isAnimating)}
+            className={`w-full text-xs py-1.5 rounded transition-colors ${
+              isAnimating
+                ? "bg-brand-600 text-white"
+                : "bg-surface-hover text-text-secondary hover:text-text-primary"
+            }`}
+          >
+            {isAnimating ? "⏸ Pause Animation" : "▶ Animate Deformation"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
+  const diagramContent = (
+    <div>
+      <p className="text-[11px] text-text-secondary mb-2">
+        শুধু Beam/Column/Brace/Pile — Slab/Wall এর force recovery নেই
+        (Phase 4a সীমাবদ্ধতা, displacement-only)। Diagram piecewise-
+        linear approximation, দুই প্রান্তের value দিয়ে (backend থেকে
+        mid-span sample point পাওয়া যায় না)।
+      </p>
+
+      {(!elementEndForces || elementEndForces.length === 0) && (
+        <p className="text-xs text-text-secondary mb-2">
+          কোনো Element End Forces নেই — Analysis ট্যাবে একটা run করুন।
+        </p>
+      )}
+
+      <label className="flex items-center gap-2 text-xs text-text-secondary mb-3">
+        <input
+          type="checkbox"
+          checked={diagramEnabled}
+          onChange={(e) => setDiagramEnabled(e.target.checked)}
+          disabled={!elementEndForces || elementEndForces.length === 0}
+          className="accent-brand-600"
+        />
+        Show diagram
+      </label>
+
+      {diagramEnabled && (
+        <div className="space-y-3">
+          <div>
+            <span className="text-[11px] text-text-muted block mb-1">Quantity</span>
+            <div className="flex gap-1">
+              {(["moment", "shear", "axial"] as const).map((q) => (
+                <button
+                  key={q}
+                  onClick={() => setDiagramQuantity(q)}
+                  className={`flex-1 text-xs py-1 rounded capitalize transition-colors ${
+                    diagramQuantity === q
+                      ? "bg-brand-600 text-white"
+                      : "bg-surface-hover text-text-secondary hover:text-text-primary"
+                  }`}
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[11px] text-text-muted">Scale factor</span>
+              <span className="text-[11px] text-text-secondary">{diagramScale.toFixed(3)}</span>
+            </div>
+            <input
+              type="range"
+              min={0.001}
+              max={0.5}
+              step={0.001}
+              value={diagramScale}
+              onChange={(e) => setDiagramScale(Number(e.target.value))}
+              className="w-full accent-brand-600"
+            />
+          </div>
+
+          <div className="flex items-center gap-3 text-[11px] text-text-muted">
+            <span className="flex items-center gap-1">
+              <span className="inline-block w-3 h-0.5 bg-orange-500" /> Y-plane
+            </span>
+            {diagramQuantity !== "axial" && (
+              <span className="flex items-center gap-1">
+                <span className="inline-block w-3 h-0.5 bg-brand-600" /> Z-plane
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const reactionContent = (
+    <div>
+      <p className="text-[11px] text-text-secondary mb-2">
+        শুধু Linear Static এ পাওয়া যায় (backend penalty-method দিয়ে
+        global DOF এ reaction গণনা করে, hand-verified)।
+      </p>
+
+      {!linearStaticResult?.reactionForces?.length && (
+        <p className="text-xs text-text-secondary mb-2">
+          কোনো Reaction ফলাফল নেই — Analysis ট্যাবে Linear Static চালান।
+        </p>
+      )}
+
+      <label className="flex items-center gap-2 text-xs text-text-secondary mb-3">
+        <input
+          type="checkbox"
+          checked={reactionEnabled}
+          onChange={(e) => setReactionEnabled(e.target.checked)}
+          disabled={!linearStaticResult?.reactionForces?.length}
+          className="accent-brand-600"
+        />
+        Show reactions
+      </label>
+
+      {reactionEnabled && (
+        <div className="space-y-3">
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[11px] text-text-muted">Arrow size</span>
+              <span className="text-[11px] text-text-secondary">{reactionScale.toFixed(2)}</span>
+            </div>
+            <input
+              type="range"
+              min={0.2}
+              max={3}
+              step={0.1}
+              value={reactionScale}
+              onChange={(e) => setReactionScale(Number(e.target.value))}
+              className="w-full accent-brand-600"
+            />
+          </div>
+
+          <label className="flex items-center gap-2 text-xs text-text-secondary">
             <input
               type="checkbox"
-              checked={fadeNonIsolated}
-              onChange={(e) => setFadeNonIsolated(e.target.checked)}
+              checked={reactionShowMoments}
+              onChange={(e) => setReactionShowMoments(e.target.checked)}
               className="accent-brand-600"
             />
-            Fade other stories (instead of hiding)
+            Show moment labels
           </label>
-        )}
-      </section>
-
-      <section>
-        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
-          Render Mode
-        </h3>
-        <div className="flex gap-1">
-          {RENDER_MODES.map((rm) => (
-            <button
-              key={rm.mode}
-              onClick={() => setRenderMode(rm.mode)}
-              className={`flex-1 text-xs py-1.5 rounded transition-colors ${
-                renderMode === rm.mode
-                  ? "bg-brand-600 text-white"
-                  : "bg-surface-hover text-text-muted hover:text-text-primary"
-              }`}
-            >
-              {rm.label}
-            </button>
-          ))}
         </div>
-      </section>
+      )}
+    </div>
+  );
 
-      <section>
-        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
-          Displacement / Deformation
-        </h3>
+  const dcrHeatMapContent = (
+    <div>
+      <p className="text-[11px] text-text-secondary mb-2">
+        Design ট্যাবে যেসব element এর design run হয়েছে, তাদের governing
+        utilization ratio অনুযায়ী রং করে (green ≤0.7, yellow 0.7-1.0,
+        red ≥1.0)। যে element এর design এখনো চালানো হয়নি সেটা normal
+        category color এই থাকে।
+      </p>
 
-        {activeAnalysisType ? (
-          <p className="text-xs text-text-muted mb-2">
-            Active result: <span className="text-text-primary">{ANALYSIS_TYPE_LABELS[activeAnalysisType]}</span>
-          </p>
-        ) : (
-          <p className="text-xs text-text-secondary mb-2">
-            কোনো Analysis result নেই — Analysis ট্যাবে একটা run করুন।
-          </p>
-        )}
-
-        {activeAnalysisType && !DISPLACEMENT_CAPABLE_TYPES.has(activeAnalysisType) && (
-          <p className="text-[11px] text-status-holdText/90 mb-2">
-            {ANALYSIS_TYPE_LABELS[activeAnalysisType]} এ সরাসরি deformable displacement নেই (Modal/
-            Buckling/Pushover এর mode shape animation পরবর্তী sub-phase এ যোগ হবে)।
-          </p>
-        )}
-
-        <label className="flex items-center gap-2 text-xs text-text-secondary mb-3">
-          <input
-            type="checkbox"
-            checked={deformationEnabled}
-            onChange={(e) => setDeformationEnabled(e.target.checked)}
-            disabled={!activeAnalysisType}
-            className="accent-brand-600"
-          />
-          Show deformed shape
-        </label>
-
-        {deformationEnabled && (
-          <div className="space-y-3">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] text-text-muted">Scale factor</span>
-                <span className="text-[11px] text-text-secondary">{deformationScale}×</span>
-              </div>
-              <input
-                type="range"
-                min={1}
-                max={500}
-                step={1}
-                value={deformationScale}
-                onChange={(e) => setDeformationScale(Number(e.target.value))}
-                className="w-full accent-brand-600"
-              />
-            </div>
-
-            <button
-              onClick={() => setIsAnimating(!isAnimating)}
-              className={`w-full text-xs py-1.5 rounded transition-colors ${
-                isAnimating
-                  ? "bg-brand-600 text-white"
-                  : "bg-surface-hover text-text-secondary hover:text-text-primary"
-              }`}
-            >
-              {isAnimating ? "⏸ Pause Animation" : "▶ Animate Deformation"}
-            </button>
-          </div>
-        )}
-      </section>
-
-      <section>
-        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
-          Moment / Shear / Axial Diagram
-        </h3>
-
-        <p className="text-[11px] text-text-secondary mb-2">
-          শুধু Beam/Column/Brace/Pile — Slab/Wall এর force recovery নেই
-          (Phase 4a সীমাবদ্ধতা, displacement-only)। Diagram piecewise-
-          linear approximation, দুই প্রান্তের value দিয়ে (backend থেকে
-          mid-span sample point পাওয়া যায় না)।
+      {dcrRecordCount === 0 && (
+        <p className="text-xs text-text-secondary mb-2">
+          কোনো DCR ফলাফল নেই — Design ট্যাবে কিছু element এর design
+          চালান।
         </p>
+      )}
 
-        {(!elementEndForces || elementEndForces.length === 0) && (
-          <p className="text-xs text-text-secondary mb-2">
-            কোনো Element End Forces নেই — Analysis ট্যাবে একটা run করুন।
-          </p>
-        )}
+      <label className="flex items-center gap-2 text-xs text-text-secondary mb-2">
+        <input
+          type="checkbox"
+          checked={dcrHeatMapEnabled}
+          onChange={(e) => setDcrHeatMapEnabled(e.target.checked)}
+          disabled={dcrRecordCount === 0}
+          className="accent-brand-600"
+        />
+        Show heat map ({dcrRecordCount} element{dcrRecordCount === 1 ? "" : "s"})
+      </label>
 
-        <label className="flex items-center gap-2 text-xs text-text-secondary mb-3">
-          <input
-            type="checkbox"
-            checked={diagramEnabled}
-            onChange={(e) => setDiagramEnabled(e.target.checked)}
-            disabled={!elementEndForces || elementEndForces.length === 0}
-            className="accent-brand-600"
-          />
-          Show diagram
-        </label>
+      {dcrHeatMapEnabled && (
+        <div className="flex items-center gap-3 text-[11px] text-text-muted">
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-3 h-3 rounded-sm bg-[#22c55e]" /> ≤0.7
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-3 h-3 rounded-sm bg-[#eab308]" /> 0.7-1.0
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-3 h-3 rounded-sm bg-[#ef4444]" /> ≥1.0
+          </span>
+        </div>
+      )}
+    </div>
+  );
 
-        {diagramEnabled && (
-          <div className="space-y-3">
-            <div>
-              <span className="text-[11px] text-text-muted block mb-1">Quantity</span>
-              <div className="flex gap-1">
-                {(["moment", "shear", "axial"] as const).map((q) => (
-                  <button
-                    key={q}
-                    onClick={() => setDiagramQuantity(q)}
-                    className={`flex-1 text-xs py-1 rounded capitalize transition-colors ${
-                      diagramQuantity === q
-                        ? "bg-brand-600 text-white"
-                        : "bg-surface-hover text-text-secondary hover:text-text-primary"
-                    }`}
-                  >
-                    {q}
-                  </button>
-                ))}
-              </div>
-            </div>
+  const modeShapeContent = (
+    <div>
+      <p className="text-[11px] text-text-secondary mb-2">
+        Normalized shape (arbitrary scale, physical displacement না) —
+        Displacement/Deformation এর সাথে একসাথে চালু করা যায় না।
+      </p>
 
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] text-text-muted">Scale factor</span>
-                <span className="text-[11px] text-text-secondary">{diagramScale.toFixed(3)}</span>
-              </div>
-              <input
-                type="range"
-                min={0.001}
-                max={0.5}
-                step={0.001}
-                value={diagramScale}
-                onChange={(e) => setDiagramScale(Number(e.target.value))}
-                className="w-full accent-brand-600"
-              />
-            </div>
+      <div className="flex gap-1 mb-2">
+        {(["modal", "buckling"] as const).map((src) => (
+          <button
+            key={src}
+            onClick={() => {
+              setModeShapeSource(src);
+              setModeShapeIndex(0);
+            }}
+            className={`flex-1 text-xs py-1 rounded capitalize transition-colors ${
+              modeShapeSource === src
+                ? "bg-brand-600 text-white"
+                : "bg-surface-hover text-text-secondary hover:text-text-primary"
+            }`}
+          >
+            {src}
+          </button>
+        ))}
+      </div>
 
-            <div className="flex items-center gap-3 text-[11px] text-text-muted">
-              <span className="flex items-center gap-1">
-                <span className="inline-block w-3 h-0.5 bg-orange-500" /> Y-plane
+      {modeCount === 0 && (
+        <p className="text-xs text-text-secondary mb-2">
+          কোনো {modeShapeSource === "modal" ? "Modal" : "Buckling"} result নেই — Analysis ট্যাবে চালান।
+        </p>
+      )}
+
+      <label className="flex items-center gap-2 text-xs text-text-secondary mb-3">
+        <input
+          type="checkbox"
+          checked={modeShapeEnabled}
+          onChange={(e) => {
+            setModeShapeEnabled(e.target.checked);
+            if (e.target.checked) setDeformationEnabled(false); // mutually exclusive
+          }}
+          disabled={modeCount === 0}
+          className="accent-brand-600"
+        />
+        Show mode shape
+      </label>
+
+      {modeShapeEnabled && modeCount > 0 && (
+        <div className="space-y-3">
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[11px] text-text-muted">
+                Mode {modeShapeIndex + 1} of {modeCount}
               </span>
-              {diagramQuantity !== "axial" && (
-                <span className="flex items-center gap-1">
-                  <span className="inline-block w-3 h-0.5 bg-brand-600" /> Z-plane
+              {modeShapeSource === "modal" && modalResult?.modes?.[modeShapeIndex] && (
+                <span className="text-[11px] text-text-muted">
+                  T={(1 / modalResult.modes[modeShapeIndex].naturalFrequencyHz).toFixed(3)}s
+                </span>
+              )}
+              {modeShapeSource === "buckling" && bucklingResult?.modes?.[modeShapeIndex] && (
+                <span className="text-[11px] text-text-muted">
+                  λ={bucklingResult.modes[modeShapeIndex].criticalLoadFactor?.toFixed(2)}
                 </span>
               )}
             </div>
+            <input
+              type="range"
+              min={0}
+              max={modeCount - 1}
+              step={1}
+              value={modeShapeIndex}
+              onChange={(e) => setModeShapeIndex(Number(e.target.value))}
+              className="w-full accent-brand-600"
+            />
           </div>
-        )}
-      </section>
 
-      <section>
-        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
-          Reaction Display
-        </h3>
-
-        <p className="text-[11px] text-text-secondary mb-2">
-          শুধু Linear Static এ পাওয়া যায় (backend penalty-method দিয়ে
-          global DOF এ reaction গণনা করে, hand-verified)।
-        </p>
-
-        {!linearStaticResult?.reactionForces?.length && (
-          <p className="text-xs text-text-secondary mb-2">
-            কোনো Reaction ফলাফল নেই — Analysis ট্যাবে Linear Static চালান।
-          </p>
-        )}
-
-        <label className="flex items-center gap-2 text-xs text-text-secondary mb-3">
-          <input
-            type="checkbox"
-            checked={reactionEnabled}
-            onChange={(e) => setReactionEnabled(e.target.checked)}
-            disabled={!linearStaticResult?.reactionForces?.length}
-            className="accent-brand-600"
-          />
-          Show reactions
-        </label>
-
-        {reactionEnabled && (
-          <div className="space-y-3">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] text-text-muted">Arrow size</span>
-                <span className="text-[11px] text-text-secondary">{reactionScale.toFixed(2)}</span>
-              </div>
-              <input
-                type="range"
-                min={0.2}
-                max={3}
-                step={0.1}
-                value={reactionScale}
-                onChange={(e) => setReactionScale(Number(e.target.value))}
-                className="w-full accent-brand-600"
-              />
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[11px] text-text-muted">Scale factor</span>
+              <span className="text-[11px] text-text-secondary">{modeShapeScale}×</span>
             </div>
-
-            <label className="flex items-center gap-2 text-xs text-text-secondary">
-              <input
-                type="checkbox"
-                checked={reactionShowMoments}
-                onChange={(e) => setReactionShowMoments(e.target.checked)}
-                className="accent-brand-600"
-              />
-              Show moment labels
-            </label>
+            <input
+              type="range"
+              min={1}
+              max={500}
+              step={1}
+              value={modeShapeScale}
+              onChange={(e) => setModeShapeScale(Number(e.target.value))}
+              className="w-full accent-brand-600"
+            />
           </div>
-        )}
-      </section>
 
-      <section>
-        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
-          DCR / Utilization Heat Map
-        </h3>
+          <button
+            onClick={() => setModeShapeAnimating(!modeShapeAnimating)}
+            className={`w-full text-xs py-1.5 rounded transition-colors ${
+              modeShapeAnimating
+                ? "bg-brand-600 text-white"
+                : "bg-surface-hover text-text-secondary hover:text-text-primary"
+            }`}
+          >
+            {modeShapeAnimating ? "⏸ Pause Animation" : "▶ Animate Mode Shape"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
 
-        <p className="text-[11px] text-text-secondary mb-2">
-          Design ট্যাবে যেসব element এর design run হয়েছে, তাদের governing
-          utilization ratio অনুযায়ী রং করে (green ≤0.7, yellow 0.7-1.0,
-          red ≥1.0)। যে element এর design এখনো চালানো হয়নি সেটা normal
-          category color এই থাকে।
+  const stressContourContent = (
+    <div>
+      <p className="text-[11px] text-status-holdText/90 mb-2">
+        এটা প্রকৃত stress না — shell element (Slab/Wall) এ কোনো FE
+        stress/moment recovery নেই এই ইঞ্জিনে (শুধু displacement)।
+        এই contour প্রতিটা shell element এর গড় displacement
+        magnitude দেখায় (blue=কম, red=বেশি, dataset-relative স্কেল)
+        — বেশি নড়াচড়া মানে সাধারণত বেশি strain, কিন্তু thickness/
+        material/boundary condition বিবেচনা করে না। শুধু একটা visual
+        indicator, design এর জন্য ব্যবহারযোগ্য না।
+      </p>
+
+      <label className="flex items-center gap-2 text-xs text-text-secondary mb-2">
+        <input
+          type="checkbox"
+          checked={stressContourEnabled}
+          onChange={(e) => setStressContourEnabled(e.target.checked)}
+          className="accent-brand-600"
+        />
+        Show contour (proxy)
+      </label>
+
+      {stressContourEnabled && (
+        <div className="flex items-center gap-2 text-[11px] text-text-muted">
+          <span>কম</span>
+          <span className="flex-1 h-2 rounded-full bg-gradient-to-r from-[#3b82f6] via-[#22c55e] via-[#eab308] to-[#ef4444]" />
+          <span>বেশি</span>
+        </div>
+      )}
+    </div>
+  );
+
+  const hingeMarkersContent = (
+    <div>
+      <p className="text-[11px] text-status-holdText/90 mb-2">
+        শুধু চূড়ান্ত (converged) hinge অবস্থা দেখায় — কোনো step-by-step
+        progressive animation নেই (backend intermediate step সংরক্ষণ
+        করে না)। &ldquo;Crack&rdquo; মানে প্রকৃত crack-width model না, শুধু hinge
+        yield (reinforcement yield stress) কে crack-প্রবণ location এর
+        proxy হিসেবে ধরা হয়েছে। শুধু Nonlinear Static/Pushover এ
+        পাওয়া যায় (elastic analysis এ hinge concept নেই)।
+      </p>
+
+      {activeHingeCount === 0 && (
+        <p className="text-xs text-text-secondary mb-2">
+          কোনো Hinge ফলাফল নেই — Analysis ট্যাবে Nonlinear Static বা
+          Pushover চালান।
         </p>
+      )}
 
-        {dcrRecordCount === 0 && (
-          <p className="text-xs text-text-secondary mb-2">
-            কোনো DCR ফলাফল নেই — Design ট্যাবে কিছু element এর design
-            চালান।
-          </p>
-        )}
+      <label className="flex items-center gap-2 text-xs text-text-secondary mb-2">
+        <input
+          type="checkbox"
+          checked={hingeMarkersEnabled}
+          onChange={(e) => setHingeMarkersEnabled(e.target.checked)}
+          disabled={activeHingeCount === 0}
+          className="accent-brand-600"
+        />
+        Show hinge markers ({activeHingeCount})
+      </label>
 
-        <label className="flex items-center gap-2 text-xs text-text-secondary mb-2">
-          <input
-            type="checkbox"
-            checked={dcrHeatMapEnabled}
-            onChange={(e) => setDcrHeatMapEnabled(e.target.checked)}
-            disabled={dcrRecordCount === 0}
-            className="accent-brand-600"
-          />
-          Show heat map ({dcrRecordCount} element{dcrRecordCount === 1 ? "" : "s"})
-        </label>
-
-        {dcrHeatMapEnabled && (
+      {hingeMarkersEnabled && (
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-xs text-text-secondary">
+            <input
+              type="checkbox"
+              checked={hingeMarkerShowLabels}
+              onChange={(e) => setHingeMarkerShowLabels(e.target.checked)}
+              className="accent-brand-600"
+            />
+            Show plastic rotation labels
+          </label>
           <div className="flex items-center gap-3 text-[11px] text-text-muted">
             <span className="flex items-center gap-1">
-              <span className="inline-block w-3 h-3 rounded-sm bg-[#22c55e]" /> ≤0.7
+              <span className="inline-block w-3 h-3 rounded-full bg-[#ef4444]" /> Yielded
             </span>
             <span className="flex items-center gap-1">
-              <span className="inline-block w-3 h-3 rounded-sm bg-[#eab308]" /> 0.7-1.0
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="inline-block w-3 h-3 rounded-sm bg-[#ef4444]" /> ≥1.0
+              <span className="inline-block w-3 h-3 rounded-full bg-[#64748b]" /> Not yielded
             </span>
           </div>
-        )}
-      </section>
-
-      <section>
-        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
-          Mode Shape / Buckling Animation
-        </h3>
-
-        <p className="text-[11px] text-text-secondary mb-2">
-          Normalized shape (arbitrary scale, physical displacement না) —
-          Displacement/Deformation এর সাথে একসাথে চালু করা যায় না।
-        </p>
-
-        <div className="flex gap-1 mb-2">
-          {(["modal", "buckling"] as const).map((src) => (
-            <button
-              key={src}
-              onClick={() => {
-                setModeShapeSource(src);
-                setModeShapeIndex(0);
-              }}
-              className={`flex-1 text-xs py-1 rounded capitalize transition-colors ${
-                modeShapeSource === src
-                  ? "bg-brand-600 text-white"
-                  : "bg-surface-hover text-text-secondary hover:text-text-primary"
-              }`}
-            >
-              {src}
-            </button>
-          ))}
         </div>
+      )}
+    </div>
+  );
 
-        {modeCount === 0 && (
-          <p className="text-xs text-text-secondary mb-2">
-            কোনো {modeShapeSource === "modal" ? "Modal" : "Buckling"} result নেই — Analysis ট্যাবে চালান।
-          </p>
+  const elementVisibilityContent = (
+    <div>
+      <div className="flex items-center justify-end gap-2 mb-2">
+        <button
+          onClick={() => setAllCategoriesVisible(true)}
+          className="text-[10px] text-brand-600 hover:text-brand-800"
+        >
+          All
+        </button>
+        <button
+          onClick={() => setAllCategoriesVisible(false)}
+          className="text-[10px] text-text-muted hover:text-text-secondary"
+        >
+          None
+        </button>
+      </div>
+      <div className="space-y-1">
+        {CATEGORY_LABELS.filter((c) => categoriesPresent.has(c.category)).map((c) => (
+          <label key={c.category} className="flex items-center gap-2 text-xs text-text-secondary">
+            <input
+              type="checkbox"
+              checked={categoryVisibility[c.category] ?? true}
+              onChange={() => toggleCategoryVisibility(c.category)}
+              className="accent-brand-600"
+            />
+            {c.label}
+          </label>
+        ))}
+        {categoriesPresent.size === 0 && (
+          <p className="text-xs text-text-secondary">কোনো element এখনো তৈরি হয়নি।</p>
         )}
+      </div>
+    </div>
+  );
 
-        <label className="flex items-center gap-2 text-xs text-text-secondary mb-3">
-          <input
-            type="checkbox"
-            checked={modeShapeEnabled}
-            onChange={(e) => {
-              setModeShapeEnabled(e.target.checked);
-              if (e.target.checked) setDeformationEnabled(false); // mutually exclusive
-            }}
-            disabled={modeCount === 0}
-            className="accent-brand-600"
-          />
-          Show mode shape
-        </label>
-
-        {modeShapeEnabled && modeCount > 0 && (
-          <div className="space-y-3">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] text-text-muted">
-                  Mode {modeShapeIndex + 1} of {modeCount}
-                </span>
-                {modeShapeSource === "modal" && modalResult?.modes?.[modeShapeIndex] && (
-                  <span className="text-[11px] text-text-muted">
-                    T={(1 / modalResult.modes[modeShapeIndex].naturalFrequencyHz).toFixed(3)}s
-                  </span>
-                )}
-                {modeShapeSource === "buckling" && bucklingResult?.modes?.[modeShapeIndex] && (
-                  <span className="text-[11px] text-text-muted">
-                    λ={bucklingResult.modes[modeShapeIndex].criticalLoadFactor?.toFixed(2)}
-                  </span>
-                )}
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={modeCount - 1}
-                step={1}
-                value={modeShapeIndex}
-                onChange={(e) => setModeShapeIndex(Number(e.target.value))}
-                className="w-full accent-brand-600"
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] text-text-muted">Scale factor</span>
-                <span className="text-[11px] text-text-secondary">{modeShapeScale}×</span>
-              </div>
-              <input
-                type="range"
-                min={1}
-                max={500}
-                step={1}
-                value={modeShapeScale}
-                onChange={(e) => setModeShapeScale(Number(e.target.value))}
-                className="w-full accent-brand-600"
-              />
-            </div>
-
-            <button
-              onClick={() => setModeShapeAnimating(!modeShapeAnimating)}
-              className={`w-full text-xs py-1.5 rounded transition-colors ${
-                modeShapeAnimating
-                  ? "bg-brand-600 text-white"
-                  : "bg-surface-hover text-text-secondary hover:text-text-primary"
-              }`}
-            >
-              {modeShapeAnimating ? "⏸ Pause Animation" : "▶ Animate Mode Shape"}
-            </button>
-          </div>
-        )}
-      </section>
-
-      <section>
-        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
-          Stress / Strain Contour
-        </h3>
-
-        <p className="text-[11px] text-status-holdText/90 mb-2">
-          এটা প্রকৃত stress না — shell element (Slab/Wall) এ কোনো FE
-          stress/moment recovery নেই এই ইঞ্জিনে (শুধু displacement)।
-          এই contour প্রতিটা shell element এর গড় displacement
-          magnitude দেখায় (blue=কম, red=বেশি, dataset-relative স্কেল)
-          — বেশি নড়াচড়া মানে সাধারণত বেশি strain, কিন্তু thickness/
-          material/boundary condition বিবেচনা করে না। শুধু একটা visual
-          indicator, design এর জন্য ব্যবহারযোগ্য না।
-        </p>
-
-        <label className="flex items-center gap-2 text-xs text-text-secondary mb-2">
-          <input
-            type="checkbox"
-            checked={stressContourEnabled}
-            onChange={(e) => setStressContourEnabled(e.target.checked)}
-            className="accent-brand-600"
-          />
-          Show contour (proxy)
-        </label>
-
-        {stressContourEnabled && (
-          <div className="flex items-center gap-2 text-[11px] text-text-muted">
-            <span>কম</span>
-            <span className="flex-1 h-2 rounded-full bg-gradient-to-r from-[#3b82f6] via-[#22c55e] via-[#eab308] to-[#ef4444]" />
-            <span>বেশি</span>
-          </div>
-        )}
-      </section>
-
-      <section>
-        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
-          Crack Prediction / Failure Visualization
-        </h3>
-
-        <p className="text-[11px] text-status-holdText/90 mb-2">
-          শুধু চূড়ান্ত (converged) hinge অবস্থা দেখায় — কোনো step-by-step
-          progressive animation নেই (backend intermediate step সংরক্ষণ
-          করে না)। &ldquo;Crack&rdquo; মানে প্রকৃত crack-width model না, শুধু hinge
-          yield (reinforcement yield stress) কে crack-প্রবণ location এর
-          proxy হিসেবে ধরা হয়েছে। শুধু Nonlinear Static/Pushover এ
-          পাওয়া যায় (elastic analysis এ hinge concept নেই)।
-        </p>
-
-        {activeHingeCount === 0 && (
-          <p className="text-xs text-text-secondary mb-2">
-            কোনো Hinge ফলাফল নেই — Analysis ট্যাবে Nonlinear Static বা
-            Pushover চালান।
-          </p>
-        )}
-
-        <label className="flex items-center gap-2 text-xs text-text-secondary mb-2">
-          <input
-            type="checkbox"
-            checked={hingeMarkersEnabled}
-            onChange={(e) => setHingeMarkersEnabled(e.target.checked)}
-            disabled={activeHingeCount === 0}
-            className="accent-brand-600"
-          />
-          Show hinge markers ({activeHingeCount})
-        </label>
-
-        {hingeMarkersEnabled && (
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-xs text-text-secondary">
-              <input
-                type="checkbox"
-                checked={hingeMarkerShowLabels}
-                onChange={(e) => setHingeMarkerShowLabels(e.target.checked)}
-                className="accent-brand-600"
-              />
-              Show plastic rotation labels
-            </label>
-            <div className="flex items-center gap-3 text-[11px] text-text-muted">
-              <span className="flex items-center gap-1">
-                <span className="inline-block w-3 h-3 rounded-full bg-[#ef4444]" /> Yielded
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="inline-block w-3 h-3 rounded-full bg-[#64748b]" /> Not yielded
-              </span>
-            </div>
-          </div>
-        )}
-      </section>
-
-      <section>
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide">
-            Element Visibility
-          </h3>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setAllCategoriesVisible(true)}
-              className="text-[10px] text-brand-600 hover:text-brand-800"
-            >
-              All
-            </button>
-            <button
-              onClick={() => setAllCategoriesVisible(false)}
-              className="text-[10px] text-text-muted hover:text-text-secondary"
-            >
-              None
-            </button>
-          </div>
-        </div>
-        <div className="space-y-1">
-          {CATEGORY_LABELS.filter((c) => categoriesPresent.has(c.category)).map((c) => (
-            <label key={c.category} className="flex items-center gap-2 text-xs text-text-secondary">
-              <input
-                type="checkbox"
-                checked={categoryVisibility[c.category] ?? true}
-                onChange={() => toggleCategoryVisibility(c.category)}
-                className="accent-brand-600"
-              />
-              {c.label}
-            </label>
-          ))}
-          {categoriesPresent.size === 0 && (
-            <p className="text-xs text-text-secondary">কোনো element এখনো তৈরি হয়নি।</p>
-          )}
-        </div>
-      </section>
-
-      <section>
-        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
+  const infoContent = (
+    <div className="space-y-4">
+      <div>
+        <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">
           Selected Element
-        </h3>
+        </h4>
         {selectedElement ? (
           <div className="bg-surface-hover/60 rounded p-2.5 text-xs text-text-secondary space-y-1">
             <p>
@@ -696,9 +684,9 @@ export function VisualizationControlsPanel() {
         ) : (
           <p className="text-xs text-text-secondary">Viewport এ একটা element ক্লিক করুন।</p>
         )}
-      </section>
+      </div>
 
-      <section className="border-t border-surface-border pt-4">
+      <div className="border-t border-surface-border pt-3">
         <p className="text-[11px] text-text-secondary leading-relaxed">
           Phase 10 Visualization সম্পূর্ণ (10i-10r): 3D Viewer Core,
           Rebar Detailing Model, Displacement/Deformation Animation,
@@ -706,7 +694,29 @@ export function VisualizationControlsPanel() {
           Buckling Animation, Stress-proxy Contour, ও Crack/Failure
           Visualization।
         </p>
-      </section>
+      </div>
     </div>
   );
+
+  const items: ViewportTopBarItem[] = [
+    { id: "story", label: "Story Isolation", content: storyIsolationContent, active: isolatedStoryId !== null },
+    { id: "render", label: "Render Mode", content: renderModeContent, active: renderMode !== "solid" },
+    { id: "deformation", label: "Deformation", content: deformationContent, active: deformationEnabled },
+    { id: "diagram", label: "Diagram", content: diagramContent, active: diagramEnabled },
+    { id: "reaction", label: "Reaction", content: reactionContent, active: reactionEnabled },
+    { id: "dcr", label: "DCR Heat Map", content: dcrHeatMapContent, active: dcrHeatMapEnabled },
+    { id: "mode-shape", label: "Mode Shape", content: modeShapeContent, active: modeShapeEnabled },
+    { id: "stress", label: "Stress Contour", content: stressContourContent, active: stressContourEnabled },
+    {
+      id: "hinge",
+      label: "Hinge Markers",
+      content: hingeMarkersContent,
+      active: hingeMarkersEnabled,
+      badge: activeHingeCount > 0 ? activeHingeCount : undefined,
+    },
+    { id: "visibility", label: "Element Visibility", content: elementVisibilityContent },
+    { id: "info", label: "Info", content: infoContent },
+  ];
+
+  return <ViewportTopBar items={items} />;
 }

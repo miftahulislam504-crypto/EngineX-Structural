@@ -33,6 +33,7 @@ import { TorsionCheckPanel } from "./TorsionCheckPanel";
 import { PerformanceBasedDesignPanel } from "./PerformanceBasedDesignPanel";
 import { useHubAnalysisSuggestions } from "@/lib/hub/useHubAnalysisSuggestions";
 import { useSupportOverrideStore } from "@/lib/analysis/useSupportOverrideStore";
+import { ViewportTopBar, type ViewportTopBarItem } from "@/components/viewport/ViewportTopBar";
 
 interface AnalysisPanelProps {
   projectId: string;
@@ -90,6 +91,17 @@ const SITE_CLASSES: SiteClass[] = ["SA", "SB", "SC", "SD", "SE"];
  *
  * ফলাফল দেখানোর সময় warnings সবসময় prominently দেখানো হয় (backend
  * থেকে আসা 🔴/⚠️/ℹ️ warning), এমনকি success=true হলেও।
+ *
+ * Redesign (২০২৬-০৮) — আগে এই পুরো প্যানেলটা viewport-এর উপরে ভাসমান
+ * একটা ডান-পাশের card এ (analysis type selector + parameters + Run
+ * বাটন + result views, সব একটার নিচে একটা) বসত। ব্যবহারকারীর নির্দেশে
+ * top bar + full-width viewport লেআউটে আনা হয়েছে — এই কম্পোনেন্ট এখন
+ * নিজেই একটা ViewportTopBar রেন্ডার করে, ২টা dropdown এ ভাগ করে:
+ * "Setup & Run" (analysis type/parameters/Run বাটন — জটিল conditional
+ * per-type UI অক্ষত, শুধু wrapping বদলেছে) আর "Results" (সব result
+ * view + Performance-Based Design panel, রান করার পর badge এ দেখা
+ * যায় কতগুলো result আছে)। ভেতরের কোনো state/hook/analysis-run logic
+ * বদলায়নি।
  */
 export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
   const elements = useElementsStore((s) => s.elements);
@@ -296,8 +308,8 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
     }
   }
 
-  return (
-    <div className="space-y-4">
+  const setupContent = (
+    <div>
       <div>
         <label className="block text-xs text-slate-500 mb-1.5">Analysis Type</label>
         <select
@@ -515,7 +527,18 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
           {isRunning ? "Solving..." : "▶ Run Analysis"}
         </button>
       </div>
+    </div>
+  );
 
+  const hasAnyResult = Boolean(
+    linearStaticResult || modalResult || bucklingResult || pdeltaResult || rsaResult || nonlinearResult || pushoverResult
+  );
+
+  const resultsContent = (
+    <div className="space-y-4 w-full">
+      {!hasAnyResult && (
+        <p className="text-xs text-slate-500">এখনো কোনো ফলাফল নেই — &quot;Setup &amp; Run&quot; থেকে একটা analysis চালান।</p>
+      )}
       {linearStaticResult && <LinearStaticResultView result={linearStaticResult} />}
       {modalResult && <ModalResultView result={modalResult} />}
       {bucklingResult && <BucklingResultView result={bucklingResult} />}
@@ -533,6 +556,30 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
       )}
     </div>
   );
+
+  const resultCount = [
+    linearStaticResult,
+    modalResult,
+    bucklingResult,
+    pdeltaResult,
+    rsaResult,
+    nonlinearResult,
+    pushoverResult,
+  ].filter(Boolean).length;
+
+  const items: ViewportTopBarItem[] = [
+    { id: "setup", label: `Setup — ${ANALYSIS_TYPE_LABELS[analysisType]}`, content: setupContent },
+    {
+      id: "results",
+      label: "Results",
+      content: resultsContent,
+      active: hasAnyResult,
+      badge: resultCount > 0 ? resultCount : undefined,
+      wide: true,
+    },
+  ];
+
+  return <ViewportTopBar items={items} />;
 }
 
 function StatusBanner({

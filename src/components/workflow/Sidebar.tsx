@@ -13,7 +13,6 @@ import {
   Eye,
   Ruler,
   FileText,
-  ListTree,
   X,
   FolderOpen,
   LogOut,
@@ -78,7 +77,6 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
 interface SidebarProps {
   activeTab: SidebarTab;
   onSelectTab: (tab: SidebarTab) => void;
-  onOpenWorkflow: () => void;
   /**
    * ঐচ্ছিক — শুধু mobile drawer variant এ পাস করা হয় (layout.tsx এর
    * mobileSidebarOpen ব্লক, useShellUiStore থেকে)। দেওয়া হলে header এ
@@ -98,7 +96,7 @@ interface SidebarProps {
   projectName?: string | null;
 }
 
-export function Sidebar({ activeTab, onSelectTab, onOpenWorkflow, onClose, projectName }: SidebarProps) {
+export function Sidebar({ activeTab, onSelectTab, onClose, projectName }: SidebarProps) {
   const router = useRouter();
   const signOut = useAuthStore((s) => s.signOut);
 
@@ -162,14 +160,6 @@ export function Sidebar({ activeTab, onSelectTab, onOpenWorkflow, onClose, proje
       </nav>
 
       <div className="border-t border-surface-border px-2.5 py-3">
-        <button
-          type="button"
-          onClick={onOpenWorkflow}
-          className="mb-0.5 flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-text-secondary hover:bg-surface-hover hover:text-text-primary transition-colors"
-        >
-          <ListTree size={16} className="flex-shrink-0" />
-          Workflow
-        </button>
         <Link
           href="/"
           className="mb-0.5 flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-text-secondary hover:bg-surface-hover hover:text-text-primary transition-colors"

@@ -1,9 +1,15 @@
 /**
  * SidebarTab / LoadSubTab / DesignSubTab টাইপগুলো আগে শুধু page.tsx এর
- * ভেতরে ছিল। Workflow Layer কে stage → tab mapping করতে হলে এই
- * টাইপগুলো দরকার, তাই এখানে বের করে আনা হয়েছে এবং page.tsx থেকে
- * re-export করা হচ্ছে (কোনো import path ভাঙেনি — page.tsx এ
- * `export type { SidebarTab, LoadSubTab, DesignSubTab }` থাকবে)।
+ * ভেতরে ছিল, এখানে বের করে আনা হয়েছে যাতে একাধিক ফাইল (Sidebar,
+ * layout.tsx, প্রতিটা route page) একই টাইপ শেয়ার করতে পারে।
+ *
+ * এই ফাইলে আগে ৯-Stage Workflow Wizard এর STAGES array/StageDef ও
+ * ছিল (Sidebar-এর "Workflow" বাটনে ক্লিক করলে যে guided panel খুলত) —
+ * ব্যবহারকারীর নির্দেশে সেই পুরো wizard ফিচার (WorkflowSidebar.tsx,
+ * useWorkflowProgress.ts, useWorkflowUiStore.ts, workflow/types.ts)
+ * মুছে ফেলা হয়েছে। মূল flat Sidebar (Sidebar.tsx) ও প্রতিটা tab-এর
+ * নিজস্ব route/sub-tab navigation অপরিবর্তিত আছে — শুধু বিকল্প
+ * guided-wizard overlay সরানো হয়েছে।
  *
  * Phase 0.5 (Sidebar পুনর্গঠন) এ যা বদলেছে:
  *   - "optimization" এবং "documentation" আগে "design" tab এর sub-tab
@@ -72,92 +78,4 @@ export type DocumentationSubTab =
   | "drawing-sync"
   | "reports-export";
 
-/** Verification stage-এ যাওয়ার সময় Design ট্যাবের কোন sub-tab-এ নামানো ভালো (Collapse Prediction, Phase 8/9 এর ভেরিফিকেশন-ঘেঁষা চেক)। */
-export const VERIFICATION_DESIGN_SUB_TAB: DesignSubTab = "collapse-prediction";
 
-import type { StageDef } from "@/lib/workflow/types";
-
-export const STAGES: StageDef[] = [
-  {
-    id: "preliminary",
-    order: 1,
-    label: "Preliminary",
-    labelBn: "প্রাথমিক সেটআপ",
-    description: "Material ও Section library সেটআপ করুন — ডিজাইনের ভিত্তি।",
-    targetTab: "library",
-  },
-  {
-    id: "model",
-    order: 2,
-    label: "Model",
-    labelBn: "মডেল",
-    description:
-      "Grid/Story জ্যামিতি বসান, EngineXDraw থেকে architectural geometry আমদানি করুন, তারপর বাকি Beam/Column/Slab/Wall/Footing এলিমেন্ট যোগ করুন।",
-    targetTab: "geometry",
-  },
-  {
-    id: "loads",
-    order: 3,
-    label: "Loads",
-    labelBn: "লোড",
-    description: "Load pattern, Wind/Seismic ক্যালকুলেটর, element-এ লোড প্রয়োগ, ও Load Combination।",
-    targetTab: "loads",
-  },
-  {
-    id: "analysis",
-    order: 4,
-    label: "Analysis",
-    labelBn: "বিশ্লেষণ",
-    description: "FE Solver চালান — element forces, reactions, displacement বের করুন।",
-    targetTab: "analysis",
-  },
-  {
-    id: "design",
-    order: 5,
-    label: "Design",
-    labelBn: "ডিজাইন",
-    description: "RC/Steel member design — flexure, shear, P-M interaction, foundation sizing।",
-    targetTab: "design",
-  },
-  {
-    id: "optimization",
-    order: 6,
-    label: "Optimization",
-    labelBn: "অপ্টিমাইজেশন",
-    description: "Section/Weight/Cost অপ্টিমাইজেশন — ঐচ্ছিক ধাপ, ডিজাইন ফাইনাল করার আগে রিফাইন করতে।",
-    targetTab: "optimization",
-  },
-  {
-    id: "verification",
-    order: 7,
-    label: "Validation",
-    labelBn: "যাচাই",
-    description: "Model Health Score, Design Verification, ও Collapse Prediction দিয়ে চূড়ান্ত পরীক্ষা।",
-    targetTab: "validation",
-  },
-  {
-    id: "detailing",
-    order: 8,
-    label: "Detailing",
-    labelBn: "ডিটেইলিং",
-    description: "Rebar geometry viewport — element-ভিত্তিক reinforcement দেখুন।",
-    targetTab: "detailing",
-  },
-  {
-    id: "documentation",
-    order: 9,
-    label: "Documentation",
-    labelBn: "ডকুমেন্টেশন",
-    description: "Bar Bending Schedule, Rebar/Stirrup Layout, Development Length, রিপোর্ট ও ড্রয়িং।",
-    targetTab: "documentation",
-  },
-  {
-    id: "export",
-    order: 10,
-    label: "Export",
-    labelBn: "এক্সপোর্ট",
-    description: "Hub-এ ফলাফল পাঠানো ও ফাইল এক্সপোর্ট — শীঘ্রই আসছে (Phase 11+)।",
-    targetTab: "documentation",
-    isPlaceholder: true,
-  },
-];
