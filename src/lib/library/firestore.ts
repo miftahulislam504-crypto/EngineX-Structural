@@ -1,5 +1,3 @@
-"use client";
-
 import {
   doc,
   getDoc,
@@ -14,6 +12,13 @@ import type { StructuralMaterial } from "@/lib/types/material";
 import type { StructuralSection } from "@/lib/types/section";
 
 /**
+ * NOTE: এই ফাইলে আগে ভুলবশত "use client" ডিরেক্টিভ ছিল (geometry/
+ * firestore.ts, hub/sync.ts এর মতো একই বাগ) — শুধু plain async
+ * function/pure helper, কোনো hook/JSX নেই, কিন্তু reportContext.ts
+ * (Documentation API route, server-side) fetchMaterialLibrary/
+ * fetchSectionLibrary ইমপোর্ট করে। ডিরেক্টিভ থাকায় PDF ডাউনলোড ভাঙছিল।
+ * সরানো হয়েছে — client component/hook থেকে আগের মতোই ব্যবহার করা যাবে।
+ *
  * Material Library ও Section Library — প্রতিটা project-এর জন্য একটা
  * করে ডকুমেন্ট, যার ভিতরে একটা array থাকে। এই প্যাটার্নটা Phase 1-এর
  * GeometryCore এর মতোই (src/lib/geometry/firestore.ts দেখুন) — কারণ

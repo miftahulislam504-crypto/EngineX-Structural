@@ -20,9 +20,15 @@
  * overwrite, history রাখা হয় না) — designId হিসেবে elementId নিজেই
  * ব্যবহার করা হচ্ছে, যাতে "upsert" স্বাভাবিকভাবেই হয় (আলাদা "does this
  * element already have a result" চেক লাগে না)।
+ *
+ * NOTE: এই ফাইলে আগে ভুলবশত "use client" ডিরেক্টিভ ছিল (geometry/
+ * firestore.ts, analysis/firestore.ts এর মতো একই বাগ) — শুধু plain
+ * async function, কোনো hook/JSX নেই (উপরের docstring-এ "useState"
+ * শব্দটা শুধু ব্যাখ্যামূলক প্রসঙ্গে, কোনো actual hook call না)।
+ * fetchDesignResults reportContext.ts (server-side Documentation API
+ * route) থেকে কল হয় — ডিরেক্টিভ থাকায় PDF ডাউনলোড ভাঙছিল। সরানো
+ * হয়েছে — client component/hook থেকে আগের মতোই ব্যবহার করা যাবে।
  */
-
-"use client";
 
 import { doc, getDocs, setDoc, collection } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";

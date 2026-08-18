@@ -22,9 +22,16 @@
  * শুধু "সর্বশেষ সফল run প্রতি runType")। History দরকার হলে ভবিষ্যতে
  * runId immutable আলাদা document banano যাবে — কিন্তু Documentation
  * Engine এর "latest successful analysis" চাহিদা মেটাতে এটাই যথেষ্ট।
+ *
+ * NOTE: এই ফাইলে আগে ভুলবশত "use client" ডিরেক্টিভ ছিল (geometry/
+ * firestore.ts, elements/firestore.ts এর মতো একই বাগ) — শুধু plain
+ * async function, কোনো hook/JSX নেই (উপরের docstring-এ "useState"
+ * শব্দটা শুধু ব্যাখ্যামূলক প্রসঙ্গে, কোনো actual hook call না)।
+ * fetchLatestSuccessfulAnalysisRun reportContext.ts (server-side
+ * Documentation API route) থেকে কল হয় — ডিরেক্টিভ থাকায় PDF ডাউনলোড
+ * ভাঙছিল। সরানো হয়েছে — client component/hook থেকে আগের মতোই ব্যবহার
+ * করা যাবে।
  */
-
-"use client";
 
 import {
   doc,

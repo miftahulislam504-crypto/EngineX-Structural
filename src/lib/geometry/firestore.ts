@@ -1,5 +1,3 @@
-"use client";
-
 import {
   doc,
   getDoc,
@@ -16,6 +14,23 @@ import {
   type StructuralGrid,
   type StructuralStory,
 } from "@/lib/types/geometry";
+
+/**
+ * NOTE: এই ফাইলে আগে ভুলবশত "use client" ডিরেক্টিভ ছিল। এটা শুধু plain
+ * async function ও pure helper export করে (কোনো React hook/JSX নেই),
+ * কিন্তু reportContext.ts (Documentation API route থেকে server-side
+ * কল হয়, app/api/documentation/[projectId]/[document]/route.tsx দেখুন)
+ * এই ফাইলের fetchGeometryCore ইমপোর্ট করে। "use client" থাকায়
+ * Next.js সেই server-side কলকে reject করছিল ("fetchGeometryCore is on
+ * the client... cannot invoke a client function from the server") —
+ * এতে Design Report/Bar Bending Schedule/Model Validation প্রতিটা PDF
+ * ডাউনলোড ভেঙে যাচ্ছিল (আগে hub/sync.ts-এ একই বাগ fetchHubIncomingPackage
+ * এর জন্য ফিক্স করা হয়েছিল — এটা সেই একই প্যাটার্নের আরেকটা ফাইল)।
+ * ডিরেক্টিভ সরানো হয়েছে — firebase/firestore client SDK (getDoc/setDoc/
+ * onSnapshot) server context (API route) থেকে কল হলেও ঠিকই কাজ করে,
+ * তাই client component/hook (useGeometryCore.ts, ArchitecturalImportPanel.tsx)
+ * থেকে আগের মতো ব্যবহার করাও অক্ষুণ্ন থাকে।
+ */
 
 /**
  * একবার Geometry Core পড়ে আনে। কোনো ডকুমেন্ট না থাকলে একটা খালি

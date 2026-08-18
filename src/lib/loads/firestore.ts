@@ -1,5 +1,3 @@
-"use client";
-
 import {
   doc,
   collection,
@@ -18,6 +16,14 @@ import type { LoadCombination } from "@/lib/loads/loadCombinations";
 import { generateDefaultLoadCombinations } from "@/lib/loads/loadCombinations";
 
 /**
+ * NOTE: এই ফাইলে আগে ভুলবশত "use client" ডিরেক্টিভ ছিল (geometry/
+ * firestore.ts, elements/firestore.ts এর মতো একই বাগ) — এই ফাইলের
+ * নিজের docstring অনুযায়ীই fetchLoadCases বানানো হয়েছিল
+ * reportContext.ts এর server-side route.tsx হ্যান্ডলার থেকে কল হওয়ার
+ * জন্য, অথচ "use client" থাকায় ঠিক সেই কলটাই Next.js reject করছিল।
+ * ডিরেক্টিভ সরানো হয়েছে — client component/hook থেকে আগের মতোই
+ * ব্যবহার করা যাবে।
+ *
  * Load Pattern ও Load Combination — MaterialLibrary/SectionLibrary
  * (Phase 2a) এর মতোই single-document প্যাটার্ন, কারণ সংখ্যায় কম।
  * Load Case — StructuralElements (Phase 2a) এর মতোই subcollection,

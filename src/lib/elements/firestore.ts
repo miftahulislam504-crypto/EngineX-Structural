@@ -1,5 +1,3 @@
-"use client";
-
 import {
   collection,
   doc,
@@ -15,6 +13,14 @@ import { firestorePaths } from "@/lib/firebase/schema";
 import type { StructuralElement } from "@/lib/types/element";
 
 /**
+ * NOTE: এই ফাইলে আগে ভুলবশত "use client" ডিরেক্টিভ ছিল (geometry/
+ * firestore.ts, library/firestore.ts এর মতো একই বাগ) — এই ফাইলের
+ * নিজের docstring অনুযায়ীই fetchAllElements বানানো হয়েছিল
+ * reportContext.ts (server-side Documentation API route) থেকে কল
+ * হওয়ার জন্য, অথচ "use client" থাকায় ঠিক সেই কলটাই Next.js reject
+ * করছিল। ডিরেক্টিভ সরানো হয়েছে — client component/hook থেকে আগের
+ * মতোই ব্যবহার করা যাবে।
+ *
  * Structural Elements — subcollection প্যাটার্ন (Grid/Story/Material/
  * Section এর single-document প্যাটার্নের বিপরীতে)।
  *

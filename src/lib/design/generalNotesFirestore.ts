@@ -12,9 +12,14 @@
  * AssembleGeneralNotesInput (generalNotes.ts) সরাসরি reuse করা হয়েছে
  * — নতুন duplicate টাইপ বানানো হয়নি, কারণ এটা ইতিমধ্যেই সম্পূর্ণ
  * plain/serializable shape।
+ *
+ * NOTE: এই ফাইলে আগে ভুলবশত "use client" ডিরেক্টিভ ছিল (geometry/
+ * firestore.ts, detailing/firestore.ts এর মতো একই বাগ) — শুধু plain
+ * async function, কোনো hook/JSX নেই। fetchGeneralNotesInput
+ * reportContext.ts (server-side Documentation API route) থেকে কল
+ * হয় — ডিরেক্টিভ থাকায় PDF ডাউনলোড ভাঙছিল। সরানো হয়েছে — client
+ * component/hook থেকে আগের মতোই ব্যবহার করা যাবে।
  */
-
-"use client";
 
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
