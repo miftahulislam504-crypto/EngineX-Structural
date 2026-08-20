@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { LoadPatternLibrary, LoadCombinationLibrary } from "@/lib/loads/firestore";
 import {
-  createEmptyLoadPatternLibrary,
+  createDefaultLoadPatternLibrary,
   createDefaultLoadCombinationLibrary,
 } from "@/lib/loads/firestore";
 import type { LoadCase } from "@/lib/types/load";
@@ -28,7 +28,7 @@ interface LoadStoreState {
  * আপডেট রাখবে।
  */
 export const useLoadStore = create<LoadStoreState>((set) => ({
-  patternLibrary: createEmptyLoadPatternLibrary(),
+  patternLibrary: createDefaultLoadPatternLibrary(),
   combinationLibrary: createDefaultLoadCombinationLibrary(),
   loadCases: [],
   isLoading: true,

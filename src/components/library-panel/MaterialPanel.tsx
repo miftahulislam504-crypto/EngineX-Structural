@@ -23,6 +23,49 @@ function makeMaterialId(): string {
 }
 
 /**
+ * Standard Concrete Grade প্রিসেট — BNBC 2020 / ACI 318-19 তে প্রচলিত
+ * M-নোটেশন (M = fc' MPa তে)। বাংলাদেশের প্র্যাকটিসে M15-M20 সাধারণত
+ * lean/PCC কাজে, M20-M25 সাধারণ RCC (slab/beam/column) এ, M30+
+ * ভারী-লোড কলাম বা special structure এ ব্যবহৃত হয়। প্রতিটা গ্রেডের
+ * সাথে rebar grade আলাদা একটা dropdown-এ (নিচে) স্বাধীনভাবে বেছে
+ * নেওয়া যায় — বাস্তবে concrete grade আর rebar grade স্বাধীন চয়েস
+ * (M25 concrete-এর সাথে Grade 60 বা Grade 500 rebar দুটোই সম্ভব)।
+ */
+interface ConcreteGradePreset {
+  id: string;
+  label: string; // যেমন "M25 (fc'=25 MPa)"
+  fc: number;
+}
+
+const CONCRETE_GRADE_PRESETS: ConcreteGradePreset[] = [
+  { id: "m15", label: "M15 (fc'=15 MPa) — Lean/PCC", fc: 15 },
+  { id: "m20", label: "M20 (fc'=20 MPa)", fc: 20 },
+  { id: "m25", label: "M25 (fc'=25 MPa)", fc: 25 },
+  { id: "m30", label: "M30 (fc'=30 MPa)", fc: 30 },
+  { id: "m35", label: "M35 (fc'=35 MPa)", fc: 35 },
+  { id: "m40", label: "M40 (fc'=40 MPa)", fc: 40 },
+  { id: "custom", label: "Custom (নিজে লিখুন)", fc: 0 },
+];
+
+/**
+ * Rebar Grade প্রিসেট — Grade 40 (ASTM A615, কম প্রচলিত), Grade 60
+ * (fy=414 MPa, ACI/BNBC-তে সবচেয়ে প্রচলিত), Grade 500 (fy=500 MPa,
+ * BS/Eurocode-style rebar, বাংলাদেশে অনেক rolling mill-এর প্রোডাক্ট)।
+ */
+interface RebarGradePreset {
+  id: string;
+  label: string;
+  fy: number;
+}
+
+const REBAR_GRADE_PRESETS: RebarGradePreset[] = [
+  { id: "grade40", label: "Grade 40 (fy=276 MPa)", fy: 276 },
+  { id: "grade60", label: "Grade 60 (fy=414 MPa)", fy: 414 },
+  { id: "grade500", label: "Grade 500 (fy=500 MPa)", fy: 500 },
+  { id: "custom", label: "Custom (নিজে লিখুন)", fy: 0 },
+];
+
+/**
  * প্রতিটা material type-এর জন্য "primary strength field" আলাদা নামে
  * (fc, fy, bendingStrength ইত্যাদি) — একটা কনফিগ ম্যাপ দিয়ে ফর্মকে
  * generic রাখা হয়েছে, যাতে নতুন material type যোগ করতে শুধু এই
@@ -130,16 +173,48 @@ export function MaterialPanel({ onAddMaterial, onDeleteMaterial }: MaterialPanel
 
   const [materialType, setMaterialType] = useState<MaterialType>("concrete");
   const [name, setName] = useState("");
-  const [strengthValue, setStrengthValue] = useState("");
+  // ডিফল্ট material type "concrete" এবং ডিফল্ট গ্রেড "m25" — তাই strength
+  // ফিল্ড শুরুতেই সেই প্রিসেট মান (25) দিয়ে prefill করা, খালি না রেখে।
+  const [strengthValue, setStrengthValue] = useState("25");
   const [rebarFyValue, setRebarFyValue] = useState("414");
   const [formError, setFormError] = useState<string | null>(null);
 
+  // Concrete-এর জন্য গ্রেড প্রিসেট সিলেকশন (M20/M25/... ও Grade 60/...)।
+  // "custom" বেছে নিলে নিচের numeric input দুটো ম্যানুয়ালি এডিটযোগ্য
+  // থাকে, নাহলে প্রিসেট মান দিয়ে lock করা থাকে (typo এড়াতে)।
+  const [concreteGradeId, setConcreteGradeId] = useState<string>("m25");
+  const [rebarGradeId, setRebarGradeId] = useState<string>("grade60");
+
   const activeConfig = getConfig(materialType);
+  const isConcreteCustomGrade = concreteGradeId === "custom";
+  const isRebarCustomGrade = rebarGradeId === "custom";
+
+  function handleConcreteGradeChange(gradeId: string) {
+    setConcreteGradeId(gradeId);
+    const preset = CONCRETE_GRADE_PRESETS.find((g) => g.id === gradeId);
+    if (preset && gradeId !== "custom") {
+      setStrengthValue(String(preset.fc));
+      // নাম খালি থাকলে বা আগের প্রিসেট নাম থেকে বদলায়নি এমন ক্ষেত্রে
+      // সুবিধাজনক ডিফল্ট নাম বসিয়ে দেওয়া হয় — ইউজার চাইলে ওভাররাইট
+      // করতে পারবেন, তাই trim করে খালি থাকলেই শুধু বসানো হচ্ছে।
+      setName((prev) => (prev.trim() === "" ? preset.label.split(" (")[0] : prev));
+    }
+  }
+
+  function handleRebarGradeChange(gradeId: string) {
+    setRebarGradeId(gradeId);
+    const preset = REBAR_GRADE_PRESETS.find((g) => g.id === gradeId);
+    if (preset && gradeId !== "custom") {
+      setRebarFyValue(String(preset.fy));
+    }
+  }
 
   function resetForm() {
     setName("");
     setStrengthValue("");
     setRebarFyValue("414");
+    setConcreteGradeId("m25");
+    setRebarGradeId("grade60");
     setFormError(null);
   }
 
@@ -215,7 +290,16 @@ export function MaterialPanel({ onAddMaterial, onDeleteMaterial }: MaterialPanel
               <button
                 key={config.type}
                 type="button"
-                onClick={() => setMaterialType(config.type)}
+                onClick={() => {
+                  setMaterialType(config.type);
+                  if (config.type === "concrete") {
+                    // concrete এ ফিরে এলে বর্তমানে সিলেক্ট করা গ্রেড প্রিসেট
+                    // অনুযায়ী strength আবার prefill করা হয়।
+                    handleConcreteGradeChange(concreteGradeId);
+                  } else {
+                    setStrengthValue("");
+                  }
+                }}
                 className={`rounded-md px-1.5 py-1.5 text-xs transition-colors ${
                   materialType === config.type
                     ? "bg-brand-600 text-white"
@@ -234,6 +318,23 @@ export function MaterialPanel({ onAddMaterial, onDeleteMaterial }: MaterialPanel
             হিসেবে থাকে। প্রকৃত transformed-section হিসাব ছাড়া ডিফল্ট
             মান ব্যবহার করবেন না — নিজে হিসাব করে বসান।
           </p>
+        )}
+
+        {materialType === "concrete" && (
+          <div>
+            <label className="block text-xs text-text-muted mb-1">Concrete Grade</label>
+            <select
+              value={concreteGradeId}
+              onChange={(e) => handleConcreteGradeChange(e.target.value)}
+              className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
+            >
+              {CONCRETE_GRADE_PRESETS.map((preset) => (
+                <option key={preset.id} value={preset.id}>
+                  {preset.label}
+                </option>
+              ))}
+            </select>
+          </div>
         )}
 
         <div>
@@ -255,24 +356,51 @@ export function MaterialPanel({ onAddMaterial, onDeleteMaterial }: MaterialPanel
             value={strengthValue}
             onChange={(e) => setStrengthValue(e.target.value)}
             placeholder={activeConfig.placeholder}
-            className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
+            readOnly={materialType === "concrete" && !isConcreteCustomGrade}
+            className={`w-full rounded-md border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500/20 ${
+              materialType === "concrete" && !isConcreteCustomGrade
+                ? "bg-surface border-surface-border text-text-muted"
+                : "bg-surface-card border-surface-border text-text-primary"
+            }`}
           />
         </div>
 
         {materialType === "concrete" && (
-          <div>
-            <label className="block text-xs text-text-muted mb-1">
-              Rebar fy (MPa) — Phase 6 RC Design এ ব্যবহৃত হবে
-            </label>
-            <input
-              type="number"
-              step="any"
-              value={rebarFyValue}
-              onChange={(e) => setRebarFyValue(e.target.value)}
-              placeholder="414"
-              className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
-            />
-          </div>
+          <>
+            <div>
+              <label className="block text-xs text-text-muted mb-1">Rebar Grade</label>
+              <select
+                value={rebarGradeId}
+                onChange={(e) => handleRebarGradeChange(e.target.value)}
+                className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
+              >
+                {REBAR_GRADE_PRESETS.map((preset) => (
+                  <option key={preset.id} value={preset.id}>
+                    {preset.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs text-text-muted mb-1">
+                Rebar fy (MPa) — Phase 6 RC Design এ ব্যবহৃত হবে
+              </label>
+              <input
+                type="number"
+                step="any"
+                value={rebarFyValue}
+                onChange={(e) => setRebarFyValue(e.target.value)}
+                placeholder="414"
+                readOnly={!isRebarCustomGrade}
+                className={`w-full rounded-md border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500/20 ${
+                  !isRebarCustomGrade
+                    ? "bg-surface border-surface-border text-text-muted"
+                    : "bg-surface-card border-surface-border text-text-primary"
+                }`}
+              />
+            </div>
+          </>
         )}
 
         {formError && <p className="text-xs text-red-600">{formError}</p>}

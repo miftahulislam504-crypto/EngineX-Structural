@@ -46,6 +46,41 @@ export function createEmptyLoadPatternLibrary(): LoadPatternLibrary {
 }
 
 /**
+ * ডিফল্ট Load Pattern সেট — Load Combination-এর মতোই (নিচে দেখুন),
+ * প্রায় প্রতিটা প্রজেক্টেই কমপক্ষে Dead ও Live Load pattern লাগে,
+ * তাই খালি library দিয়ে শুরু করানোর বদলে এই দুটো auto-create করে
+ * দেওয়া হচ্ছে — ইউজারকে "Dead Load (DL)" টাইপ করে + বাটনে চাপার
+ * friction থেকে বাঁচানোর জন্য। Wind/Earthquake pattern এখানে
+ * অন্তর্ভুক্ত না — কারণ সেগুলো WindLoadPanel/SeismicLoadPanel-এ
+ * সাইট-নির্দিষ্ট প্যারামিটার (exposure category, seismic zone
+ * ইত্যাদি) সেট করার পর নিজে থেকেই pattern তৈরি করে, আগে থেকে খালি
+ * pattern বসিয়ে রাখলে সেই ফ্লো এর সাথে duplicate/conflict হতে পারত।
+ */
+export function createDefaultLoadPatternLibrary(): LoadPatternLibrary {
+  const now = new Date().toISOString();
+  return {
+    patterns: [
+      {
+        patternId: "pattern-default-dead",
+        name: "Dead Load (DL)",
+        category: "dead",
+        selfWeightMultiplier: 1.0,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        patternId: "pattern-default-live",
+        name: "Live Load (LL)",
+        category: "live",
+        createdAt: now,
+        updatedAt: now,
+      },
+    ],
+    updatedAt: now,
+  };
+}
+
+/**
  * খালি combination library না দিয়ে ডিফল্ট ACI 318-19 combination
  * গুলো দিয়ে শুরু করা হচ্ছে — কারণ এগুলো standard এবং প্রায় সব
  * প্রজেক্টেই প্রয়োজন হয়, ইউজারকে বারবার ম্যানুয়ালি টাইপ করানো
@@ -65,7 +100,7 @@ export async function fetchLoadPatternLibrary(projectId: string): Promise<LoadPa
   const snapshot = await getDoc(ref);
   return snapshot.exists()
     ? (snapshot.data() as LoadPatternLibrary)
-    : createEmptyLoadPatternLibrary();
+    : createDefaultLoadPatternLibrary();
 }
 
 export async function saveLoadPatternLibrary(
@@ -85,8 +120,13 @@ export function subscribeToLoadPatternLibrary(
   return onSnapshot(
     ref,
     (snapshot) => {
+      // নোট: subscribeToLoadCombinationLibrary-এর মতোই — ডকুমেন্ট এখনো
+      // তৈরি না হলে ডিফল্ট pattern (Dead + Live) দেখানো হয়, কিন্তু
+      // Firestore-এ তখনই সেভ হয় যখন ইউজার প্রথমবার কিছু পরিবর্তন করেন
+      // (addPattern/deletePattern কল হলে)। শুধু পড়ার জন্য প্রতি ভিজিটে
+      // write করা অপ্রয়োজনীয়।
       onUpdate(
-        snapshot.exists() ? (snapshot.data() as LoadPatternLibrary) : createEmptyLoadPatternLibrary()
+        snapshot.exists() ? (snapshot.data() as LoadPatternLibrary) : createDefaultLoadPatternLibrary()
       );
     },
     (error) => onError?.(error)
