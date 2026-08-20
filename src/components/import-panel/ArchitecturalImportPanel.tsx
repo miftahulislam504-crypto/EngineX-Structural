@@ -51,6 +51,9 @@ export function ArchitecturalImportPanel({ projectId, onAddElement }: Architectu
   const {
     state,
     allResolved,
+    materialsSectionsResolved,
+    hasBlockingModelIssues,
+    blockingModelCheckIssues,
     fetchAndParse,
     setItemMaterial,
     setItemSection,
@@ -167,6 +170,50 @@ export function ArchitecturalImportPanel({ projectId, onAddElement }: Architectu
             </div>
           )}
 
+          {/*
+            Model Checker (modelChecker.ts) — connectivity/duplicate/geometry/
+            support। material/section বেছে দেওয়ার আগেই দেখানো হচ্ছে, কারণ এই
+            সমস্যাগুলো (floating wall, duplicate element, zero-length beam,
+            base support অনুপস্থিত) ঠিক করার জন্য ইঞ্জিনিয়ারকে হয়তো
+            EngineXDraw-এ ফিরে গিয়ে geometry ঠিক করতে হবে — এখানে শুধু
+            material/section বেছে দিলে সমাধান হবে না। error-severity issue
+            থাকলে allResolved false থাকে (নিচের Confirm বাটন দেখুন), তাই এই
+            card ছাড়া ইঞ্জিনিয়ার শুধু "Material/Section বেছে দিন" মেসেজ
+            দেখতেন যদিও আসল কারণ geometry — বিভ্রান্তিকর হতো।
+          */}
+          {hasBlockingModelIssues && (
+            <div className="rounded-lg border border-red-200 bg-red-950/30 p-3">
+              <p className="text-xs font-medium text-red-400 mb-1.5">
+                {blockingModelCheckIssues.length}টা geometry সমস্যা পাওয়া গেছে — আমদানি করার আগে এগুলো
+                ঠিক করা প্রয়োজন (EngineXDraw-এ ফিরে গিয়ে সংশোধন করুন, প্রয়োজনে আবার publish করে
+                এখানে আবার &quot;Draw থেকে আনুন&quot; চাপুন)
+              </p>
+              <ul className="space-y-1">
+                {blockingModelCheckIssues.map((issue) => (
+                  <li key={issue.id} className="text-xs text-red-400">
+                    {issue.message}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* warning/info severity issue — ব্লক করে না, শুধু জানানোর জন্য (যেমন area element এর possibly-floating heuristic notice)। */}
+          {state.modelCheckReport.issues.some((issue) => issue.severity !== "error") && (
+            <div className="rounded-lg border border-surface-border bg-surface-card/40 p-3">
+              <p className="text-xs font-medium text-text-secondary mb-1.5">Model Checker নোট</p>
+              <ul className="space-y-1">
+                {state.modelCheckReport.issues
+                  .filter((issue) => issue.severity !== "error")
+                  .map((issue) => (
+                    <li key={issue.id} className="text-xs text-text-muted">
+                      {issue.message}
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          )}
+
           {state.items.length === 0 ? (
             <p className="text-sm text-text-muted rounded-lg border border-surface-border bg-surface-card/40 p-3">
               আমদানিযোগ্য কোনো element পাওয়া যায়নি।
@@ -206,7 +253,11 @@ export function ArchitecturalImportPanel({ projectId, onAddElement }: Architectu
               ? "আমদানি হচ্ছে..."
               : allResolved
                 ? "আমদানি নিশ্চিত করুন"
-                : "সব element-এ Material/Section বেছে দিন"}
+                : hasBlockingModelIssues
+                  ? "উপরের geometry সমস্যা ঠিক না হওয়া পর্যন্ত আমদানি করা যাবে না"
+                  : !materialsSectionsResolved
+                    ? "সব element-এ Material/Section বেছে দিন"
+                    : "আমদানি নিশ্চিত করুন"}
           </button>
         </>
       )}

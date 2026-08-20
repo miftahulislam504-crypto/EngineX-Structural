@@ -27,9 +27,23 @@
  *     করলে saveElement() (setDoc) ওভাররাইট করবে, ডুপ্লিকেট হবে না।
  *     Grid/Story একইভাবে upsertGrid/upsertStory দিয়ে merge হয় (id
  *     মিললে replace, নাহলে নতুন যোগ)।
+ *
+ * ⚠️ বাগফিক্স (Model Checker wiring): আগে এই hook fetch+parse করার পরে
+ * সরাসরি review state বসিয়ে দিত — modelChecker.ts (Phase 5, connectivity/
+ * duplicate/geometry/support check) কখনো এখানে call হতো না। ফলে Draw
+ * থেকে আসা geometry ভাঙা থাকলেও (floating wall, duplicate element,
+ * zero-length beam, কোনো base support না থাকা) ইঞ্জিনিয়ার শুধু material/
+ * section resolve করেই Confirm চাপতে পারতেন — কেউ ম্যানুয়ালি Validation
+ * Panel না খুললে কখনো জানতেন না মডেল ভাঙা ছিল, আর Analysis চুপচাপ ভুল/
+ * অর্থহীন ফলাফল দিত। এখন fetchAndParse() শেষে runModelChecks() চালানো
+ * হয় resolved elements (category override প্রয়োগ করা) এর ওপর —
+ * modelChecker.ts সম্পূর্ণ geometry-driven (materialId/sectionId ছোঁয়
+ * না), তাই material/section resolve হওয়ার আগেই safely চালানো যায়।
+ * কোনো "error"-severity issue থাকলে allResolved false হয়ে যায় (Confirm
+ * বাটন disabled থাকবে), ঠিক material/section অসম্পূর্ণ থাকলে যেভাবে হয়।
  */
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   fetchLatestArchitecturalExport,
   parseArchitecturalExport,
@@ -39,6 +53,8 @@ import {
 import type { StructuralElement } from "@/lib/types/element";
 import type { StructuralGrid, StructuralStory, GeometryCore } from "@/lib/types/geometry";
 import { upsertGrid, upsertStory } from "@/lib/geometry/firestore";
+import { runModelChecks } from "@/lib/validation/modelChecker";
+import { buildValidationReport, type ValidationReport } from "@/lib/validation/types";
 
 const UNRESOLVED_MATERIAL_ID = "__unresolved_material__";
 const UNRESOLVED_SECTION_ID = "__unresolved_section__";
@@ -70,6 +86,8 @@ export interface ArchitecturalImportState {
   grids: StructuralGrid[];
   stories: StructuralStory[];
   skippedIssues: ParsedElementIssue[]; // element কখনো তৈরিই হয়নি এমন issue (missing/invalid geometry ইত্যাদি) — শুধু তথ্যের জন্য দেখানো, override করার কিছু নেই
+  /** Model Checker (modelChecker.ts) ফলাফল — connectivity/duplicate/geometry/support, category override প্রয়োগ করা elements এর ওপর চালানো (নিচে fetchAndParse দেখুন)। runValidation.ts এর মতোই buildValidationReport() দিয়ে wrap করা (errorCount/healthScore সহ) — ValidationPanel.tsx এর সাথে সামঞ্জস্যপূর্ণ shape, যাতে Import Review UI একই কার্ড/ব্যাজ প্যাটার্ন পুনর্ব্যবহার করতে পারে। fetch/parse ব্যর্থ হলে বা কোনো element না থাকলে খালি issues (healthScore 100)। */
+  modelCheckReport: ValidationReport;
   moduleVersion: number | null;
   fetchedAt: string | null;
 }
@@ -81,6 +99,7 @@ const INITIAL_STATE: ArchitecturalImportState = {
   grids: [],
   stories: [],
   skippedIssues: [],
+  modelCheckReport: buildValidationReport([]),
   moduleVersion: null,
   fetchedAt: null,
 };
@@ -116,6 +135,25 @@ function buildReviewItems(result: ParseGeometryResult): {
 }
 
 /**
+ * চূড়ান্ত StructuralElement তৈরি করে (category override প্রয়োগ করে) —
+ * module-scope pure function (আগে hook-এর ভিতরে useCallback হিসেবে
+ * ছিল, এখানে বের করা হলো যাতে fetchAndParse() ভিতর থেকেও এটা ব্যবহার
+ * করে runModelChecks()-এর জন্য resolved elements বানাতে পারে, hook এর
+ * নিজস্ব state/closure এর ওপর নির্ভর না করে)। materialId এখানে item এর
+ * বর্তমান মান (হয়তো এখনো খালি স্ট্রিং, resolve না হলে) বসায় — এটা ঠিক
+ * আছে কারণ modelChecker.ts geometry-driven, materialId/sectionId ছোঁয়
+ * না (নিচে fetchAndParse এর কমেন্ট দেখুন)।
+ */
+function resolveItem(item: ImportReviewItem): StructuralElement {
+  const category = item.categoryOverride ?? item.original.category;
+  const base = { ...item.original, category, materialId: item.materialId } as StructuralElement;
+  if (item.sectionId !== null && "sectionId" in base) {
+    return { ...base, sectionId: item.sectionId } as StructuralElement;
+  }
+  return base;
+}
+
+/**
  * Architectural Import — orchestration hook। "একবার fetch করে review
  * state-এ বসানো, তারপর ইঞ্জিনিয়ারের প্রতিটা পরিবর্তন (material/section/
  * category বাছাই) local state-এ রাখা, শেষে confirm করলে Grid/Story
@@ -140,6 +178,21 @@ export function useArchitecturalImport(projectId: string) {
       const result = parseArchitecturalExport(fetched.data);
       const { items, skippedIssues } = buildReviewItems(result);
 
+      // Model Checker (Phase 5) — connectivity/duplicate/geometry/support
+      // check resolved elements এর ওপর (category override সহ, যদি কেউ
+      // ইতিমধ্যে থাকে — নতুন fetch এ items সবে বানানো হলো তাই এই মুহূর্তে
+      // categoryOverride সবসময় null, কিন্তু resolveItem() ব্যবহার করাই
+      // ভবিষ্যতে ধারাবাহিক থাকবে যদি re-fetch flow পরে override-aware হয়)।
+      // materialId/sectionId এখনো unresolved (খালি স্ট্রিং) থাকতে পারে —
+      // modelChecker.ts এই দুটো ফিল্ড ছোঁয় না (pure geometry check), তাই
+      // material/section resolve হওয়ার আগেই নিরাপদে চালানো যায়। এভাবে
+      // ইঞ্জিনিয়ার material/section পূরণ করার আগেই geometry সমস্যা
+      // (floating wall, duplicate element, zero-length beam, no base
+      // support) সম্পর্কে জানতে পারবেন — শুধু Validation Panel ম্যানুয়ালি
+      // খুললে তবে জানা যেত এমন না।
+      const resolvedForCheck = items.map(resolveItem);
+      const modelCheckReport = buildValidationReport(runModelChecks(resolvedForCheck));
+
       setState({
         status: "ready",
         errorMessage: null,
@@ -147,6 +200,7 @@ export function useArchitecturalImport(projectId: string) {
         grids: result.grids,
         stories: result.stories,
         skippedIssues,
+        modelCheckReport,
         moduleVersion: fetched.moduleVersion,
         fetchedAt: fetched.fetchedAt,
       });
@@ -182,28 +236,33 @@ export function useArchitecturalImport(projectId: string) {
 
   /**
    * প্রতিটা item-এ materialId (সব category) এবং sectionId (শুধু line
-   * category — beam/column/brace/pile) পূরণ করা আছে কিনা। যতক্ষণ কোনো
-   * একটা item অসম্পূর্ণ, ততক্ষণ confirmImport() কল করা উচিত না (UI-তে
-   * বাটন disabled রাখা হবে এই ফ্ল্যাগ দিয়ে) — parser-এর "কখনো ভুল-
-   * দেখতে ID বসিয়ে দেওয়া হবে না" নীতির সরাসরি বাস্তবায়ন।
+   * category — beam/column/brace/pile) পূরণ করা আছে কিনা।
    */
-  const allResolved = state.items.every(
+  const materialsSectionsResolved = state.items.every(
     (it) => it.materialId.trim() !== "" && (it.sectionId === null || it.sectionId.trim() !== "")
   );
 
   /**
-   * চূড়ান্ত StructuralElement তৈরি করে (override প্রয়োগ করে) — confirm
-   * করার সময়, এবং UI-তে preview দেখানোর সময়ও ব্যবহারযোগ্য (pure ফাংশন,
-   * কোনো state mutate করে না)।
+   * Model Checker এর "error"-severity issue (connectivity/duplicate/
+   * geometry/support — modelChecker.ts) থাকলে ব্লক করে, ঠিক যেমন
+   * unresolved material/section ব্লক করে। "warning"/"info" severity
+   * ব্লক করে না (যেমন Footing skip notice, single-end-pin caveat) —
+   * শুধু জানানোর জন্য, model চালানো-অযোগ্য না।
    */
-  const resolveItem = useCallback((item: ImportReviewItem): StructuralElement => {
-    const category = item.categoryOverride ?? item.original.category;
-    const base = { ...item.original, category, materialId: item.materialId } as StructuralElement;
-    if (item.sectionId !== null && "sectionId" in base) {
-      return { ...base, sectionId: item.sectionId } as StructuralElement;
-    }
-    return base;
-  }, []);
+  const blockingModelCheckIssues = useMemo(
+    () => state.modelCheckReport.issues.filter((issue) => issue.severity === "error"),
+    [state.modelCheckReport]
+  );
+  const hasBlockingModelIssues = blockingModelCheckIssues.length > 0;
+
+  /**
+   * যতক্ষণ material/section অসম্পূর্ণ অথবা geometry-তে error-severity
+   * সমস্যা থাকে, ততক্ষণ confirmImport() কল করা উচিত না (UI-তে বাটন
+   * disabled রাখা হবে এই ফ্ল্যাগ দিয়ে) — parser-এর "কখনো ভুল-দেখতে ID
+   * বসিয়ে দেওয়া হবে না" নীতির, এবং এখন Model Checker এর "ভাঙা geometry
+   * নিয়ে চুপচাপ import না করা" নীতির সরাসরি বাস্তবায়ন।
+   */
+  const allResolved = materialsSectionsResolved && !hasBlockingModelIssues;
 
   /**
    * Confirm — Grid/Story আগে (persist ফাংশন থেকে সরাসরি ধার করা upsert
@@ -233,13 +292,16 @@ export function useArchitecturalImport(projectId: string) {
 
   const resolvedElements = useCallback((): StructuralElement[] => {
     return state.items.map(resolveItem);
-  }, [state.items, resolveItem]);
+  }, [state.items]);
 
   const reset = useCallback(() => setState(INITIAL_STATE), []);
 
   return {
     state,
     allResolved,
+    materialsSectionsResolved,
+    hasBlockingModelIssues,
+    blockingModelCheckIssues,
     fetchAndParse,
     setItemMaterial,
     setItemSection,
