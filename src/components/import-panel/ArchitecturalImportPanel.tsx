@@ -6,10 +6,14 @@
  * useArchitecturalImport() hook-এর UI স্তর। ইঞ্জিনিয়ার এখানে:
  *  ১. "Draw থেকে আনুন" চেপে সর্বশেষ প্রকাশিত architectural model fetch+parse করেন
  *  ২. প্রতিটা parsed element-এর জন্য Material (ও line element হলে Section) বেছে দেন
- *  ৩. thickness ≥150mm ওয়ালা wall-এ "Shear Wall হতে পারে" পর্যালোচনা-সতর্কতা দেখে
- *     চাইলে category override করেন (ডিফল্ট: parser যা দিয়েছে, category কখনো
- *     automatically পাল্টায় না — hub-geometry-parser.ts-এর নীতি)
+ *  ৩. প্রতিটা wall item-এ "Shear Wall হিসেবে import করুন" চেকপয়েন্ট দেখেন —
+ *     ডিফল্ট un-checked (thickness ≥150mm হলে parser-এর review-recommended
+ *     সতর্কতাও দেখা যায়, কিন্তু checkbox থাকে thickness নির্বিশেষে সব wall-এ)।
+ *     checkpoint না দিলে সেই wall confirm-এর সময় silently বাদ পড়ে (ETABS-এর
+ *     মতো এই মডেলেও সাধারণ/architectural wall কখনো analysis element হয় না —
+ *     শুধু beam/column/slab/stairs/shear-wall)।
  *  ৪. সব resolved হলে "আমদানি নিশ্চিত করুন" চেপে Grid/Story+Elements লাইভ মডেলে লেখেন
+ *     (un-checked wall বাদ দিয়ে)
  *
  * ElementPanel.tsx/AreaElementPanel.tsx (elements-panel) থেকে form styling
  * (dark slate select/input, sky accent) হুবহু ধার করা হয়েছে যাতে নতুন এই
@@ -17,11 +21,7 @@
  */
 
 import { useMemo, useState } from "react";
-import {
-  useArchitecturalImport,
-  type ImportReviewItem,
-  type OverridableCategory,
-} from "@/lib/hub/useArchitecturalImport";
+import { useArchitecturalImport, type ImportReviewItem } from "@/lib/hub/useArchitecturalImport";
 import { useLibraryStore } from "@/lib/library/useLibraryStore";
 import { useGeometryStore } from "@/lib/geometry/useGeometryStore";
 import { saveGeometryCore } from "@/lib/geometry/firestore";
@@ -36,6 +36,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   wall: "Wall",
   "shear-wall": "Shear Wall",
   slab: "Slab",
+  stair: "Stairs",
 };
 
 interface ArchitecturalImportPanelProps {
@@ -57,9 +58,10 @@ export function ArchitecturalImportPanel({ projectId, onAddElement }: Architectu
     fetchAndParse,
     setItemMaterial,
     setItemSection,
-    setItemCategoryOverride,
+    setItemIncludeAsShearWall,
     buildMergedGeometry,
     resolvedElements,
+    excludedWallCount,
     reset,
   } = useArchitecturalImport(projectId);
 
@@ -105,9 +107,11 @@ export function ArchitecturalImportPanel({ projectId, onAddElement }: Architectu
     <div className="space-y-4">
       <div className="rounded-lg border border-surface-border bg-surface-card/40 p-3">
         <p className="text-xs text-text-secondary mb-2">
-          EngineXDraw-এ সর্বশেষ প্রকাশিত architectural model থেকে Wall/Slab/Column/Beam জ্যামিতি
-          আনুন। কোনো ডেটা সরাসরি লেখা হবে না — প্রতিটা element-এর Material/Section বেছে দিয়ে
-          নিশ্চিত করার পরেই মডেলে যোগ হবে।
+          EngineXDraw-এ সর্বশেষ প্রকাশিত architectural model থেকে Beam/Column/Slab/Stairs/Wall
+          জ্যামিতি আনুন। কোনো ডেটা সরাসরি লেখা হবে না — প্রতিটা element-এর Material/Section বেছে
+          দিয়ে নিশ্চিত করার পরেই মডেলে যোগ হবে। সাধারণ (architectural) wall ডিফল্টে মডেলে যোগ হয়
+          না — শুধু যেগুলোকে আপনি &quot;Shear Wall হিসেবে import করুন&quot; চেকপয়েন্ট দেবেন সেগুলোই
+          shear wall হিসেবে মডেলে যোগ হবে, বাকি সব ETABS-এর মতোই বাদ থাকবে।
         </p>
         <button
           type="button"
@@ -153,6 +157,12 @@ export function ArchitecturalImportPanel({ projectId, onAddElement }: Architectu
               {state.fetchedAt ? ` — সর্বশেষ প্রকাশিত: ${new Date(state.fetchedAt).toLocaleString("bn-BD")}` : ""}
               {state.moduleVersion !== null ? ` (version ${state.moduleVersion})` : ""}
             </p>
+            {excludedWallCount > 0 && (
+              <p className="text-text-muted">
+                {excludedWallCount}টা সাধারণ wall চেকপয়েন্ট দেওয়া হয়নি — এগুলো আমদানিতে বাদ যাবে
+                (নিচে চাইলে &quot;Shear Wall হিসেবে import করুন&quot; দিয়ে যোগ করুন)।
+              </p>
+            )}
           </div>
 
           {state.skippedIssues.length > 0 && (
@@ -233,8 +243,8 @@ export function ArchitecturalImportPanel({ projectId, onAddElement }: Architectu
                       sections={sections}
                       onMaterialChange={(materialId) => setItemMaterial(item.original.elementId, materialId)}
                       onSectionChange={(sectionId) => setItemSection(item.original.elementId, sectionId)}
-                      onCategoryOverrideChange={(next) =>
-                        setItemCategoryOverride(item.original.elementId, next)
+                      onIncludeAsShearWallChange={(include) =>
+                        setItemIncludeAsShearWall(item.original.elementId, include)
                       }
                     />
                   ))}
@@ -271,7 +281,7 @@ interface ImportItemRowProps {
   sections: { sectionId: string; name: string }[];
   onMaterialChange: (materialId: string) => void;
   onSectionChange: (sectionId: string) => void;
-  onCategoryOverrideChange: (category: OverridableCategory | null) => void;
+  onIncludeAsShearWallChange: (include: boolean) => void;
 }
 
 function ImportItemRow({
@@ -280,70 +290,88 @@ function ImportItemRow({
   sections,
   onMaterialChange,
   onSectionChange,
-  onCategoryOverrideChange,
+  onIncludeAsShearWallChange,
 }: ImportItemRowProps) {
-  const canOverrideCategory = item.original.category === "wall" || item.original.category === "shear-wall";
-  const isOverridden = item.categoryOverride === "shear-wall";
+  // চেকপয়েন্ট গেট শুধু আসল (override-না-করা) category "wall" item-এই
+  // দেখানো হয় — categoryOverride ইতিমধ্যে "shear-wall" থাকলে সেটা এই
+  // চেকবক্স দিয়েই সেট হয়েছে, তাই সেই item স্বাভাবিক shear-wall row হিসেবে
+  // দেখানো হয় (নিচে isWallGate false)।
+  const isWallGate = item.original.category === "wall";
+  const included = item.includeAsShearWall;
 
   return (
-    <div className="rounded-lg border border-surface-border bg-surface-card p-2.5 space-y-2">
+    <div
+      className={`rounded-lg border p-2.5 space-y-2 ${
+        isWallGate && !included
+          ? "border-surface-border/60 bg-surface-card/40 opacity-70"
+          : "border-surface-border bg-surface-card"
+      }`}
+    >
       <div className="flex items-center justify-between">
         <span className="text-sm text-text-primary font-medium">{item.original.label}</span>
         <span className="text-[10px] text-text-muted">{item.original.elementId}</span>
       </div>
 
-      {item.issue && (
-        <div className="flex items-start justify-between gap-2 rounded-md bg-status-holdBg border border-status-holdBorder/40 px-2 py-1.5">
-          <p className="text-[11px] text-status-holdText flex-1">{item.issue.reason}</p>
-          {canOverrideCategory && (
-            <label className="flex items-center gap-1.5 text-[11px] text-status-holdText whitespace-nowrap flex-shrink-0">
-              <input
-                type="checkbox"
-                checked={isOverridden}
-                onChange={(e) => onCategoryOverrideChange(e.target.checked ? "shear-wall" : null)}
-                className="accent-amber-600"
-              />
-              Shear Wall হিসেবে চিহ্নিত করুন
-            </label>
-          )}
+      {isWallGate && (
+        <div className="flex items-start justify-between gap-2 rounded-md bg-surface-card/60 border border-surface-border px-2 py-1.5">
+          <p className="text-[11px] text-text-muted flex-1">
+            সাধারণ (architectural) wall — চেকপয়েন্ট না দিলে আমদানির সময় বাদ যাবে, মডেলে যোগ হবে না।
+          </p>
+          <label className="flex items-center gap-1.5 text-[11px] text-text-primary whitespace-nowrap flex-shrink-0">
+            <input
+              type="checkbox"
+              checked={included}
+              onChange={(e) => onIncludeAsShearWallChange(e.target.checked)}
+              className="accent-amber-600"
+            />
+            Shear Wall হিসেবে import করুন
+          </label>
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="block text-[11px] text-text-muted mb-1">Material</label>
-          <select
-            value={item.materialId}
-            onChange={(e) => onMaterialChange(e.target.value)}
-            className={SELECT_CLASS}
-          >
-            <option value="">নির্বাচন করুন</option>
-            {materials.map((m) => (
-              <option key={m.materialId} value={m.materialId}>
-                {m.name}
-              </option>
-            ))}
-          </select>
+      {item.issue && (
+        <div className="rounded-md bg-status-holdBg border border-status-holdBorder/40 px-2 py-1.5">
+          <p className="text-[11px] text-status-holdText">{item.issue.reason}</p>
         </div>
+      )}
 
-        {item.sectionId !== null && (
+      {(!isWallGate || included) && (
+        <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[11px] text-text-muted mb-1">Section</label>
+            <label className="block text-[11px] text-text-muted mb-1">Material</label>
             <select
-              value={item.sectionId}
-              onChange={(e) => onSectionChange(e.target.value)}
+              value={item.materialId}
+              onChange={(e) => onMaterialChange(e.target.value)}
               className={SELECT_CLASS}
             >
               <option value="">নির্বাচন করুন</option>
-              {sections.map((s) => (
-                <option key={s.sectionId} value={s.sectionId}>
-                  {s.name}
+              {materials.map((m) => (
+                <option key={m.materialId} value={m.materialId}>
+                  {m.name}
                 </option>
               ))}
             </select>
           </div>
-        )}
-      </div>
+
+          {item.sectionId !== null && (
+            <div>
+              <label className="block text-[11px] text-text-muted mb-1">Section</label>
+              <select
+                value={item.sectionId}
+                onChange={(e) => onSectionChange(e.target.value)}
+                className={SELECT_CLASS}
+              >
+                <option value="">নির্বাচন করুন</option>
+                {sections.map((s) => (
+                  <option key={s.sectionId} value={s.sectionId}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

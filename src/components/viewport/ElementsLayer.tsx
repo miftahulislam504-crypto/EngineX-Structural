@@ -25,6 +25,7 @@ const COLOR_SLAB = "#94a3b8"; // slate
 const COLOR_WALL = "#78716c"; // stone
 const COLOR_SHEAR_WALL = "#dc2626"; // red — lateral system এর গুরুত্বপূর্ণ অংশ হিসেবে দৃষ্টি আকর্ষণ করে
 const COLOR_CORE_WALL = "#b91c1c"; // darker red — shear wall এর কাছাকাছি কিন্তু distinguishable
+const COLOR_STAIR = "#a855f7"; // purple — inclined AreaElement হলেও দৃষ্টিগতভাবে স্পষ্ট আলাদা (Slab/Wall এর সাথে গুলিয়ে না যায়)
 const COLOR_FOOTING = "#a16207"; // amber-brown
 const COLOR_COMBINED_FOOTING = "#b45309"; // amber-700 — isolated footing এর কাছাকাছি কিন্তু distinguishable
 const COLOR_STRIP_FOOTING = "#92400e"; // amber-800
@@ -76,6 +77,7 @@ export function ElementsLayer({
           case "wall":
           case "shear-wall":
           case "core-wall":
+          case "stair":
             return (
               <AreaElementMesh
                 key={element.elementId}
@@ -197,7 +199,7 @@ function getLineElementColor(category: "beam" | "column" | "brace" | "pile"): st
   }
 }
 
-function getAreaElementColor(category: "slab" | "wall" | "shear-wall" | "core-wall"): string {
+function getAreaElementColor(category: "slab" | "wall" | "shear-wall" | "core-wall" | "stair"): string {
   switch (category) {
     case "slab":
       return COLOR_SLAB;
@@ -207,6 +209,8 @@ function getAreaElementColor(category: "slab" | "wall" | "shear-wall" | "core-wa
       return COLOR_SHEAR_WALL;
     case "core-wall":
       return COLOR_CORE_WALL;
+    case "stair":
+      return COLOR_STAIR;
   }
 }
 

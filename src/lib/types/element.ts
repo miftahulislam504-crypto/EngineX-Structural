@@ -54,6 +54,7 @@ export type ElementCategory =
   | "wall"
   | "shear-wall"
   | "core-wall"
+  | "stair"
   | "footing"
   | "combined-footing"
   | "strip-footing"
@@ -166,6 +167,21 @@ export interface ShearWallElement extends AreaElement {
  */
 export interface CoreWallElement extends AreaElement {
   category: "core-wall";
+}
+
+/**
+ * Stair — প্রতিটা straight flight একটা inclined waist-slab হিসেবে
+ * মডেল করা হয় (Draw-এর multi-flight Stair থেকে আসা প্রতিটা StairFlight
+ * আলাদা একটা StairElement হয়ে আসে — hub-geometry-parser.ts দেখুন)।
+ * জ্যামিতিকভাবে AreaElement-ই ব্যবহার করা হয়েছে (vertices + thickness)
+ * যেমন Slab/Wall — vertices-এর নিচের/উপরের প্রান্তের z আলাদা থাকায়
+ * inclination ধরা পড়ে, তাই আলাদা geometry shape লাগেনি। landing
+ * (যদি থাকে, flight-দের মাঝে) এই মুহূর্তে আলাদা element হিসেবে আসে
+ * না — parser landing-কে flight geometry-র বাইরে derive করে না, শুধু
+ * Draw-এর raw flights[] সরাসরি map হয়।
+ */
+export interface StairElement extends AreaElement {
+  category: "stair";
 }
 
 /** Isolated Footing — একটা পয়েন্টে বসে, নিজস্ব plan dimension ও thickness থাকে। */
@@ -281,6 +297,7 @@ export type StructuralElement =
   | WallElement
   | ShearWallElement
   | CoreWallElement
+  | StairElement
   | FootingElement
   | CombinedFootingElement
   | StripFootingElement

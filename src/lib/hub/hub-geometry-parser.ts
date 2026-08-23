@@ -70,9 +70,31 @@
  * হলে একটা 'approximate' সতর্কতা যোগ করে যাতে ইঞ্জিনিয়ার নিজে review
  * করে প্রয়োজনে ShearWallElement-এ পরিবর্তন করতে পারেন (এই ফাইলে সেই
  * পরিবর্তন ম্যানুয়াল — parser নিজে করে না)।
+ *
+ * ⚠️ ডাউনস্ট্রিম নীতি (এই ফাইলের বাইরে, useArchitecturalImport.ts):
+ * category "wall" ওয়ালা element এখানে সবসময় তৈরি হয় (parser কখনো
+ * silently বাদ দেয় না), কিন্তু import review UI-তে ডিফল্ট un-checked
+ * থাকে — ইঞ্জিনিয়ার explicitly "Shear Wall হিসেবে import করুন" চেকপয়েন্ট
+ * না দিলে confirmImport()-এ বাদ পড়ে (ETABS-এর মতো শুধু beam/column/
+ * slab/stairs/shear-wall analysis model-এ থাকে, সাধারণ/architectural
+ * wall না)। parser নিজে এই gate প্রয়োগ করে না — শুধু category বসায়,
+ * gate hook-স্তরে।
+ *
+ * ═══════════════════════════════════════════════════════════════════
+ * Stair mapping — mapStair() দ্রষ্টব্য
+ * ═══════════════════════════════════════════════════════════════════
+ * Draw-এর Stair (packages/object-model/src/geometry.ts, verified) একটা
+ * ordered flights[] array পাঠায় (bottom-to-top, প্রতিটা straight run)।
+ * এই App-এ কোনো dedicated multi-flight "Stair" element type নেই —
+ * প্রতিটা flight structural analysis-এর জন্য একটা inclined waist-slab
+ * (element.ts এর StairElement, AreaElement-ই পুনর্ব্যবহার করে) হিসেবে
+ * মডেল করা হয়, তাই একটা Draw Stair থেকে ১+ StairElement আসতে পারে।
+ * waist-slab thickness Draw পাঠায় না (architectural drawing-এ অপ্রাসঙ্গিক)
+ * — DEFAULT_STAIR_WAIST_THICKNESS_M ধরে নেওয়া হয়, সবসময় review-recommended
+ * issue সহ (thickness ইঞ্জিনিয়ারকে নিশ্চিত করতে হবে)।
  */
 
-import type { StructuralElement, Point3D, WallElement, SlabElement } from "@/lib/types/element";
+import type { StructuralElement, Point3D, WallElement, SlabElement, StairElement } from "@/lib/types/element";
 import type { StructuralGrid, StructuralStory } from "@/lib/types/geometry";
 import type { BuildingElementRef } from "./contract.types";
 import type {
@@ -82,6 +104,7 @@ import type {
   DrawSlabGeometry,
   DrawColumnGeometry,
   DrawBeamGeometry,
+  DrawStairGeometry,
 } from "./hub-module-shapes";
 import { getModuleData, subscribeToModuleData } from "./hub-sdk-client";
 import { mapArchitecturalGeometry } from "./hub-module-mapper";
@@ -197,6 +220,18 @@ const UNRESOLVED_SECTION_ID = "__unresolved_section__";
  * হওয়ার সম্ভাবনা তুলনামূলক কম।
  */
 const THICK_WALL_REVIEW_THRESHOLD_M = 0.15;
+
+/**
+ * Stair waist-slab thickness — Draw কখনো এই মান পাঠায় না (architectural
+ * drawing-এ দরকার হয় না, শুধু structural design-এ)। BNBC 2020-context
+ * সাধারণ RC waist slab span/20 rough rule অনুযায়ী প্রচলিত রেঞ্জ
+ * 125-200mm — Slab-এর ডিফল্টের (125mm) চেয়ে সামান্য বেশি ধরা হলো
+ * কারণ stair slab-এ সাধারণত বাড়তি সেলফ-ওয়েট (step) থাকে। প্রতিটা
+ * mapped StairElement-এ সবসময় review-recommended issue যোগ হয় (thickness
+ * ধরে নেওয়া, Draw থেকে verified না) — ইঞ্জিনিয়ারকে import review-তে
+ * এই থিকনেস (ও দরকার হলে material) নিশ্চিত/পরিবর্তন করতে হবে।
+ */
+const DEFAULT_STAIR_WAIST_THICKNESS_M = 0.15;
 
 function warnSkipped(issues: ParsedElementIssue[], ref: BuildingElementRef, reason: string): void {
   issues.push({ severity: "skipped", elementRefId: ref.id, elementType: ref.type, reason });
@@ -316,6 +351,127 @@ function mapSlab(ref: BuildingElementRef, baseElevationM: number, issues: Parsed
 }
 
 /**
+ * Stair → StairElement[]। বাকি সব mapXxx() একটা BuildingElementRef থেকে
+ * একটা element রিটার্ন করে, কিন্তু Draw-এর একটা Stair-এ ১+ flight থাকতে
+ * পারে (L/U-shaped multi-flight) — তাই এই ফাংশনটাই একমাত্র ব্যতিক্রম,
+ * array রিটার্ন করে (নিচে parseArchitecturalExport()-এ push(...mapped)
+ * দিয়ে flatten করা হয়)।
+ *
+ * প্রতিটা flight একটা independent inclined AreaElement (waist slab):
+ *   - rise = numberOfSteps * riserHeight (মিটার), flight-টা bottom
+ *     elevation থেকে সেই rise যোগ করে top-এ পৌঁছায়
+ *   - flight-এর bottom elevation = storyBase + আগের সব flight-এর মোট
+ *     rise (bottom-to-top ক্রম ধরে নেওয়া হয়, Draw-এর StairFlight
+ *     কমেন্ট অনুযায়ী — landing-এর নিজস্ব কোনো rise নেই বলে এই sequential
+ *     accumulation-ই landing-সহ সঠিক ফলাফল দেয়)
+ *   - width perpendicular offset করে ৪-vertex plane বানানো হয় (start
+ *     bottom, end bottom+width-offset স্তরে না — বরং centerline থেকে
+ *     width/2 দুই পাশে), ঠিক Wall-এর centerline-plane কনভেনশনের মতোই
+ *     thickness আলাদা property হিসেবে রাখা (vertices zero-thickness
+ *     ধরে)।
+ *   - প্রতিটা flight-এর elementId মূল Stair id + flight index (একাধিক
+ *     StructuralElement একই ref.id হলে re-import/duplicate-check ভুল
+ *     আচরণ করবে, তাই ইউনিক করা আবশ্যক)
+ *
+ * সীমাবদ্ধতা: কোনো flight invalid হয়ে skip হলে (নিচের validation) তার
+ * rise runningRiseM-এ যোগ হয় না, তাই পরের flight ভুল base elevation-এ
+ * বসতে পারে। এটা গ্রহণযোগ্য কারণ invalid flight থাকা মানেই পুরো Stair
+ * geometry-তে সমস্যা আছে — ইঞ্জিনিয়ারকে review-তে দেখেই EngineXDraw-এ
+ * ফিরে সংশোধন করতে হবে, শুধু elevation ঠিক করে আমদানি চালিয়ে যাওয়া
+ * কোনো valid ব্যবহারযোগ্য কেস না।
+ */
+function mapStair(
+  ref: BuildingElementRef,
+  baseElevationM: number,
+  issues: ParsedElementIssue[],
+  nowIso: string,
+): StairElement[] {
+  const g = ref.geometry as DrawStairGeometry | undefined;
+  if (!g || !isFiniteNumber(g.width) || g.width <= 0) {
+    warnSkipped(issues, ref, "width অনুপস্থিত বা অবৈধ (সংখ্যা হতে হবে, > 0)");
+    return [];
+  }
+  if (!Array.isArray(g.flights) || g.flights.length === 0) {
+    warnSkipped(issues, ref, "flights অনুপস্থিত বা খালি — কমপক্ষে ১টা flight দরকার");
+    return [];
+  }
+
+  const result: StairElement[] = [];
+  let runningRiseM = 0;
+
+  for (let i = 0; i < g.flights.length; i++) {
+    const flight = g.flights[i];
+    const flightLabel = g.flights.length > 1 ? `${ref.id}-F${i + 1}` : ref.id;
+
+    if (!isDrawPoint2D(flight.start) || !isDrawPoint2D(flight.end)) {
+      warnSkipped(issues, { ...ref, id: flightLabel }, "flight-এর start/end পয়েন্ট অনুপস্থিত বা ভুল shape");
+      continue;
+    }
+    if (!isFiniteNumber(flight.numberOfSteps) || flight.numberOfSteps <= 0) {
+      warnSkipped(issues, { ...ref, id: flightLabel }, "flight-এর numberOfSteps অনুপস্থিত বা অবৈধ (সংখ্যা হতে হবে, > 0)");
+      continue;
+    }
+    if (!isFiniteNumber(flight.riserHeight) || flight.riserHeight <= 0) {
+      warnSkipped(issues, { ...ref, id: flightLabel }, "flight-এর riserHeight অনুপস্থিত বা অবৈধ (সংখ্যা হতে হবে, > 0)");
+      continue;
+    }
+
+    const flightBaseM = baseElevationM + runningRiseM;
+    const flightRiseM = flight.numberOfSteps * flight.riserHeight;
+    const flightTopM = flightBaseM + flightRiseM;
+    runningRiseM += flightRiseM;
+
+    // centerline-এর perpendicular unit vector (Draw.x/y প্লেনে) —
+    // width কে দুই পাশে অর্ধেক করে centerline থেকে অফসেট করতে ব্যবহার
+    // হয়, ঠিক যেমন একটা রাস্তার centerline থেকে দুই পাশের কার্ব বের
+    // করা হয়।
+    const dx = flight.end.x - flight.start.x;
+    const dy = flight.end.y - flight.start.y;
+    const len = Math.hypot(dx, dy);
+    if (len < 1e-9) {
+      warnSkipped(issues, { ...ref, id: flightLabel }, "flight-এর start/end পয়েন্ট একই — শূন্য-দৈর্ঘ্য flight");
+      continue;
+    }
+    const halfWidth = g.width / 2;
+    const perpX = (-dy / len) * halfWidth;
+    const perpY = (dx / len) * halfWidth;
+
+    const startLeft: DrawPoint2D = { x: flight.start.x + perpX, y: flight.start.y + perpY };
+    const startRight: DrawPoint2D = { x: flight.start.x - perpX, y: flight.start.y - perpY };
+    const endLeft: DrawPoint2D = { x: flight.end.x + perpX, y: flight.end.y + perpY };
+    const endRight: DrawPoint2D = { x: flight.end.x - perpX, y: flight.end.y - perpY };
+
+    warnReview(
+      issues,
+      { ...ref, id: flightLabel },
+      `waist-slab thickness Draw থেকে আসে না — ${(DEFAULT_STAIR_WAIST_THICKNESS_M * 1000).toFixed(0)}mm ডিফল্ট ধরা হয়েছে, import review-তে প্রয়োজন অনুযায়ী পরিবর্তন করুন।`,
+    );
+
+    result.push({
+      elementId: flightLabel,
+      category: "stair",
+      label: flightLabel,
+      materialId: UNRESOLVED_MATERIAL_ID,
+      storyId: ref.levelId || undefined,
+      // bottom edge (start elevation) থেকে top edge (end elevation) —
+      // counter-clockwise ক্রম (element.ts এর AreaElement.vertices কমেন্ট
+      // অনুযায়ী)।
+      vertices: [
+        toPoint3D(startLeft, flightBaseM),
+        toPoint3D(startRight, flightBaseM),
+        toPoint3D(endRight, flightTopM),
+        toPoint3D(endLeft, flightTopM),
+      ],
+      thickness: DEFAULT_STAIR_WAIST_THICKNESS_M * 1000, // mm
+      createdAt: nowIso,
+      updatedAt: nowIso,
+    });
+  }
+
+  return result;
+}
+
+/**
  * Column → ColumnElement (LineElement)। Draw-এর center + height থেকে
  * base/top দুই পয়েন্ট বানানো হয় — element.ts এর LineElement মডেল
  * অনুযায়ী Column একটা vertical line element (start=base, end=top)।
@@ -385,11 +541,14 @@ function mapBeam(ref: BuildingElementRef, baseElevationM: number, issues: Parsed
  * fetchLatestArchitecturalExport()-এর কাজ) — শুধু pure transformation,
  * unit-testable।
  *
- * শুধু ৪টা category হ্যান্ডল করা হয় (wall, slab, column, beam) —
+ * শুধু ৫টা category হ্যান্ডল করা হয় (wall, slab, column, beam, stair) —
  * প্ল্যানের Phase 2 স্কোপ অনুযায়ী প্রথম দুটো (wall→wall/shear-wall,
  * slab→area) মূল আইটেম, column/beam বোনাস হিসেবে যোগ করা হয়েছে কারণ
- * mapping একই রকম straightforward এবং Draw ইতিমধ্যে পাঠায়। door/window/
- * room/stair/roof/ceiling/foundation/footing/ইত্যাদি ইচ্ছাকৃতভাবে বাদ —
+ * mapping একই রকম straightforward এবং Draw ইতিমধ্যে পাঠায়। stair
+ * পরে যোগ হয়েছে (mapStair() দেখুন — প্রতিটা flight একটা inclined
+ * StairElement, ETABS-এর মতো beam/column/slab/stairs/shear-wall
+ * প্রয়োজন অনুযায়ী)। door/window/room/roof/ceiling/foundation/footing/
+ * ইত্যাদি ইচ্ছাকৃতভাবে বাদ —
  * এগুলো হয় structural element না (door/window/room), অথবা এই App-এর
  * নিজস্ব foundation design workflow-এর (FootingElement ইত্যাদি) সাথে
  * architectural geometry সরাসরি না মেলা উচিত (foundation sizing এই
@@ -426,6 +585,15 @@ export function parseArchitecturalExport(data: DrawArchitecturalExport): ParseGe
       continue;
     }
 
+    // stair বাকি সব category থেকে আলাদা — একটা ref থেকে ০+ element
+    // আসতে পারে (multi-flight), তাই এখানেই সরাসরি push করে পরের ref-এ
+    // যাওয়া হয়, নিচের single-mapped flow-এ ঢোকানো হয় না।
+    if (ref.type === "stair") {
+      const stairElements = mapStair(ref, baseElevationM, issues, nowIso);
+      mappedElements.push(...stairElements);
+      continue;
+    }
+
     let mapped: StructuralElement | null;
     switch (ref.type) {
       case "wall":
@@ -441,8 +609,8 @@ export function parseArchitecturalExport(data: DrawArchitecturalExport): ParseGe
         mapped = mapBeam(ref, baseElevationM, issues, nowIso);
         break;
       default:
-        // door/window/room/stair/roof/ceiling/foundation/footing/ইত্যাদি
-        // — ইচ্ছাকৃতভাবে স্কিপ, ফাইল হেডারে ব্যাখ্যা করা কারণে। এটা
+        // door/window/room/roof/ceiling/foundation/footing/ইত্যাদি —
+        // ইচ্ছাকৃতভাবে স্কিপ, ফাইল হেডারে ব্যাখ্যা করা কারণে। এটা
         // warning-যোগ্য "সমস্যা" না, তাই issues-এ যোগ হয় না — শুধু
         // পরিকল্পিতভাবে out-of-scope।
         continue;

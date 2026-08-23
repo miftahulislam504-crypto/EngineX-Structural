@@ -22,6 +22,17 @@
  *     দেয় (সম্ভাব্য shear wall) — এই hook সেই wall-গুলোর জন্য category
  *     override (wall ⇄ shear-wall) টগল সমর্থন করে, ডিফল্ট category
  *     parser যা দিয়েছে তাই থাকে (কখনো automatic পাল্টায় না)।
+ *   - Draw থেকে আসা "সাধারণ" (architectural/partition) wall কখনোই
+ *     মডেলে যোগ হয় না — ETABS-এর মতো এই মডেলেও শুধু beam/column/slab/
+ *     stairs/shear-wall structural analysis element হিসেবে থাকে। তাই
+ *     category "wall" ওয়ালা প্রতিটা item ডিফল্ট includeAsShearWall:
+ *     false নিয়ে শুরু হয় — ইঞ্জিনিয়ার explicitly "Shear Wall" চেকপয়েন্ট
+ *     না দিলে সেই wall confirmImport()-এ silently বাদ পড়ে (skip, block
+ *     না)। চেকপয়েন্ট দিলে categoryOverride "shear-wall"-এ সেট হয় এবং
+ *     ঠিক অন্য elements-এর মতোই material/section resolve করে import
+ *     হয়। non-wall category (beam/column/slab/stairs/shear-wall
+ *     সরাসরি parser থেকে যদি কখনো আসে) এই ফ্ল্যাগ ছোঁয় না, স্বাভাবিকভাবে
+ *     import হয়।
  *   - re-import নিরাপদ: elementId Draw-এর BuildingElementRef.id থেকে
  *     সরাসরি আসে (parser অপরিবর্তিত রাখে), তাই একই element আবার import
  *     করলে saveElement() (setDoc) ওভাররাইট করবে, ডুপ্লিকেট হবে না।
@@ -73,6 +84,15 @@ export interface ImportReviewItem {
   materialId: string;
   sectionId: string | null; // null মানে এই category-র sectionId লাগে না (area/point element)
   categoryOverride: OverridableCategory | null;
+  /**
+   * শুধু category === "wall" item-এ প্রাসঙ্গিক (বাকি সবার জন্য সবসময়
+   * true, নিচে buildReviewItems() দেখুন)। false থাকা মানে এই wall-টা
+   * "সাধারণ" (architectural) — ইঞ্জিনিয়ার এখনো একে shear wall হিসেবে
+   * চেকপয়েন্ট করেননি, তাই confirmImport()-এ এটা বাদ পড়বে। true মানে
+   * ইঞ্জিনিয়ার চেকপয়েন্ট দিয়েছেন — categoryOverride "shear-wall"-এ সেট
+   * থাকবে এবং এটা বাকি elements-এর মতোই normally import হবে।
+   */
+  includeAsShearWall: boolean;
   /** এই elementId-র সাথে সম্পর্কিত issue(s), যদি থাকে (review-recommended) — skipped issue এখানে আসে না, কারণ skipped element কখনো elements[]-এ ঢোকেই না। */
   issue: ParsedElementIssue | null;
 }
@@ -128,10 +148,25 @@ function buildReviewItems(result: ParseGeometryResult): {
         : ""
       : null,
     categoryOverride: null,
+    // "wall" ছাড়া বাকি সব category (beam/column/slab/stairs/shear-wall)
+    // সবসময় include — শুধু সাধারণ wall ডিফল্টে বাদ, চেকপয়েন্ট দিলে যোগ।
+    includeAsShearWall: el.category !== "wall",
     issue: issueByElementId.get(el.elementId) ?? null,
   }));
 
   return { items, skippedIssues };
+}
+
+/**
+ * item-টা confirmImport()-এ আদৌ model-এ যাবে কিনা — শুধু un-checked
+ * সাধারণ wall (includeAsShearWall false) বাদ পড়ে, বাকি সব category
+ * (beam/column/slab/stairs, ও checkpoint-করা shear-wall) সবসময় true।
+ * material/section resolve, model-check input, এবং চূড়ান্ত save — এই
+ * তিন জায়গাতেই একই filter ব্যবহার করা হয় যাতে "কী গণনা হচ্ছে" এবং "কী
+ * সেভ হচ্ছে" কখনো আলাদা না হয়ে যায়।
+ */
+function willImport(item: ImportReviewItem): boolean {
+  return item.includeAsShearWall;
 }
 
 /**
@@ -190,7 +225,10 @@ export function useArchitecturalImport(projectId: string) {
       // (floating wall, duplicate element, zero-length beam, no base
       // support) সম্পর্কে জানতে পারবেন — শুধু Validation Panel ম্যানুয়ালি
       // খুললে তবে জানা যেত এমন না।
-      const resolvedForCheck = items.map(resolveItem);
+      // model-check শুধু সেই elements-এর ওপর চালানো হয় যেগুলো আসলে
+      // import হবে (un-checked সাধারণ wall বাদ) — নাহলে কখনো import না
+      // হওয়া wall-এর জন্য ভুল floating/connectivity error দেখানো হতো।
+      const resolvedForCheck = items.filter(willImport).map(resolveItem);
       const modelCheckReport = buildValidationReport(runModelChecks(resolvedForCheck));
 
       setState({
@@ -235,12 +273,36 @@ export function useArchitecturalImport(projectId: string) {
   }, []);
 
   /**
-   * প্রতিটা item-এ materialId (সব category) এবং sectionId (শুধু line
-   * category — beam/column/brace/pile) পূরণ করা আছে কিনা।
+   * "Shear Wall হিসেবে import করুন" চেকপয়েন্ট — শুধু category === "wall"
+   * item-এ প্রযোজ্য। checked করলে categoryOverride "shear-wall"-এ সেট
+   * হয় (ঠিক আগের override যুক্তিই ব্যবহার করে, thickness-issue থাকুক বা
+   * না থাকুক) এবং includeAsShearWall true হয়ে item confirmImport()-এ
+   * অন্তর্ভুক্ত হয়। uncheck করলে categoryOverride আবার null এবং
+   * includeAsShearWall false — item confirmImport()-এ silently বাদ
+   * পড়ে (Confirm বাটন কখনো এর জন্য disabled হয় না, নিচে
+   * materialsSectionsResolved/allResolved দেখুন)।
    */
-  const materialsSectionsResolved = state.items.every(
-    (it) => it.materialId.trim() !== "" && (it.sectionId === null || it.sectionId.trim() !== "")
-  );
+  const setItemIncludeAsShearWall = useCallback((elementId: string, include: boolean) => {
+    setState((s) => ({
+      ...s,
+      items: s.items.map((it) =>
+        it.original.elementId === elementId
+          ? { ...it, includeAsShearWall: include, categoryOverride: include ? "shear-wall" : null }
+          : it
+      ),
+    }));
+  }, []);
+
+  /**
+   * প্রতিটা import-হতে-যাওয়া item-এ (willImport() — un-checked সাধারণ
+   * wall বাদ, সেগুলোর material/section কখনো লাগবেই না কারণ সেগুলো
+   * confirmImport()-এ ছোঁয়াই হয় না) materialId (সব category) এবং
+   * sectionId (শুধু line category — beam/column/brace/pile) পূরণ করা
+   * আছে কিনা।
+   */
+  const materialsSectionsResolved = state.items
+    .filter(willImport)
+    .every((it) => it.materialId.trim() !== "" && (it.sectionId === null || it.sectionId.trim() !== ""));
 
   /**
    * Model Checker এর "error"-severity issue (connectivity/duplicate/
@@ -290,9 +352,18 @@ export function useArchitecturalImport(projectId: string) {
     [state.grids, state.stories]
   );
 
+  /**
+   * চূড়ান্ত save-এ যাওয়া elements — un-checked সাধারণ wall বাদ (কখনো
+   * addElement() কল হয় না তাদের জন্য), বাকি সব (beam/column/slab/
+   * stairs, checkpoint-করা shear-wall) resolveItem() দিয়ে category
+   * override + material/section প্রয়োগ করে রিটার্ন হয়।
+   */
   const resolvedElements = useCallback((): StructuralElement[] => {
-    return state.items.map(resolveItem);
+    return state.items.filter(willImport).map(resolveItem);
   }, [state.items]);
+
+  /** UI-তে "X টা wall বাদ যাবে" জাতীয় সারাংশ দেখানোর জন্য — কখনো model-এ যাবে না, শুধু তথ্যের জন্য। */
+  const excludedWallCount = state.items.filter((it) => !willImport(it)).length;
 
   const reset = useCallback(() => setState(INITIAL_STATE), []);
 
@@ -306,8 +377,10 @@ export function useArchitecturalImport(projectId: string) {
     setItemMaterial,
     setItemSection,
     setItemCategoryOverride,
+    setItemIncludeAsShearWall,
     buildMergedGeometry,
     resolvedElements,
+    excludedWallCount,
     reset,
   };
 }

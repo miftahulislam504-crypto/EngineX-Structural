@@ -199,6 +199,21 @@ export function computeWeightTakeoff(
       continue;
     }
 
+    if (element.category === "stair") {
+      // waist-slab — Wall-এর মতোই AreaElement, computePlanarPolygon3DAreaM2()
+      // Newell's method ব্যবহার করে বলে inclined plane-এও সত্যিকার
+      // surface area দেয় (flat XZ-projection না) — mapStair()-এর
+      // ৪-vertex inclined plane-এর জন্য এটাই সঠিক ভলিউম দেয়। step-এর
+      // নিজস্ব আয়তন (waist slab-এর ওপরের ত্রিভুজাকার ধাপ) এখানে ধরা
+      // হয়নি — শুধু waist slab, একই সরলীকরণ Slab/Wall-এও প্রযোজ্য
+      // (uniform-thickness plate ধরে নেওয়া হয়, কোনো surface relief না)।
+      const areaM2 = computePlanarPolygon3DAreaM2(element.vertices);
+      const volumeM3 = areaM2 * (element.thickness / 1000);
+      const weightKN = volumeM3 * getUnitWeightKNPerM3(material);
+      addToCategory(element.category, material.type, volumeM3, weightKN);
+      continue;
+    }
+
     if (element.category === "footing" || element.category === "pile-cap") {
       const volumeM3 = (element.width / 1000) * (element.length / 1000) * (element.thickness / 1000);
       const weightKN = volumeM3 * getUnitWeightKNPerM3(material);

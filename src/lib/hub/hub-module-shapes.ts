@@ -96,6 +96,34 @@ export interface DrawBeamGeometry {
 }
 
 /**
+ * Draw-এর একটা StairFlight — bottom→top একটা সরল ধাপ-সারি। Draw-এর
+ * object-model প্যাকেজ (geometry.ts, Stair.flights) থেকে হুবহু
+ * verified — riserHeight মিটার/ধাপ, treadDepth/waist-thickness Draw
+ * পাঠায় না (architectural drawing-এ দরকার হয় না, শুধু structural
+ * design-এর জন্য দরকার — parser এটা নিজে ধরে নেয়, mapStair() দেখুন)।
+ */
+export interface DrawStairFlight {
+  start: DrawPoint2D;
+  end: DrawPoint2D;
+  numberOfSteps: number;
+  riserHeight: number; // মিটার প্রতি ধাপ
+}
+
+/**
+ * BuildingElementRef.type === 'stair' এর geometry payload — Draw-এর
+ * Stair টাইপ থেকে হুবহু verified (hub-write.ts: `geometry: { width:
+ * s.width, flights: s.flights }`)। flights bottom-to-top ক্রমে, একটা
+ * এন্ট্রি মানে সোজা এক-flight সিঁড়ি, ২+ মানে L/U-shaped (turn সহ)।
+ * elevation নেই (wall-এর মতোই levelId থেকে base elevation resolve
+ * হয়) — landing geometry এখানে raw আসে না (Draw-এর core-engine
+ * deriveStairLandings()-এ derive হয়, export-এ শুধু raw flights)।
+ */
+export interface DrawStairGeometry {
+  width: number; // মিটার — পুরো stair-এর জন্য একটাই, সব flight/landing-এ সমান
+  flights: DrawStairFlight[];
+}
+
+/**
  * Draw-এর ArchitecturalExport shape (hub-write.ts এর buildArchitecturalExport
  * এর রিটার্ন টাইপ, verified) — এইটাই ContractEnvelope.data হিসেবে
  * Storage JSON ফাইলে থাকে। shafts/siteBoundary/sheets/materials এই

@@ -69,6 +69,7 @@ const COLOR_SLAB = "#94a3b8";
 const COLOR_WALL = "#78716c";
 const COLOR_SHEAR_WALL = "#dc2626";
 const COLOR_CORE_WALL = "#b91c1c";
+const COLOR_STAIR = "#a855f7"; // purple — ElementsLayer.tsx এর COLOR_STAIR এর সাথে সামঞ্জস্যপূর্ণ
 const COLOR_FOOTING = "#a16207";
 const COLOR_COMBINED_FOOTING = "#b45309";
 const COLOR_STRIP_FOOTING = "#92400e";
@@ -116,6 +117,10 @@ const COLOR_SELECTED = "#38bdf8";
  * Footing/Pile-Cap/Pile-Group ও একই কারণে বাদ — এরা FE model এ নেই
  * (6e/7a-7f এর design output, নিজস্ব location/pointA/pointB/
  * centroidLocation field ব্যবহার করে যা analysis node-indexed না)।
+ * Stair (Phase 6.5 import) একই কারণে (backend এখনো stair-কে shell
+ * হিসেবে solve করে না) SHELL_ELEMENT_CATEGORIES-এর বাইরে — Mat-
+ * Foundation-এর প্যাটার্ন অনুসরণ করে raw vertices দিয়ে render হয়,
+ * deformPoint() wrap ছাড়া।
  */
 export function VisualizationElementsLayer({
   elements,
@@ -268,6 +273,22 @@ export function VisualizationElementsLayer({
               />
             );
 
+          case "stair":
+            // Mat-Foundation-এর মতোই SHELL_ELEMENT_CATEGORIES তালিকায় নেই
+            // (backend analysis_orchestration.py এখনো stair কে shell
+            // হিসেবে solve করে না — Phase 6.5 এখনো শুধু import, analysis
+            // engine stair সাপোর্ট আলাদা কাজ) — তাই deformPoint() wrap
+            // ছাড়াই render (raw vertices, deform প্রযোজ্য না)।
+            return (
+              <AreaElementMesh
+                key={element.elementId}
+                vertices={element.vertices}
+                thickness={element.thickness}
+                materialProps={materialProps}
+                onSelect={() => onSelectElement(element.elementId)}
+              />
+            );
+
           case "pile-group":
             return (
               <PileGroupMesh
@@ -313,6 +334,8 @@ function getElementColor(category: StructuralElement["category"]): string {
       return COLOR_SHEAR_WALL;
     case "core-wall":
       return COLOR_CORE_WALL;
+    case "stair":
+      return COLOR_STAIR;
     case "footing":
       return COLOR_FOOTING;
     case "combined-footing":
