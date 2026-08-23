@@ -21,6 +21,7 @@
 import { useEffect, useRef, useState } from "react";
 import { subscribeToElements } from "@/lib/elements/firestore";
 import { publishStructuralToHub } from "./hub-structural-export";
+import { useStructuralAutoSyncStatusStore } from "./useStructuralAutoSyncStatusStore";
 
 const DEBOUNCE_MS = 3000;
 const INITIAL_SETTLE_MS = 2000;
@@ -44,6 +45,7 @@ export function useStructuralAutoSync(projectId: string | null): StructuralAutoS
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const settledRef = useRef(false);
+  const setGlobalStatus = useStructuralAutoSyncStatusStore((s) => s.setStatus);
 
   useEffect(() => {
     if (!projectId) return;
@@ -51,29 +53,36 @@ export function useStructuralAutoSync(projectId: string | null): StructuralAutoS
 
     const pushToHub = async () => {
       setState((prev) => ({ ...prev, status: "syncing" }));
+      setGlobalStatus({ status: "syncing", lastError: null, lastSyncedVersion: null });
       try {
         const result = await publishStructuralToHub(projectId);
         if (result.success) {
-          setState({
-            status: "synced",
+          const next = {
+            status: "synced" as const,
             lastError: null,
             lastSyncedVersion: result.moduleVersion,
             lastSkippedElementCount: result.skippedElementCount,
-          });
+          };
+          setState(next);
+          setGlobalStatus({ status: "synced", lastError: null, lastSyncedVersion: result.moduleVersion });
         } else {
           setState((prev) => ({ ...prev, status: "error", lastError: result.error }));
+          setGlobalStatus({ status: "error", lastError: result.error, lastSyncedVersion: null });
         }
       } catch (e) {
+        const message = e instanceof Error ? e.message : "Hub-এ sync করতে ব্যর্থ";
         setState((prev) => ({
           ...prev,
           status: "error",
-          lastError: e instanceof Error ? e.message : "Hub-এ sync করতে ব্যর্থ",
+          lastError: message,
         }));
+        setGlobalStatus({ status: "error", lastError: message, lastSyncedVersion: null });
       }
     };
 
     const scheduleDebouncedPush = () => {
       setState((prev) => ({ ...prev, status: "pending" }));
+      setGlobalStatus({ status: "pending", lastError: null, lastSyncedVersion: null });
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
       debounceTimerRef.current = setTimeout(pushToHub, DEBOUNCE_MS);
     };

@@ -11,6 +11,7 @@ import { useShellUiStore } from "@/lib/workflow/useShellUiStore";
 import type { SidebarTab } from "@/lib/workflow/stageTabs";
 import { useGlobalModelSubscriptions } from "@/lib/model/useGlobalModelSubscriptions";
 import { useAutoLoadSync } from "@/lib/loads/useAutoLoadSync";
+import { useStructuralAutoSync } from "@/lib/hub/useStructuralAutoSync";
 
 /**
  * Phase 4 (Panel Migration) — persistent shell।
@@ -129,6 +130,18 @@ function ModelLayoutInner({ children, params }: LayoutProps<"/model/[projectId]"
   // না। এই দুটো hook একসাথে, এই ক্রমেই কল করা আবশ্যক।
   useGlobalModelSubscriptions(projectId);
   useAutoLoadSync(projectId);
+
+  // --- Structural → Hub auto-sync (audit fix, ২০২৬-০৮) ---
+  // hub-structural-export.ts এর assemble+push logic এবং
+  // useStructuralAutoSync.ts এর debounce/listener — দুটোই আগে থেকেই
+  // সম্পূর্ণ লেখা ছিল, কিন্তু hook টা কোথাও mount করা হয়নি (কোনো .tsx
+  // এ import ছিল না) — ফলে Structural app কখনো Hub এ কিছু publish
+  // করত না, EngineXEstimate এর Quantity Takeoff তাই চিরকাল "No
+  // Structural data found" দেখাতো। useAutoLoadSync এর ঠিক পাশে বসানো
+  // হলো — একই কারণ: subscription-type hook, layout এ একবার mount
+  // হওয়া উচিত (element edit যেকোনো tab থেকেই হতে পারে, শুধু elements
+  // page থেকে না)।
+  useStructuralAutoSync(projectId);
 
   // --- Route Guard (Phase 0.2, Phase 4-এ page.tsx থেকে এখানে সরানো) ---
   const { user, isReady: isAuthReady } = useEnsureAuth();

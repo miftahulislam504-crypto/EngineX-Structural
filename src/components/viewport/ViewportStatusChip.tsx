@@ -5,6 +5,7 @@ import { useLibraryStore } from "@/lib/library/useLibraryStore";
 import { useElementsStore } from "@/lib/elements/useElementsStore";
 import { useLoadStore } from "@/lib/loads/useLoadStore";
 import { useProjectInfoStore } from "@/lib/projects/useProjectInfoStore";
+import { useStructuralAutoSyncStatusStore } from "@/lib/hub/useStructuralAutoSyncStatusStore";
 
 /**
  * Phase 4 (Panel Migration) — মূল page.tsx এ isSaving/loadError ৪টা
@@ -40,6 +41,15 @@ export function ViewportStatusChip({ projectId }: { projectId: string }) {
   const loadsLoadError = useLoadStore((s) => s.loadError);
   const loadError = geometryLoadError ?? libraryLoadError ?? elementsLoadError ?? loadsLoadError;
 
+  // Structural → Hub auto-sync status (useStructuralAutoSync.ts,
+  // layout.tsx এ mount করা, এই chip শুধু broadcast store থেকে পড়ে —
+  // ViewportStatusChip.tsx এর ফাইল-টপ কমেন্টে বর্ণিত নীতির সাথে
+  // সামঞ্জস্যপূর্ণ, ডুপ্লিকেট hook-call এড়াতে)। "idle" ও "pending"
+  // কে আলাদা করে দেখানো হয়নি (pending কয়েক সেকেন্ডের debounce মাত্র,
+  // "syncing" দেখানোই যথেষ্ট তথ্য) — শুধু syncing/synced/error।
+  const structuralSyncStatus = useStructuralAutoSyncStatusStore((s) => s.status);
+  const structuralSyncError = useStructuralAutoSyncStatusStore((s) => s.lastError);
+
   return (
     <div className="absolute bottom-3 left-3 flex items-center gap-2 flex-wrap">
       <span className="hidden sm:inline text-xs text-text-muted bg-surface-card/90 backdrop-blur rounded-md px-2.5 py-1 border border-surface-border">
@@ -53,6 +63,16 @@ export function ViewportStatusChip({ projectId }: { projectId: string }) {
       {loadError && (
         <span className="text-xs text-red-600 bg-surface-card/90 backdrop-blur rounded-md px-2.5 py-1 border border-red-200">
           লোড এরর: {loadError}
+        </span>
+      )}
+      {(structuralSyncStatus === "pending" || structuralSyncStatus === "syncing") && (
+        <span className="text-xs text-text-muted bg-surface-card/90 backdrop-blur rounded-md px-2.5 py-1 border border-surface-border">
+          Hub-এ sync হচ্ছে...
+        </span>
+      )}
+      {structuralSyncStatus === "error" && (
+        <span className="text-xs text-red-600 bg-surface-card/90 backdrop-blur rounded-md px-2.5 py-1 border border-red-200">
+          Hub sync ব্যর্থ{structuralSyncError ? `: ${structuralSyncError}` : ""}
         </span>
       )}
     </div>
