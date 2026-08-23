@@ -30,10 +30,23 @@ export interface SlabDetailingInput {
   report: RcSlabDesignReport;
 }
 
-/** Slab polygon-এর local (planar) bounding box বের করে — vertices প্রায় coplanar ধরা হয়, XZ-dominant প্লেন অনুমান করে। */
-function planarBoundingBox(vertices: Point3D[]): { minX: number; maxX: number; minZ: number; maxZ: number } {
-  const xs = vertices.map((v) => v.x);
-  const zs = vertices.map((v) => v.z);
+/**
+ * Slab polygon-এর local (planar) bounding box বের করে (মিলিমিটারে) —
+ * vertices প্রায় coplanar ধরা হয়, XZ-dominant প্লেন অনুমান করে।
+ *
+ * Unit bug fix (Report-Audit Phase B7, 2026-08-20): vertices আসে
+ * Point3D থেকে যা মিটারে (element.ts এর "length মিটারে, যেহেতু
+ * grid/story কোঅর্ডিনেট মিটারে" কমেন্ট অনুযায়ী), কিন্তু নিচের সব bar
+ * spacing হিসাব মিলিমিটারে (requiredSpacingMm 75-300mm রেঞ্জ
+ * রিটার্ন করে)। আগে bbox মিটারেই থেকে যেত আর spacingMm এর সাথে সরাসরি
+ * ভাগ হতো (spanX/spacingMm — যেমন 5m/150mm = 0.033), ফলে countZ/countX
+ * প্রায় সবসময় ন্যূনতম 2 তে capped হয়ে যেত, bar count/spacing বাস্তব
+ * span অনুযায়ী কখনোই সঠিক হতো না। এখানে ×1000 করে মিলিমিটারে
+ * convert করা হলো — এখন bbox ও spacingMm একই এককে, ভাগফল অর্থপূর্ণ।
+ */
+function planarBoundingBoxMm(vertices: Point3D[]): { minX: number; maxX: number; minZ: number; maxZ: number } {
+  const xs = vertices.map((v) => v.x * 1000);
+  const zs = vertices.map((v) => v.z * 1000);
   return { minX: Math.min(...xs), maxX: Math.max(...xs), minZ: Math.min(...zs), maxZ: Math.max(...zs) };
 }
 
@@ -48,7 +61,7 @@ export function generateSlabDetailing(input: SlabDetailingInput): DetailingResul
   const { elementId, elementLabel, vertices, thicknessMm, effectiveCoverMm, barDiameterMm, report } = input;
 
   const warnings: string[] = [];
-  const bbox = planarBoundingBox(vertices);
+  const bbox = planarBoundingBoxMm(vertices);
   const spanX = bbox.maxX - bbox.minX;
   const spanZ = bbox.maxZ - bbox.minZ;
 

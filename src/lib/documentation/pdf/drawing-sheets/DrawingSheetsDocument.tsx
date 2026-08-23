@@ -6,11 +6,17 @@
  * in DrawingSheetsDocument.tsx") — এতদিন তৈরি হয়নি, এই commit এ প্রথমবার।
  *
  * উদ্দেশ্য: S-00 থেকে S-19 (S-01 বাদে, যেটা Phase 11g তে আলাদা ফোল্ডারে
- * তৈরি হয়েছে — general-notes/GeneralNotesSheet.tsx) — সবগুলো sheet কে
- * একটাই react-pdf Document এ, ধারাবাহিক ক্রমে জুড়ে একটা single downloadable
- * "Structural Working Drawings" PDF বানায় — ঠিক যেভাবে আসল MICON রেফারেন্স
- * ড্রয়িং সেট (ব্যবহারকারীর দেওয়া) একটাই bound sheet-set হিসেবে ডেলিভার
- * হয়।
+ * তৈরি হয়েছে — general-notes/GeneralNotesSheet.tsx), S-20 (Beam
+ * Schedule, Phase B2), S-21 (Column Starter/Splice Detail, Phase B3),
+ * S-22 (Column Reinforcement Detail, Phase B4), S-23 (Beam-Column
+ * Joint Detail, Phase B5), এবং S-24 (Wall/Shear Wall Layout Plan,
+ * Phase B1 — এর পেয়ার Wall Calc Sheet CalcSheetsDocument.tsx এ, এই
+ * drawing-sheets বান্ডলে না, calc-sheets এর নিজস্ব বান্ডলে) — সবগুলো
+ * মূল ২০-এন্ট্রি reference set এর বাইরে — সবগুলো sheet কে একটাই
+ * react-pdf Document এ, ধারাবাহিক ক্রমে জুড়ে একটা single downloadable
+ * "Structural Working Drawings" PDF বানায় — ঠিক যেভাবে আসল MICON
+ * রেফারেন্স ড্রয়িং সেট (ব্যবহারকারীর দেওয়া) একটাই bound sheet-set
+ * হিসেবে ডেলিভার হয়।
  *
  * unmodeled sheet গুলো (S-12, S-17, S-18, S-19 — Machine Room/O.H.W.T
  * Beam+Slab Details, Stair, U.G.W.R) আলাদা ফাইল হিসেবে বানানো হয়নি,
@@ -40,6 +46,11 @@ import { GradeBeamLayoutPlanSheetContent } from "@/lib/documentation/pdf/drawing
 import { GradeBeamDetailsSheetContent } from "@/lib/documentation/pdf/drawing-sheets/GradeBeamDetailsSheet";
 import { TypicalFloorBeamLayoutPlanSheetContent } from "@/lib/documentation/pdf/drawing-sheets/TypicalFloorBeamLayoutPlanSheet";
 import { TypicalFloorBeamDetailsSheetContent } from "@/lib/documentation/pdf/drawing-sheets/TypicalFloorBeamDetailsSheet";
+import { BeamScheduleSheetContent } from "@/lib/documentation/pdf/drawing-sheets/BeamScheduleSheet";
+import { ColumnSpliceDetailSheetContent } from "@/lib/documentation/pdf/drawing-sheets/ColumnSpliceDetailSheet";
+import { ColumnReinforcementDetailSheetContent } from "@/lib/documentation/pdf/drawing-sheets/ColumnReinforcementDetailSheet";
+import { BeamColumnJointDetailSheetContent } from "@/lib/documentation/pdf/drawing-sheets/BeamColumnJointDetailSheet";
+import { WallLayoutPlanSheetContent } from "@/lib/documentation/pdf/drawing-sheets/WallLayoutPlanSheet";
 import { TypicalFloorSlabLayoutEWSheetContent } from "@/lib/documentation/pdf/drawing-sheets/TypicalFloorSlabLayoutEWSheet";
 import { TypicalFloorSlabLayoutNSSheetContent } from "@/lib/documentation/pdf/drawing-sheets/TypicalFloorSlabLayoutNSSheet";
 import { RoofFloorBeamLayoutPlanSheetContent } from "@/lib/documentation/pdf/drawing-sheets/RoofFloorBeamLayoutPlanSheet";
@@ -89,6 +100,11 @@ export function DrawingSheetsDocument({ context, revisionNumber }: DrawingSheets
       <UnmodeledSheetPlaceholderContent {...props} entry={unmodeledEntry("S-17")} />
       <UnmodeledSheetPlaceholderContent {...props} entry={unmodeledEntry("S-18")} />
       <UnmodeledSheetPlaceholderContent {...props} entry={unmodeledEntry("S-19")} />
+      <BeamScheduleSheetContent {...props} />
+      <ColumnSpliceDetailSheetContent {...props} />
+      <ColumnReinforcementDetailSheetContent {...props} />
+      <BeamColumnJointDetailSheetContent {...props} />
+      <WallLayoutPlanSheetContent {...props} />
     </Document>
   );
 }

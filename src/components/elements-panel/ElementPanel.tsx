@@ -3,13 +3,28 @@
 import { useState } from "react";
 import type { Point3D, StructuralElement } from "@/lib/types/element";
 import { createBeam, createColumn, createBrace, createPile } from "@/lib/types/element";
+import type { StructuralSection } from "@/lib/types/section";
 import { useLibraryStore } from "@/lib/library/useLibraryStore";
 import { useElementsStore } from "@/lib/elements/useElementsStore";
 import { useSelectionStore } from "@/lib/viewport/useSelectionStore";
+import { autoAssignBeamSection, autoAssignColumnSection } from "@/lib/design/autoAssignSection";
+
+function makeSectionId(): string {
+  return `sec-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
 
 interface ElementPanelProps {
   onAddElement: (element: StructuralElement) => void;
   onDeleteElement: (elementId: string) => void;
+  /**
+   * Beam/Column auto-section-assign করার সময় library-তে মিলে যাওয়া
+   * preset না থাকলে নতুন section তৈরি করে library-তে save করতে হয় —
+   * সেই জন্য এই callback (library/page.tsx এর addSection এর মতোই,
+   * useMaterialSectionLibrary hook থেকে)। ঐচ্ছিক রাখা হয়েছে যাতে এই
+   * prop ছাড়া পুরোনো কোড ভেঙে না যায়, তবে না দিলে auto-assign কাজ
+   * করবে না (formError এ জানানো হবে)।
+   */
+  onAddSection?: (section: StructuralSection) => void;
 }
 
 type LineElementCategory = "beam" | "column" | "brace" | "pile";
@@ -33,6 +48,13 @@ const LINE_CATEGORY_LABEL_PREFIXES: Record<LineElementCategory, string> = {
 // storyId নেই, src/lib/types/element.ts দেখুন)। Brace/Beam/Column
 // সবাই storyId নেয়।
 const CATEGORIES_WITHOUT_STORY: ReadonlySet<LineElementCategory> = new Set(["pile"]);
+
+// Beam/Column এ section আর ম্যানুয়ালি বাছতে হয় না — span/height থেকে
+// autoAssignBeamSection/autoAssignColumnSection স্বয়ংক্রিয়ভাবে ঠিক
+// করে দেয় (Miftahul এর অনুরোধ: "section আমি বসাতে চাই না")। Brace/
+// Pile এ এখনো ম্যানুয়াল dropdown লাগে, কারণ তাদের জন্য কোনো নির্ভরযোগ্য
+// auto-sizing rule নেই (ফাইলের হেডার কমেন্ট দেখুন, autoAssignSection.ts)।
+const AUTO_SECTION_CATEGORIES: ReadonlySet<LineElementCategory> = new Set(["beam", "column"]);
 
 function parsePoint(x: string, y: string, z: string): Point3D | null {
   const px = Number(x);
@@ -60,7 +82,7 @@ function parsePoint(x: string, y: string, z: string): Point3D | null {
  * moment, Brace = pin) — ভবিষ্যতে ফর্মে override করার UI যোগ করা
  * যাবে, কিন্তু এখন ডিফল্টই বেশিরভাগ বাস্তব কেসে সঠিক।
  */
-export function ElementPanel({ onAddElement, onDeleteElement }: ElementPanelProps) {
+export function ElementPanel({ onAddElement, onDeleteElement, onAddSection }: ElementPanelProps) {
   const elements = useElementsStore((s) => s.elements);
   const materials = useLibraryStore((s) => s.materialLibrary.materials);
   const sections = useLibraryStore((s) => s.sectionLibrary.sections);
@@ -103,7 +125,8 @@ export function ElementPanel({ onAddElement, onDeleteElement }: ElementPanelProp
       return;
     }
 
-    if (!sectionId) {
+    const needsManualSection = !AUTO_SECTION_CATEGORIES.has(category);
+    if (needsManualSection && !sectionId) {
       setFormError("একটা Section নির্বাচন করুন");
       return;
     }
@@ -125,23 +148,79 @@ export function ElementPanel({ onAddElement, onDeleteElement }: ElementPanelProp
       return;
     }
 
+    // Beam/Column হলে auto-assign থেকে sectionId নির্ণয় করা হয়;
+    // লাগলে নতুন section library তে save করে সেই id ব্যবহার হয়।
+    let resolvedSectionId = sectionId;
+    if (category === "beam" || category === "column") {
+      const autoResult =
+        category === "beam"
+          ? autoAssignBeamSection(startPoint, endPoint, sections)
+          : autoAssignColumnSection(startPoint, endPoint, sections);
+
+      if (autoResult.matchedExistingSectionId) {
+        resolvedSectionId = autoResult.matchedExistingSectionId;
+      } else if (autoResult.newSectionToCreate) {
+        if (!onAddSection) {
+          setFormError(
+            "Auto section তৈরি করা যায়নি (onAddSection সংযুক্ত নয়) — page.tsx এ ElementPanel কে addSection prop দিন।"
+          );
+          return;
+        }
+        const now = new Date().toISOString();
+        const newSection: StructuralSection = {
+          ...autoResult.newSectionToCreate,
+          sectionId: makeSectionId(),
+          createdAt: now,
+          updatedAt: now,
+        };
+        onAddSection(newSection);
+        resolvedSectionId = newSection.sectionId;
+      }
+    }
+
+    if (!resolvedSectionId) {
+      setFormError("Section নির্ণয় করা যায়নি — অনুগ্রহ করে আবার চেষ্টা করুন।");
+      return;
+    }
+
     const storyId = selection.type === "story" ? selection.storyId : undefined;
 
     let element: StructuralElement;
     switch (category) {
       case "beam":
-        element = createBeam({ label: trimmedLabel, materialId, sectionId, startPoint, endPoint, storyId });
+        element = createBeam({
+          label: trimmedLabel,
+          materialId,
+          sectionId: resolvedSectionId,
+          startPoint,
+          endPoint,
+          storyId,
+        });
         break;
       case "column":
-        element = createColumn({ label: trimmedLabel, materialId, sectionId, startPoint, endPoint, storyId });
+        element = createColumn({
+          label: trimmedLabel,
+          materialId,
+          sectionId: resolvedSectionId,
+          startPoint,
+          endPoint,
+          storyId,
+        });
         break;
       case "brace":
-        element = createBrace({ label: trimmedLabel, materialId, sectionId, startPoint, endPoint, storyId });
+        element = createBrace({
+          label: trimmedLabel,
+          materialId,
+          sectionId: resolvedSectionId,
+          startPoint,
+          endPoint,
+          storyId,
+        });
         break;
       case "pile":
         // storyId এখানে ইচ্ছাকৃতভাবে পাস করা হচ্ছে না — createPile এর
         // param টাইপেই এই ফিল্ড নেই (উপরের মন্তব্য দেখুন)।
-        element = createPile({ label: trimmedLabel, materialId, sectionId, startPoint, endPoint });
+        element = createPile({ label: trimmedLabel, materialId, sectionId: resolvedSectionId, startPoint, endPoint });
         break;
     }
 
@@ -149,7 +228,12 @@ export function ElementPanel({ onAddElement, onDeleteElement }: ElementPanelProp
     resetForm();
   }
 
-  const noLibraryData = materials.length === 0 || sections.length === 0;
+  // sections.length === 0 আর ব্লক করে না — Beam/Column এ auto-assign
+  // library তে কোনো section না থাকলেও নতুন তৈরি করে দেয়। Material
+  // এখনো বাধ্যতামূলক (কোনো auto-material rule নেই, ভবিষ্যতে যোগ হতে
+  // পারে) এবং Brace/Pile এ এখনো ম্যানুয়াল section লাগে (নিচে দেখুন)।
+  const noLibraryData = materials.length === 0;
+  const noManualSectionData = !AUTO_SECTION_CATEGORIES.has(category) && sections.length === 0;
 
   return (
     <div className="space-y-4">
@@ -195,7 +279,8 @@ export function ElementPanel({ onAddElement, onDeleteElement }: ElementPanelProp
 
       {noLibraryData ? (
         <p className="text-xs text-status-holdText border-t border-surface-border pt-3">
-          Element যোগ করার আগে অন্তত একটা Material ও একটা Section লাইব্রেরিতে থাকতে হবে।
+          Element যোগ করার আগে অন্তত একটা Material লাইব্রেরিতে থাকতে হবে (Section Beam/Column এ
+          এখন অটোমেটিক তৈরি হয়, Brace/Pile এ ম্যানুয়ালি লাগবে)।
         </p>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-2.5 border-t border-surface-border pt-3">
@@ -252,22 +337,38 @@ export function ElementPanel({ onAddElement, onDeleteElement }: ElementPanelProp
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-xs text-text-muted mb-1">Section</label>
-              <select
-                value={sectionId}
-                onChange={(e) => setSectionId(e.target.value)}
-                className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
-              >
-                <option value="">নির্বাচন করুন</option>
-                {sections.map((s) => (
-                  <option key={s.sectionId} value={s.sectionId}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {AUTO_SECTION_CATEGORIES.has(category) ? (
+              <div>
+                <label className="block text-xs text-text-muted mb-1">Section</label>
+                <p className="text-xs text-text-muted bg-surface-card rounded-md px-2.5 py-2 border border-surface-border">
+                  ℹ️ স্বয়ংক্রিয় (span অনুযায়ী)
+                </p>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-xs text-text-muted mb-1">Section</label>
+                <select
+                  value={sectionId}
+                  onChange={(e) => setSectionId(e.target.value)}
+                  className="w-full rounded-md bg-surface-card border border-surface-border px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
+                >
+                  <option value="">নির্বাচন করুন</option>
+                  {sections.map((s) => (
+                    <option key={s.sectionId} value={s.sectionId}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
+
+          {noManualSectionData && (
+            <p className="text-xs text-status-holdText bg-surface-card rounded-md px-2.5 py-2">
+              {LINE_CATEGORY_LABELS[category]} এর জন্য অন্তত একটা Section লাইব্রেরিতে থাকতে হবে (Library
+              ট্যাব থেকে যোগ করুন)।
+            </p>
+          )}
 
           <div>
             <p className="text-xs text-text-muted mb-1">Start Point (m)</p>

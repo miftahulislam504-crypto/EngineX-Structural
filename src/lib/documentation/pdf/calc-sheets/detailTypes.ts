@@ -29,6 +29,7 @@ import type { RcBeamDesignInput, RcBeamDesignReport } from "@/lib/design/rcBeamD
 import type { RcColumnDesignInput, RcColumnDesignReport } from "@/lib/design/rcColumnDesign";
 import type { RcSlabDesignInput, RcSlabDesignReport } from "@/lib/design/rcSlabDesign";
 import type { FootingDesignInput, FootingDesignReport } from "@/lib/design/footingDesign";
+import type { RcWallDesignInput, RcWallDesignReport } from "@/lib/design/rcWallDesign";
 
 function hasKeys(value: Record<string, unknown>, keys: string[]): boolean {
   return keys.every((k) => k in value);
@@ -81,5 +82,19 @@ export function asFootingDetail(detail: Record<string, unknown>): FootingCalcDet
   const report = detail.report as Record<string, unknown>;
   return hasKeys(report, ["sizing", "momentX", "momentZ", "punchingShear", "overallStatus"])
     ? (detail as unknown as FootingCalcDetail)
+    : null;
+}
+
+export interface WallCalcDetail {
+  input: RcWallDesignInput;
+  report: RcWallDesignReport;
+}
+
+/** Report-Audit Phase B1 (2026-08-20) — WallCalcSheet.tsx এর জন্য, Slab/Footing এর একই { input, report } persist প্যাটার্ন। */
+export function asWallDetail(detail: Record<string, unknown>): WallCalcDetail | null {
+  if (!hasKeys(detail, ["input", "report"])) return null;
+  const report = detail.report as Record<string, unknown>;
+  return hasKeys(report, ["axialCapacity", "minReinforcement", "shearCapacity", "overallStatus"])
+    ? (detail as unknown as WallCalcDetail)
     : null;
 }

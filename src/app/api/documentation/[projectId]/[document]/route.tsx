@@ -1,5 +1,6 @@
 /**
- * GET /api/documentation/[projectId]/[document] — Phase 11i
+ * GET/POST /api/documentation/[projectId]/[document] — Phase 11i
+ * (POST + deformed-shape snapshot: Report-Audit Phase A4, 2026-08-20)
  *
  * Documentation Engine এর সব document (11c-11h) এখন পর্যন্ত শুধু library
  * code + smoke test হিসেবে ছিল — কোনো UI entry point ছিল না
@@ -34,12 +35,26 @@
  * তাই "drawing-sheets" ডাউনলোডে S-01 থাকবে না, আলাদা "general-notes"
  * ডাউনলোড করতে হবে। এই route সেই সীমাবদ্ধতা লুকায় না — নিচে
  * DOCUMENT_REGISTRY এর description এ স্পষ্ট লেখা আছে।
+ *
+ * GET vs POST — Phase A4 এর আগে এই route শুধু GET ছিল। Deformed Shape
+ * snapshot (Section F, Analysis Summary) client-side WebGL viewport এ
+ * তৈরি হয় (DeformedShapeSnapshotCanvas.tsx, offscreen React Three
+ * Fiber canvas) — server-এ কোনো WebGL নেই, তাই এই snapshot server-side
+ * generate করা সম্ভব না। সমাধান: client base64 PNG বানিয়ে POST body তে
+ * পাঠায়, এই route সেটা DesignReportDocument এ props হিসেবে pass করে।
+ * পুরনো GET রুট **অপরিবর্তিত রাখা হয়েছে** (বাকি ৫টা document type এর
+ * জন্য snapshot প্রাসঙ্গিক না, এবং design-report snapshot ছাড়াও
+ * ডাউনলোডযোগ্য থাকা উচিত — snapshot capture client-side fail করলে বা
+ * কোনো displacement result না থাকলে) — POST শুধু design-report কে
+ * optional snapshot সহ ডাউনলোড করার নতুন পথ, GET কে replace করে না।
+ * দুটো handler একই buildDocumentPdf() হেল্পার শেয়ার করে যাতে কোর লজিক
+ * ডুপ্লিকেট না হয়।
  */
 
 import type { ReactElement } from "react";
 import { NextRequest, NextResponse } from "next/server";
 import { renderToBuffer, type DocumentProps } from "@react-pdf/renderer";
-import { buildReportContext } from "@/lib/documentation/reportContext";
+import { buildReportContext, type ReportContext } from "@/lib/documentation/reportContext";
 import { DesignReportDocument } from "@/lib/documentation/pdf/design-report/DesignReportDocument";
 import { CalcSheetsDocument } from "@/lib/documentation/pdf/calc-sheets/CalcSheetsDocument";
 import { BbsSheetDocument } from "@/lib/documentation/pdf/bbs/BbsSheetDocument";
@@ -51,12 +66,19 @@ import { DOCUMENT_KEYS, DOCUMENT_REGISTRY, isDocumentKey, type DocumentKey } fro
 
 export { DOCUMENT_KEYS, DOCUMENT_REGISTRY, type DocumentKey };
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ projectId: string; document: string }> }
-) {
-  const { projectId, document } = await params;
+interface BuildOptions {
+  revisionNumber: string;
+  filterCategories: DesignElementCategory[] | undefined;
+  /** শুধু design-report এ প্রযোজ্য — client থেকে POST body তে আসা base64 PNG data URL। */
+  deformedShapeSnapshotDataUrl: string | null;
+}
 
+/** GET ও POST দুটো handler এই একই কোর লজিক শেয়ার করে — document type resolve, context build, react-pdf render, PDF response তৈরি। */
+async function buildDocumentPdf(
+  projectId: string,
+  document: string,
+  options: BuildOptions
+): Promise<NextResponse> {
   if (!isDocumentKey(document)) {
     return NextResponse.json(
       { error: `Unknown document "${document}". Valid values: ${DOCUMENT_KEYS.join(", ")}` },
@@ -64,14 +86,7 @@ export async function GET(
     );
   }
 
-  const searchParams = request.nextUrl.searchParams;
-  const revisionNumber = searchParams.get("rev") ?? "A";
-  const categoriesParam = searchParams.get("categories");
-  const filterCategories = categoriesParam
-    ? (categoriesParam.split(",").filter(Boolean) as DesignElementCategory[])
-    : undefined;
-
-  let context;
+  let context: ReportContext;
   try {
     context = await buildReportContext(projectId);
   } catch (err) {
@@ -89,22 +104,28 @@ export async function GET(
   let element: ReactElement;
   switch (document) {
     case "design-report":
-      element = <DesignReportDocument context={context} revisionNumber={revisionNumber} />;
+      element = (
+        <DesignReportDocument
+          context={context}
+          revisionNumber={options.revisionNumber}
+          deformedShapeSnapshotDataUrl={options.deformedShapeSnapshotDataUrl}
+        />
+      );
       break;
     case "bbs":
-      element = <BbsSheetDocument context={context} revisionNumber={revisionNumber} />;
+      element = <BbsSheetDocument context={context} revisionNumber={options.revisionNumber} />;
       break;
     case "calc-sheets":
-      element = <CalcSheetsDocument context={context} filterCategories={filterCategories} />;
+      element = <CalcSheetsDocument context={context} filterCategories={options.filterCategories} />;
       break;
     case "qc-report":
-      element = <QcReportDocument context={context} revisionNumber={revisionNumber} />;
+      element = <QcReportDocument context={context} revisionNumber={options.revisionNumber} />;
       break;
     case "general-notes":
-      element = <GeneralNotesSheet context={context} revisionNumber={revisionNumber} />;
+      element = <GeneralNotesSheet context={context} revisionNumber={options.revisionNumber} />;
       break;
     case "drawing-sheets":
-      element = <DrawingSheetsDocument context={context} revisionNumber={revisionNumber} />;
+      element = <DrawingSheetsDocument context={context} revisionNumber={options.revisionNumber} />;
       break;
   }
 
@@ -133,5 +154,65 @@ export async function GET(
       "Content-Disposition": `attachment; filename="${filename.replace(/"/g, "")}"`,
       "Content-Length": String(buffer.length),
     },
+  });
+}
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ projectId: string; document: string }> }
+) {
+  const { projectId, document } = await params;
+
+  const searchParams = request.nextUrl.searchParams;
+  const revisionNumber = searchParams.get("rev") ?? "A";
+  const categoriesParam = searchParams.get("categories");
+  const filterCategories = categoriesParam
+    ? (categoriesParam.split(",").filter(Boolean) as DesignElementCategory[])
+    : undefined;
+
+  return buildDocumentPdf(projectId, document, {
+    revisionNumber,
+    filterCategories,
+    deformedShapeSnapshotDataUrl: null, // GET path snapshot বহন করে না (query string এ ছবি পাঠানো ব্যবহারিক না — URL length limit, encoding overhead)
+  });
+}
+
+/**
+ * POST — শুধু design-report এর জন্য প্রাসঙ্গিক (deformedShapeSnapshotDataUrl
+ * body তে)। অন্য document type এ POST করলেও কাজ করবে (buildDocumentPdf
+ * সেই field silently ignore করে non-design-report case এ), কিন্তু
+ * DocumentationPanel.tsx শুধু design-report এর জন্যই POST ব্যবহার করে —
+ * বাকি ৫টার জন্য এখনো GET (snapshot প্রাসঙ্গিক না বলে POST এর অতিরিক্ত
+ * জটিলতার দরকার নেই)।
+ */
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ projectId: string; document: string }> }
+) {
+  const { projectId, document } = await params;
+
+  const searchParams = request.nextUrl.searchParams;
+  const revisionNumber = searchParams.get("rev") ?? "A";
+  const categoriesParam = searchParams.get("categories");
+  const filterCategories = categoriesParam
+    ? (categoriesParam.split(",").filter(Boolean) as DesignElementCategory[])
+    : undefined;
+
+  let deformedShapeSnapshotDataUrl: string | null = null;
+  try {
+    const body = await request.json();
+    if (typeof body?.deformedShapeSnapshotDataUrl === "string") {
+      deformedShapeSnapshotDataUrl = body.deformedShapeSnapshotDataUrl;
+    }
+  } catch {
+    // body খালি/invalid JSON হলে snapshot ছাড়াই এগিয়ে যাওয়া হচ্ছে —
+    // এটা একটা optional enhancement, তাই malformed body তে পুরো
+    // request ব্যর্থ করার দরকার নেই।
+  }
+
+  return buildDocumentPdf(projectId, document, {
+    revisionNumber,
+    filterCategories,
+    deformedShapeSnapshotDataUrl,
   });
 }

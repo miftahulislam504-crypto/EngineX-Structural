@@ -14,6 +14,14 @@
  * যদি এই প্রজেক্টে wall না থাকে তাহলে G4 entry বাদ দেওয়া হয়, যাতে
  * TOC আসলে যা রেন্ডার হচ্ছে তার সাথে মেলে (TOC এ থাকা entry রিপোর্টে
  * নেই — এমন অসঙ্গতি এড়াতে)।
+ *
+ * deformedShapeSnapshotDataUrl (Report-Audit Phase A4, 2026-08-20) —
+ * client (DocumentationPanel.tsx) থেকে POST body তে আসা base64 PNG
+ * data URL, route.tsx এই পর্যন্ত pass-through করে। null/undefined
+ * হলে (GET path, বা snapshot capture client-side ব্যর্থ হলে)
+ * Section F "Deformed Shape" sub-section একটা honest "not available"
+ * নোট দেখায়, ব্লক করে না — snapshot একটা optional enhancement, মূল
+ * PDF generation তার উপর নির্ভরশীল না।
  */
 
 import { Document } from "@react-pdf/renderer";
@@ -43,12 +51,14 @@ export interface DesignReportDocumentProps {
   context: ReportContext;
   revisionNumber: string;
   structuralEngineerName?: string;
+  deformedShapeSnapshotDataUrl?: string | null;
 }
 
 export function DesignReportDocument({
   context,
   revisionNumber,
   structuralEngineerName,
+  deformedShapeSnapshotDataUrl,
 }: DesignReportDocumentProps) {
   const showWallSection = hasWallElements(context);
   const tocEntries = showWallSection
@@ -70,7 +80,7 @@ export function DesignReportDocument({
       <GeneralInformation context={context} />
       <MaterialProperties context={context} />
       <DesignLoads context={context} />
-      <AnalysisSummary context={context} />
+      <AnalysisSummary context={context} deformedShapeSnapshotDataUrl={deformedShapeSnapshotDataUrl ?? null} />
       <BeamDesignSummary context={context} />
       <ColumnDesignSummary context={context} />
       <SlabDesignSummary context={context} />

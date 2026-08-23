@@ -130,6 +130,7 @@ export function deriveSelfWeightLoads(
         patternId: deadPatternId,
         elementId: element.elementId,
         intensityY,
+        source: "auto",
       })
     );
   }

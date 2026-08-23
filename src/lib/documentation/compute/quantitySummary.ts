@@ -76,7 +76,7 @@ export interface QuantitySummary {
   note: string | null;
 }
 
-function sectionAreaMm2(section: StructuralSection | undefined): number | null {
+export function sectionAreaMm2(section: StructuralSection | undefined): number | null {
   if (!section) return null;
   if (section.shape === "rectangular") {
     return (section as RectangularSection).width * (section as RectangularSection).depth;
@@ -102,8 +102,8 @@ export function computeHorizontalPolygonAreaM2(vertices: { x: number; z: number 
   return Math.abs(area) / 2;
 }
 
-/** একটা element এর concrete volume (m³), হিসাবযোগ্য হলে — নাহলে null (উপরের docblock এ ব্যাখ্যা করা সীমাবদ্ধতা অনুযায়ী)। */
-function computeElementConcreteVolumeM3(
+/** একটা element এর concrete volume (m³), হিসাবযোগ্য হলে — নাহলে null (উপরের docblock এ ব্যাখ্যা করা সীমাবদ্ধতা অনুযায়ী)। Report-Audit Phase B8 (2026-08-20) এ export করা হলো selfWeightBreakdown.ts এ reuse করার জন্য (item-wise self-weight, একই volume-calculation ভিত্তি হওয়া দরকার Quantity Summary এর concrete quantity এর সাথে সামঞ্জস্যপূর্ণ রাখতে)। */
+export function computeElementConcreteVolumeM3(
   element: StructuralElement,
   sections: StructuralSection[]
 ): number | null {

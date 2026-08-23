@@ -19,6 +19,14 @@
  *   - "response reduction factor" (R factor) — কোনো টাইপে (LoadPattern,
  *     HubSiteInformation) এই নির্দিষ্ট ফিল্ড নেই, তাই "Not specified"
  *     দেখানো হয়।
+ *
+ * Item-wise Self-Weight Breakdown (Report-Audit Phase B8, 2026-08-20) —
+ * আগে শুধু selfWeightMultiplier (dead pattern এর একটা সংখ্যা) দেখানো
+ * হতো, actual category-wise weight (Beam vs Column vs Slab, কত kN)
+ * কোথাও ছিল না। selfWeightBreakdown.ts (computeSelfWeightBreakdown)
+ * থেকে সেটা এখন যোগ করা হলো — honest সীমাবদ্ধতা: Wall/Shear-Wall/
+ * Core-Wall এই breakdown এ নেই (vertical-plane area calculator এই
+ * কোডবেসে নেই), warnings এ স্পষ্ট বলা আছে।
  */
 
 import { View, Text, StyleSheet } from "@react-pdf/renderer";
@@ -28,6 +36,7 @@ import { pdfColors, pdfFontSize, pdfSpacing } from "@/lib/documentation/pdf/them
 import type { ReportContext } from "@/lib/documentation/reportContext";
 import type { LoadPattern } from "@/lib/types/load";
 import type { LoadCombination } from "@/lib/loads/loadCombinations";
+import { computeSelfWeightBreakdown, type SelfWeightGroup, type SelfWeightGroupCategory } from "@/lib/documentation/compute/selfWeightBreakdown";
 
 export interface DesignLoadsProps {
   context: ReportContext;
@@ -73,6 +82,14 @@ const CATEGORY_LABEL: Record<string, string> = {
   "soil-pressure": "Soil Pressure Load",
 };
 
+const SELF_WEIGHT_GROUP_LABEL: Record<SelfWeightGroupCategory, string> = {
+  beam: "Beams",
+  column: "Columns",
+  slab: "Slabs (incl. Mat Foundation)",
+  footing: "Isolated Footings",
+  "other-unresolved": "Other",
+};
+
 export function DesignLoads({ context }: DesignLoadsProps) {
   const site = context.hub?.siteInformation ?? null;
   const patternsByCategory = new Map<string, LoadPattern[]>();
@@ -81,6 +98,8 @@ export function DesignLoads({ context }: DesignLoadsProps) {
     list.push(p);
     patternsByCategory.set(p.category, list);
   }
+
+  const selfWeight = computeSelfWeightBreakdown(context.elements, context.materials.materials, context.sections.sections);
 
   return (
     <ReportPage footerLabel="Structural Design Report — Section E: Design Loads Summary">
@@ -100,6 +119,49 @@ export function DesignLoads({ context }: DesignLoadsProps) {
             </View>
           ))}
         </View>
+      ))}
+
+      <Text style={styles.subheading}>Item-wise Self-Weight Breakdown</Text>
+      {selfWeight.groups.length > 0 ? (
+        <>
+          <ReportTable<SelfWeightGroup>
+            columns={[
+              {
+                key: "category",
+                header: "Element Type",
+                flex: 1,
+                render: (row) => <Text>{SELF_WEIGHT_GROUP_LABEL[row.category]}</Text>,
+              },
+              { key: "elementCount", header: "Count", flex: 1, align: "right" },
+              {
+                key: "totalVolumeM3",
+                header: "Concrete Volume (m³)",
+                flex: 1,
+                align: "right",
+                render: (row) => <Text>{row.totalVolumeM3.toFixed(2)}</Text>,
+              },
+              {
+                key: "totalSelfWeightKN",
+                header: "Self-Weight (kN)",
+                flex: 1,
+                align: "right",
+                render: (row) => <Text>{row.totalSelfWeightKN.toFixed(1)}</Text>,
+              },
+            ]}
+            rows={selfWeight.groups}
+          />
+          <View style={styles.descRow}>
+            <Text style={styles.descLabel}>Total (Beam+Column+Slab+Footing)</Text>
+            <Text style={styles.descValue}>{selfWeight.totalSelfWeightKN.toFixed(1)} kN</Text>
+          </View>
+        </>
+      ) : (
+        <Text style={styles.descValue}>Not available — no elements with resolvable self-weight in this model.</Text>
+      )}
+      {selfWeight.warnings.map((w) => (
+        <Text key={w} style={{ fontSize: pdfFontSize.caption, color: pdfColors.inkMuted, marginTop: 4 }}>
+          {w}
+        </Text>
       ))}
 
       <Text style={styles.subheading}>Seismic / Wind Site Parameters</Text>

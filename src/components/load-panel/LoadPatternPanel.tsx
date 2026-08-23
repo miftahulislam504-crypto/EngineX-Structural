@@ -85,25 +85,36 @@ export function LoadPatternPanel({ onAddPattern, onDeletePattern }: LoadPatternP
           <p className="text-xs text-text-muted">কোনো load pattern যোগ করা হয়নি।</p>
         ) : (
           <ul className="space-y-1">
-            {patterns.map((pattern) => (
-              <li
-                key={pattern.patternId}
-                className="flex items-center justify-between rounded-md px-2.5 py-1.5 text-sm hover:bg-surface-hover text-text-secondary"
-              >
-                <span>
-                  <span className="font-medium">{pattern.name}</span>
-                  <span className="text-text-muted ml-1.5 text-xs">({pattern.category})</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => onDeletePattern(pattern.patternId)}
-                  className="text-xs text-red-500/70 hover:text-red-600 px-1"
-                  title="ডিলিট করুন"
+            {patterns.map((pattern) => {
+              const isAuto = pattern.patternId.startsWith("pattern-auto-");
+              return (
+                <li
+                  key={pattern.patternId}
+                  className="flex items-center justify-between rounded-md px-2.5 py-1.5 text-sm hover:bg-surface-hover text-text-secondary"
                 >
-                  ✕
-                </button>
-              </li>
-            ))}
+                  <span>
+                    {isAuto && (
+                      <span
+                        className="text-[10px] bg-brand-500/10 text-brand-600 rounded px-1 py-0.5 mr-1.5"
+                        title="Hub এর BNBC settings + model geometry থেকে স্বয়ংক্রিয়ভাবে তৈরি ও আপডেট হয় (real-time auto-sync)"
+                      >
+                        🤖 Auto
+                      </span>
+                    )}
+                    <span className="font-medium">{pattern.name}</span>
+                    <span className="text-text-muted ml-1.5 text-xs">({pattern.category})</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onDeletePattern(pattern.patternId)}
+                    className="text-xs text-red-500/70 hover:text-red-600 px-1"
+                    title={isAuto ? "Auto-generated — ডিলিট করলেও Hub ডেটা অপরিবর্তিত থাকলে auto-sync এ আবার ফিরে আসবে" : "ডিলিট করুন"}
+                  >
+                    ✕
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

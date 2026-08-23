@@ -78,6 +78,16 @@ interface BaseLoadCase {
   patternId: string; // LoadPattern রেফারেন্স করে
   elementId: string; // যে element-এ প্রয়োগ হচ্ছে (Beam/Column/Slab/Wall ইত্যাদি)
   applicationType: LoadApplicationType;
+  /**
+   * "auto" — useAutoLoadSync (Phase: real-time load sync) দ্বারা
+   * স্বয়ংক্রিয়ভাবে তৈরি/আপডেট করা (self-weight, occupancy live load,
+   * wind/seismic story-force distribution)। প্রতিবার sync চলার সময়
+   * শুধু "auto" ট্যাগের case গুলো replace হয় — ইঞ্জিনিয়ারের নিজের
+   * হাতে বসানো "manual" case কখনো auto-sync দ্বারা মুছে/বদলে যায় না।
+   * অনুপস্থিত/undefined মানে "manual" (পুরোনো ডেটা, এই ফিল্ড আসার
+   * আগে তৈরি — backward compatible ডিফল্ট)।
+   */
+  source?: "auto" | "manual";
   createdAt: string;
   updatedAt: string;
 }
@@ -157,12 +167,14 @@ export function createPointLoad(params: {
   forceY: number;
   forceZ: number;
   positionRatio?: number;
+  source?: "auto" | "manual";
 }): PointLoadCase {
   const now = new Date().toISOString();
   return {
     loadCaseId: makeId("load"),
     applicationType: "point",
     positionRatio: 0.5,
+    source: "manual",
     ...params,
     createdAt: now,
     updatedAt: now,
@@ -176,11 +188,13 @@ export function createUniformLineLoad(params: {
   intensityY: number;
   intensityX?: number;
   intensityZ?: number;
+  source?: "auto" | "manual";
 }): UniformLineLoadCase {
   const now = new Date().toISOString();
   return {
     loadCaseId: makeId("load"),
     applicationType: "uniform-line",
+    source: "manual",
     ...params,
     createdAt: now,
     updatedAt: now,
@@ -192,11 +206,13 @@ export function createUniformAreaLoad(params: {
   patternId: string;
   elementId: string;
   intensity: number;
+  source?: "auto" | "manual";
 }): UniformAreaLoadCase {
   const now = new Date().toISOString();
   return {
     loadCaseId: makeId("load"),
     applicationType: "uniform-area",
+    source: "manual",
     ...params,
     createdAt: now,
     updatedAt: now,

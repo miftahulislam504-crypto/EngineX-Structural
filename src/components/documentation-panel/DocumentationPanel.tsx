@@ -1,7 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { DOCUMENT_KEYS, DOCUMENT_REGISTRY, type DocumentKey } from "@/lib/documentation/documentRegistry";
+import { fetchAllElements } from "@/lib/elements/firestore";
+import { fetchLatestSuccessfulAnalysisRun } from "@/lib/analysis/firestore";
+import type { StructuralElement } from "@/lib/types/element";
+import type { AnalysisNode } from "@/lib/analysis/runAnalysis";
+import { DeformedShapeSnapshotCanvas } from "@/components/viewport/DeformedShapeSnapshotCanvas";
+import type { NodeTranslation } from "@/lib/viewport/nodeDisplacementLookup";
 
 /**
  * DocumentationPanel — Phase 11i
@@ -36,6 +42,18 @@ import { DOCUMENT_KEYS, DOCUMENT_REGISTRY, type DocumentKey } from "@/lib/docume
  * রাখা হলো, বর্তমান আচরণ বোঝাতে না (নিচের route.tsx এর সাথে
  * DOCUMENT_REGISTRY শেয়ার করাটাই এখন single source of truth, আলাদা
  * README আর নেই)।
+ *
+ * Design Report + Deformed Shape snapshot (Report-Audit Phase A4,
+ * 2026-08-20) — বাকি ৫টা document GET দিয়েই ডাউনলোড হয় (useDownload,
+ * অপরিবর্তিত), কিন্তু "design-report" এখন DesignReportDownloadButton
+ * (নিচে) দিয়ে ডাউনলোড হয়, যেটা ক্লিকের পর প্রথমে Firestore থেকে latest
+ * analysis run + elements টেনে (server-এর buildReportContext() একই
+ * ডেটা সোর্স ব্যবহার করে বলে consistency থাকে), একটা offscreen
+ * DeformedShapeSnapshotCanvas mount করে snapshot নেয়, POST body তে
+ * base64 PNG পাঠায়। কোনো ধাপ ব্যর্থ হলে (analysis নেই, RSA magnitude-
+ * only, elements ফাঁকা, canvas capture ব্যর্থ) snapshot ছাড়াই (null)
+ * POST হয় — PDF তখনও generate হয়, শুধু Section F এ honest "not
+ * available" নোট দেখাবে (ব্লক করা হয় না, দেখুন SectionF এর কমেন্ট)।
  */
 
 const CALC_SHEET_CATEGORIES: { value: string; label: string }[] = [
@@ -51,6 +69,20 @@ const CALC_SHEET_CATEGORIES: { value: string; label: string }[] = [
   { value: "mat-foundation", label: "Mat Foundation" },
   { value: "pile-cap", label: "Pile Cap" },
 ];
+
+function triggerBlobDownload(blob: Blob, disposition: string, fallbackFilename: string) {
+  const objectUrl = URL.createObjectURL(blob);
+  const match = disposition.match(/filename="([^"]+)"/);
+  const filename = match?.[1] ?? fallbackFilename;
+
+  const a = document.createElement("a");
+  a.href = objectUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(objectUrl);
+}
 
 function useDownload(documentKey: DocumentKey, projectId: string, extraQuery?: string) {
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
@@ -68,18 +100,7 @@ function useDownload(documentKey: DocumentKey, projectId: string, extraQuery?: s
         throw new Error(body?.error ?? `Request failed (${res.status})`);
       }
       const blob = await res.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      const disposition = res.headers.get("Content-Disposition") ?? "";
-      const match = disposition.match(/filename="([^"]+)"/);
-      const filename = match?.[1] ?? `${entry.label}.pdf`;
-
-      const a = document.createElement("a");
-      a.href = objectUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(objectUrl);
+      triggerBlobDownload(blob, res.headers.get("Content-Disposition") ?? "", `${entry.label}.pdf`);
       setStatus("idle");
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Download failed");
@@ -122,6 +143,147 @@ function DownloadButton({ documentKey, projectId }: { documentKey: DocumentKey; 
   );
 }
 
+/**
+ * activeAnalysisType অনুযায়ী nodalDisplacements বের করা —
+ * VisualizationViewport.tsx এর activeNodalDisplacements logic এর সাথে
+ * consistent (একই honest সীমাবদ্ধতা): RSA displacementIsMagnitudeOnly
+ * হলে deform করা হয় না (CQC combination sign হারায়, deform করলে ভুল
+ * দিকে সরে যাবে)। Modal/Buckling/Pushover বাদ — ওদের displacement মূল
+ * static equilibrium displacement না (mode shape/hinge state, ভিন্ন
+ * অর্থ), এই snapshot এর "deformed shape under load" ধারণার সাথে খাপ
+ * খায় না।
+ */
+function extractNodalDisplacements(
+  run: Awaited<ReturnType<typeof fetchLatestSuccessfulAnalysisRun>>
+): NodeTranslation[] | null {
+  if (!run) return null;
+  const entry = run.results.find((r) => r.runType === run.run.runType);
+  if (!entry) return null;
+
+  switch (entry.runType) {
+    case "linear-static":
+    case "pdelta":
+    case "nonlinear-static":
+      return entry.nodalDisplacements ?? null;
+    case "response-spectrum":
+      return entry.displacementIsMagnitudeOnly ? null : entry.nodalDisplacements ?? null;
+    default:
+      return null; // modal/buckling/pushover — deform এর জন্য প্রযোজ্য না
+  }
+}
+
+function extractNodes(
+  run: Awaited<ReturnType<typeof fetchLatestSuccessfulAnalysisRun>>
+): AnalysisNode[] | null {
+  if (!run) return null;
+  const entry = run.results.find((r) => r.runType === run.run.runType);
+  return entry && "nodes" in entry ? entry.nodes ?? null : null;
+}
+
+/** design-report এর জন্য বিশেষ ডাউনলোড বাটন — snapshot capture pipeline সহ (উপরের ফাইল-হেড কমেন্টে rationale)। */
+function DesignReportDownloadButton({ projectId }: { projectId: string }) {
+  const entry = DOCUMENT_REGISTRY["design-report"];
+  const [status, setStatus] = useState<"idle" | "preparing" | "capturing" | "generating" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [snapshotTarget, setSnapshotTarget] = useState<{
+    elements: StructuralElement[];
+    nodes: AnalysisNode[];
+    nodalDisplacements: NodeTranslation[];
+  } | null>(null);
+
+  const postWithSnapshot = useCallback(
+    async (dataUrl: string | null) => {
+      setSnapshotTarget(null); // canvas unmount — capture শেষ, আর দরকার নেই
+      setStatus("generating");
+      try {
+        const res = await fetch(`/api/documentation/${projectId}/design-report`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ deformedShapeSnapshotDataUrl: dataUrl }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          throw new Error(body?.error ?? `Request failed (${res.status})`);
+        }
+        const blob = await res.blob();
+        triggerBlobDownload(blob, res.headers.get("Content-Disposition") ?? "", `${entry.label}.pdf`);
+        setStatus("idle");
+      } catch (err) {
+        setErrorMessage(err instanceof Error ? err.message : "Download failed");
+        setStatus("error");
+      }
+    },
+    [projectId, entry.label]
+  );
+
+  async function handleDownload() {
+    setStatus("preparing");
+    setErrorMessage(null);
+    try {
+      const [elements, run] = await Promise.all([
+        fetchAllElements(projectId),
+        fetchLatestSuccessfulAnalysisRun(projectId),
+      ]);
+      const nodalDisplacements = extractNodalDisplacements(run);
+      const nodes = extractNodes(run);
+
+      if (elements.length === 0 || !nodes || !nodalDisplacements || nodalDisplacements.length === 0) {
+        // Snapshot এর জন্য দরকারি ডেটা নেই (মডেল খালি, analysis চালানো
+        // হয়নি, বা RSA magnitude-only) — snapshot বাদ দিয়ে সরাসরি PDF
+        // generate করা হচ্ছে, ডাউনলোড ব্লক করা হচ্ছে না।
+        await postWithSnapshot(null);
+        return;
+      }
+
+      setStatus("capturing");
+      setSnapshotTarget({ elements, nodes, nodalDisplacements });
+      // DeformedShapeSnapshotCanvas mount হয়ে onCaptured() কল করলে
+      // postWithSnapshot() চলবে (নিচের JSX দেখুন) — এখানে আর কিছু করার
+      // নেই, capture asynchronous (কয়েক rAF frame পরে callback আসবে)।
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Download failed");
+      setStatus("error");
+    }
+  }
+
+  const isBusy = status === "preparing" || status === "capturing" || status === "generating";
+  const label =
+    status === "preparing"
+      ? "Preparing…"
+      : status === "capturing"
+        ? "Capturing deformed shape…"
+        : status === "generating"
+          ? "Generating…"
+          : "Download PDF";
+
+  return (
+    <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5">
+      <p className="text-sm font-medium text-text-primary">{entry.label}</p>
+      <p className="text-xs text-text-muted mt-0.5 mb-2">{entry.description}</p>
+      <button
+        type="button"
+        onClick={handleDownload}
+        disabled={isBusy}
+        className="w-full rounded-md bg-surface-hover hover:bg-surface-border disabled:opacity-60 text-text-primary text-xs font-medium py-1.5 transition-colors"
+      >
+        {label}
+      </button>
+      {status === "error" && errorMessage && (
+        <p className="text-[10px] text-red-600 mt-1.5">{errorMessage}</p>
+      )}
+      {snapshotTarget && (
+        <DeformedShapeSnapshotCanvas
+          elements={snapshotTarget.elements}
+          nodes={snapshotTarget.nodes}
+          nodalDisplacements={snapshotTarget.nodalDisplacements}
+          deformationScale={50} // VisualizationViewport এর ডিফল্ট deformationScale এর সাথে সামঞ্জস্যপূর্ণ (useVisualizationViewStore.ts) — বাস্তব displacement মিলিমিটার-স্কেল, amplify ছাড়া দৃশ্যমান হয় না
+          onCaptured={postWithSnapshot}
+        />
+      )}
+    </div>
+  );
+}
+
 export function DocumentationPanel({ projectId }: { projectId: string }) {
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
 
@@ -148,7 +310,9 @@ export function DocumentationPanel({ projectId }: { projectId: string }) {
         </p>
       </div>
 
-      {DOCUMENT_KEYS.filter((k) => k !== "calc-sheets").map((key) => (
+      <DesignReportDownloadButton projectId={projectId} />
+
+      {DOCUMENT_KEYS.filter((k) => k !== "calc-sheets" && k !== "design-report").map((key) => (
         <DownloadButton key={key} documentKey={key} projectId={projectId} />
       ))}
 

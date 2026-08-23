@@ -299,12 +299,26 @@ export function ElementLoadPanel({ onAddLoadCase, onDeleteLoadCase }: ElementLoa
                 key={lc.loadCaseId}
                 className="flex items-center justify-between rounded-md px-2.5 py-1.5 text-sm hover:bg-surface-hover text-text-secondary"
               >
-                <span className="text-xs">{describeLoadCase(lc)}</span>
+                <span className="text-xs flex items-center gap-1.5">
+                  {lc.source === "auto" && (
+                    <span
+                      className="text-[10px] bg-brand-500/10 text-brand-600 rounded px-1 py-0.5"
+                      title="স্বয়ংক্রিয়ভাবে তৈরি (self-weight/live/wind/seismic auto-sync) — ম্যানুয়ালি ডিলিট করলেও dependency (element/section/material) অপরিবর্তিত থাকলে পরের sync এ আবার তৈরি হয়ে যাবে।"
+                    >
+                      🤖 Auto
+                    </span>
+                  )}
+                  {describeLoadCase(lc)}
+                </span>
                 <button
                   type="button"
                   onClick={() => onDeleteLoadCase(lc.loadCaseId)}
                   className="text-xs text-red-500/70 hover:text-red-600 px-1"
-                  title="ডিলিট করুন"
+                  title={
+                    lc.source === "auto"
+                      ? "Auto-generated — ডিলিট করলেও dependency অপরিবর্তিত থাকলে auto-sync এ আবার ফিরে আসবে"
+                      : "ডিলিট করুন"
+                  }
                 >
                   ✕
                 </button>

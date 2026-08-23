@@ -9,6 +9,8 @@ import { useProjectInfoStore } from "@/lib/projects/useProjectInfoStore";
 import { Sidebar } from "@/components/workflow/Sidebar";
 import { useShellUiStore } from "@/lib/workflow/useShellUiStore";
 import type { SidebarTab } from "@/lib/workflow/stageTabs";
+import { useGlobalModelSubscriptions } from "@/lib/model/useGlobalModelSubscriptions";
+import { useAutoLoadSync } from "@/lib/loads/useAutoLoadSync";
 
 /**
  * Phase 4 (Panel Migration) — persistent shell।
@@ -119,6 +121,14 @@ function ModelLayoutInner({ children, params }: LayoutProps<"/model/[projectId]"
   useEffect(() => {
     setProjectId(projectId);
   }, [projectId, setProjectId]);
+
+  // --- Real-time load auto-sync (Step 3) ---
+  // useGlobalModelSubscriptions elements/geometry/library/loads চারটা
+  // store কে সবসময় সচল রাখে (ইউজার সংশ্লিষ্ট page ভিজিট না করলেও) —
+  // এটা ছাড়া useAutoLoadSync চিরকাল isLoading=true দেখে sync চালাবে
+  // না। এই দুটো hook একসাথে, এই ক্রমেই কল করা আবশ্যক।
+  useGlobalModelSubscriptions(projectId);
+  useAutoLoadSync(projectId);
 
   // --- Route Guard (Phase 0.2, Phase 4-এ page.tsx থেকে এখানে সরানো) ---
   const { user, isReady: isAuthReady } = useEnsureAuth();

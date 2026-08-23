@@ -31,6 +31,7 @@ import { BeamCalcSheet } from "@/lib/documentation/pdf/calc-sheets/BeamCalcSheet
 import { ColumnCalcSheet } from "@/lib/documentation/pdf/calc-sheets/ColumnCalcSheet";
 import { SlabCalcSheet } from "@/lib/documentation/pdf/calc-sheets/SlabCalcSheet";
 import { FootingCalcSheet } from "@/lib/documentation/pdf/calc-sheets/FootingCalcSheet";
+import { WallCalcSheet } from "@/lib/documentation/pdf/calc-sheets/WallCalcSheet";
 
 export interface CalcSheetsDocumentProps {
   context: ReportContext;
@@ -45,6 +46,13 @@ const FOUNDATION_CATEGORIES: DesignElementCategory[] = [
   "mat-foundation",
   "pile-cap",
 ];
+
+// retaining-wall ইচ্ছাকৃতভাবে বাদ — সেটা retainingWallDesign.ts (ভিন্ন
+// calculator, ভিন্ন report shape, cantilever/gravity retaining wall
+// এর জন্য) ব্যবহার করে, rcWallDesign.ts (এই WallCalcSheet এর ভিত্তি)
+// থেকে আলাদা — Report-Audit Phase B1 এর scope শুধু building
+// wall/shear-wall/core-wall, retaining wall একটা আলাদা future item।
+const WALL_CATEGORIES: DesignElementCategory[] = ["wall", "shear-wall", "core-wall"];
 
 function UnsupportedCategoryPage({ elementLabel, category }: { elementLabel: string; category: string }) {
   return (
@@ -99,6 +107,9 @@ export function CalcSheetsDocument({ context, filterCategories }: CalcSheetsDocu
         }
         if (result.elementCategory === "slab") {
           return <SlabCalcSheet key={result.elementId} context={context} result={result} />;
+        }
+        if (WALL_CATEGORIES.includes(result.elementCategory)) {
+          return <WallCalcSheet key={result.elementId} context={context} result={result} />;
         }
         if (FOUNDATION_CATEGORIES.includes(result.elementCategory)) {
           return <FootingCalcSheet key={result.elementId} context={context} result={result} />;

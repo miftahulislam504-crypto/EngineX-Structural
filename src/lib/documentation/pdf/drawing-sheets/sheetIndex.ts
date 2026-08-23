@@ -78,7 +78,7 @@ export const SHEET_INDEX: SheetIndexEntry[] = [
     title: "Typical Floor Slab Reinforcement Layout Plan (E-W Direction)",
     dataStatus: "partial",
     limitationNote:
-      "Slab boundary is plotted from stored polygon vertices; bar-direction-wise (E-W) reinforcement split is not separately stored in this data model, so only the slab outline and category label are shown, not individual bar runs.",
+      "Slab boundary is plotted from stored polygon vertices. Bottom-layer bar run (E-W = local X-axis) is now shown for slabs with a completed design result (Phase B7, 2026-08-20); slabs without one show outline only. Top/negative bars are not shown here — see Calc Sheets / BBS. Slab openings are not a modeled attribute in this application (Phase B6, 2026-08-20) — must be added manually.",
     originalSheetNumbers: "S.T-11",
   },
   {
@@ -86,7 +86,7 @@ export const SHEET_INDEX: SheetIndexEntry[] = [
     title: "Typical Floor Slab Reinforcement Layout Plan (N-S Direction)",
     dataStatus: "partial",
     limitationNote:
-      "Slab boundary is plotted from stored polygon vertices; bar-direction-wise (N-S) reinforcement split is not separately stored in this data model, so only the slab outline and category label are shown, not individual bar runs.",
+      "Slab boundary is plotted from stored polygon vertices. Bottom-layer bar run (N-S = local Z-axis) is now shown for slabs with a completed design result (Phase B7, 2026-08-20); slabs without one show outline only. Top/negative bars are not shown here — see Calc Sheets / BBS. Slab openings are not a modeled attribute in this application (Phase B6, 2026-08-20) — must be added manually.",
     originalSheetNumbers: "S.T-12~13",
   },
   {
@@ -111,7 +111,7 @@ export const SHEET_INDEX: SheetIndexEntry[] = [
     title: "Roof Floor Slab Reinforcement Layout Plan (E-W Direction)",
     dataStatus: "partial",
     limitationNote:
-      "Slab boundary is plotted from stored polygon vertices; bar-direction-wise (E-W) reinforcement split is not separately stored in this data model.",
+      "Slab boundary is plotted from stored polygon vertices. Bottom-layer bar run (E-W = local X-axis) is now shown for slabs with a completed design result (Phase B7, 2026-08-20); slabs without one show outline only. Slab openings are not a modeled attribute in this application (Phase B6, 2026-08-20) — must be added manually.",
     originalSheetNumbers: "S.T-15, S.T-19",
   },
   {
@@ -119,7 +119,7 @@ export const SHEET_INDEX: SheetIndexEntry[] = [
     title: "Roof Floor Slab Reinforcement Layout Plan (N-S Direction)",
     dataStatus: "partial",
     limitationNote:
-      "Slab boundary is plotted from stored polygon vertices; bar-direction-wise (N-S) reinforcement split is not separately stored in this data model.",
+      "Slab boundary is plotted from stored polygon vertices. Bottom-layer bar run (N-S = local Z-axis) is now shown for slabs with a completed design result (Phase B7, 2026-08-20); slabs without one show outline only. Slab openings are not a modeled attribute in this application (Phase B6, 2026-08-20) — must be added manually.",
     originalSheetNumbers: "S.T-20",
   },
   {
@@ -144,5 +144,45 @@ export const SHEET_INDEX: SheetIndexEntry[] = [
     limitationNote:
       "Underground water reservoir (U.G.W.R) is not a modeled element category in this application's schema.",
     originalSheetNumbers: "S.T-23~24",
+  },
+  {
+    sheetNumber: "S-20",
+    title: "Beam Schedule",
+    dataStatus: "partial",
+    limitationNote:
+      "Added in Report-Audit Phase B2 (2026-08-20) — not part of the original 20-sheet MICON reference set, so it has no original sheet number. Lists span/size (from DesignResult.detail.input where a beam design was run) and final reinforcement summary (free-text, engineer-entered) per beam element, in a Beam Mark / Span / Size / Final Reinforcement / Stirrup Spacing format. This application does not store separately-tagged top-bar vs bottom-bar fields (only one free-text finalReinforcementSummary per element, same as Column/Footing Schedule) — so reinforcement is shown as one combined column, not split into Top/Bottom columns, to avoid guessing a split the underlying data doesn't actually have.",
+    originalSheetNumbers: "N/A — new in this application, not in the original 20-sheet reference set",
+  },
+  {
+    sheetNumber: "S-21",
+    title: "Column Starter Bar & Splice Detail",
+    dataStatus: "partial",
+    limitationNote:
+      "Added in Report-Audit Phase B3 (2026-08-20) — not part of the original 20-sheet MICON reference set. Per-column compression development length and lap splice length (ACI 318-19 §25.4.9.2/§25.4.9.3, §25.5.5.1), computed from each column's own bar diameter/fy/fc where a design result exists. Exact splice location along the column height is not given as a number — that is an engineer decision this application does not calculate a recommendation for. Confinement reduction (spiral/tie, ×0.75 per §25.4.9.3) is not applied — this application has no derived confinement-adequacy flag, so lengths shown are conservative (safe-side, may be longer than strictly required if confinement is adequate).",
+    originalSheetNumbers: "N/A — new in this application, not in the original 20-sheet reference set",
+  },
+  {
+    sheetNumber: "S-22",
+    title: "Column Reinforcement Detail",
+    dataStatus: "partial",
+    limitationNote:
+      "Added in Report-Audit Phase B4 (2026-08-20) — not part of the original 20-sheet MICON reference set (Column Layout Plan/Schedule, S-02/S-03, existed but no cross-section detail sheet, unlike Beam's S-09). Cross-section sketch (real bar perimeter position + tie) per column, from persisted DetailingResult where available — columns without one show \"No detailing data\" rather than a guessed bar arrangement re-derived from the design's required steel area (which can differ from the engineer's final selected bars).",
+    originalSheetNumbers: "N/A — new in this application, not in the original 20-sheet reference set",
+  },
+  {
+    sheetNumber: "S-23",
+    title: "Beam-Column Joint Detail",
+    dataStatus: "partial",
+    limitationNote:
+      "Added in Report-Audit Phase B5 (2026-08-20) — not part of the original 20-sheet MICON reference set. This application has no formal ACI 318-19 Ch. 15/18 joint-shear capacity check (verified absent, not built here either — that would be a new design-engine feature, outside documentation-gap scope). Shows only what real data supports: per-column ACI §18.7.5.1 seismic confinement zone length and tie spacing at the joint (layoutColumnTieZones, previously only used in a UI panel, never in a PDF). Seismic confinement is assumed true by default (conservative) — override in the Stirrup/Tie Zone panel if the project is confirmed non-seismic.",
+    originalSheetNumbers: "N/A — new in this application, not in the original 20-sheet reference set",
+  },
+  {
+    sheetNumber: "S-24",
+    title: "Wall / Shear Wall Layout Plan",
+    dataStatus: "partial",
+    limitationNote:
+      "Added in Report-Audit Phase B1 (2026-08-20) — not part of the original 20-sheet MICON reference set (no Wall Layout Plan existed at all, unlike Column's S-02). Walls are plotted as a single plan-view centerline (the two farthest-apart vertices in XZ projection) — this application has no general 3D vertical-plane area renderer (documented pre-existing gap in quantitySummary.ts), so wall thickness/elevation extent is not drawn, only position/length. See the paired Wall Calc Sheet (in Calculation Sheets) for thickness, axial/shear capacity, and reinforcement.",
+    originalSheetNumbers: "N/A — new in this application, not in the original 20-sheet reference set",
   },
 ];

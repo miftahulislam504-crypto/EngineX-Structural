@@ -32,6 +32,7 @@ import { IrregularityCheckPanel } from "./IrregularityCheckPanel";
 import { TorsionCheckPanel } from "./TorsionCheckPanel";
 import { PerformanceBasedDesignPanel } from "./PerformanceBasedDesignPanel";
 import { useHubAnalysisSuggestions } from "@/lib/hub/useHubAnalysisSuggestions";
+import { useAutoLoadSyncStatusStore } from "@/lib/loads/useAutoLoadSyncStatusStore";
 import { useSupportOverrideStore } from "@/lib/analysis/useSupportOverrideStore";
 import { ViewportTopBar, type ViewportTopBarItem } from "@/components/viewport/ViewportTopBar";
 
@@ -133,6 +134,9 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
   const [targetDisplacementMm, setTargetDisplacementMm] = useState(50);
 
   const [isRunning, setIsRunning] = useState(false);
+  const [lastAnalysisRunAt, setLastAnalysisRunAt] = useState<string | null>(null);
+  const autoLoadSyncLastSyncedAt = useAutoLoadSyncStatusStore((s) => s.lastSyncedAt);
+  const autoLoadSyncIsSyncing = useAutoLoadSyncStatusStore((s) => s.isSyncing);
   const [linearStaticResult, setLinearStaticResult] = useState<ParsedAnalysisResult | null>(null);
   const [modalResult, setModalResult] = useState<ParsedModalResult | null>(null);
   const [bucklingResult, setBucklingResult] = useState<ParsedBucklingResult | null>(null);
@@ -191,6 +195,7 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
 
   async function handleRunAnalysis() {
     setIsRunning(true);
+    setLastAnalysisRunAt(new Date().toISOString());
     clearAllResults();
     try {
       if (analysisType === "linear-static") {
@@ -424,6 +429,26 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
               ⚠ Hub-এর {hubSuggestions.outdatedModules.join(", ")} বদলেছে — উপরের suggestion বর্তমান model-এর
               সাথে না মিলতে পারে, re-derive/re-run বিবেচনা করুন।
             </p>
+          </div>
+        )}
+
+        {/* Step 4 — auto-load-sync stale banner: useAutoLoadSync
+            (layout.tsx এ mount) সর্বশেষ কবে loads/sections auto-update
+            করেছে তার সাথে সর্বশেষ analysis run এর সময় তুলনা করে।
+            lastAnalysisRunAt === null মানে এখনো কোনো analysis run হয়নি
+            (এই ক্ষেত্রে banner দেখানো হয় না — "নতুন" state এ stale ধারণা
+            প্রযোজ্য না, run করার আগে থেকেই তো loads ready)। */}
+        {lastAnalysisRunAt && autoLoadSyncLastSyncedAt && autoLoadSyncLastSyncedAt > lastAnalysisRunAt && (
+          <div className="mb-3 rounded-md border border-amber-900 bg-amber-950/30 px-3 py-2.5">
+            <p className="text-xs text-amber-500 leading-relaxed">
+              ⚠ শেষ Analysis run-এর পর loads/sections স্বয়ংক্রিয়ভাবে আপডেট হয়েছে (self-weight/live/wind/seismic
+              auto-sync) — বর্তমান ফলাফল stale হতে পারে, আবার Run করুন।
+            </p>
+          </div>
+        )}
+        {autoLoadSyncIsSyncing && (
+          <div className="mb-3 rounded-md border border-slate-800 bg-slate-950/60 px-3 py-2.5">
+            <p className="text-xs text-slate-500 leading-relaxed">Loads auto-sync হচ্ছে...</p>
           </div>
         )}
 

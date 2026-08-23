@@ -1,0 +1,93 @@
+/**
+ * autoGenerateWindSeismicPatterns.ts — deriveWindLoad/deriveSeismicLoad
+ * এর ফলাফল থেকে Wind X/Y ও EQ X/Y LoadPattern তৈরি করে।
+ * ------------------------------------------------------------------
+ * Dead/Live pattern createDefaultLoadPatternLibrary() (loads/firestore.ts)
+ * এ ফিক্সড আইডি দিয়ে প্রজেক্ট শুরুতেই auto-create হয়। Wind/Seismic
+ * pattern একই স্টাইলের ফিক্সড আইডি ব্যবহার করে (patternId বদলায় না,
+ * শুধু value recompute হয়) — কিন্তু শুরুতেই না, কারণ এর জন্য Hub sync
+ * + geometry + (seismic এর ক্ষেত্রে) অন্তত একটা element দরকার।
+ *
+ * এই ফাইল ইচ্ছাকৃতভাবে শুধু LoadPattern object তৈরি করে, Firestore এ
+ * write করে না (pure function, deriveSelfWeightLoads.ts এর প্যাটার্নে)
+ * — caller (useAutoLoadSync hook, Step 3) write এর সিদ্ধান্ত নেবে।
+ *
+ * element-level এ story force কীভাবে distribute হবে (কোন column গুলোতে,
+ * কী অনুপাতে) — সেই সিদ্ধান্ত ইচ্ছাকৃতভাবে এই ফাইলের বাইরে রাখা হয়েছে।
+ * এখানে শুধু pattern (নাম, category) + প্রতি story এর net force
+ * তথ্য রিটার্ন করা হচ্ছে; element এ কেসিং বসানো Step 3 এ আলাদা করে
+ * ডিজাইন করা হবে, কারণ distribution rule (equal vs stiffness-
+ * proportional vs tributary-area) একটা স্বতন্ত্র প্রকৌশল সিদ্ধান্ত।
+ */
+
+import type { LoadPattern } from "@/lib/types/load";
+import type { DerivedWindLoadResult } from "@/lib/derive/deriveWindLoad";
+import type { DerivedSeismicLoadResult } from "@/lib/derive/deriveSeismicLoad";
+import type { WindLoadResult } from "@/lib/loads/windLoad";
+import type { SeismicLoadResult } from "@/lib/loads/seismicLoad";
+
+export interface AutoWindSeismicPatternsResult {
+  patterns: LoadPattern[];
+  /** প্রতিটা pattern এর প্রতি-story নেট force (kN) — Step 3 এ element-distribution এর ইনপুট হবে। */
+  windStoryForces: { patternId: string; direction: "X" | "Y"; forces: WindLoadResult["storyForces"] }[];
+  seismicStoryForces: { patternId: string; direction: "X" | "Y"; forces: SeismicLoadResult["storyForces"] }[];
+  warnings: string[];
+}
+
+const WIND_X_PATTERN_ID = "pattern-auto-wind-x";
+const WIND_Y_PATTERN_ID = "pattern-auto-wind-y";
+const EQ_X_PATTERN_ID = "pattern-auto-eq-x";
+const EQ_Y_PATTERN_ID = "pattern-auto-eq-y";
+
+function makePattern(patternId: string, name: string, category: "wind" | "earthquake", now: string): LoadPattern {
+  return { patternId, name, category, createdAt: now, updatedAt: now };
+}
+
+/**
+ * Wind ও Seismic derive ফলাফল থেকে ৪টা pattern (Wind X, Wind Y, EQ X,
+ * EQ Y) তৈরি করে — BNBC 2020 এ উভয় প্রধান axis এ আলাদাভাবে লোড
+ * প্রয়োগ বাধ্যতামূলক (একই magnitude, শুধু direction ভিন্ন — এই
+ * codebase এ windLoad.ts/seismicLoad.ts একটাই net force magnitude
+ * রিটার্ন করে, X ও Y এর জন্য আলাদা creating করার সময় সেই একই
+ * magnitude দুই axis এ apply করা হচ্ছে যেহেতু ফাংশন নিজে
+ * direction-aware না — building এর asymmetry থাকলে ভবিষ্যতে
+ * axis-specific buildingWidth/exposure দিয়ে আলাদাভাবে compute করা
+ * উচিত)।
+ *
+ * derive ফলাফল অনুপস্থিত (input: null) হলে সংশ্লিষ্ট pattern তৈরি হয়
+ * না — শুধু warning যোগ হয়।
+ */
+export function autoGenerateWindSeismicPatterns(
+  windResult: DerivedWindLoadResult,
+  seismicResult: DerivedSeismicLoadResult
+): AutoWindSeismicPatternsResult {
+  const now = new Date().toISOString();
+  const patterns: LoadPattern[] = [];
+  const windStoryForces: AutoWindSeismicPatternsResult["windStoryForces"] = [];
+  const seismicStoryForces: AutoWindSeismicPatternsResult["seismicStoryForces"] = [];
+  const warnings: string[] = [...windResult.warnings, ...seismicResult.warnings];
+
+  if (windResult.result) {
+    patterns.push(makePattern(WIND_X_PATTERN_ID, "Wind X (WX) — Auto", "wind", now));
+    patterns.push(makePattern(WIND_Y_PATTERN_ID, "Wind Y (WY) — Auto", "wind", now));
+    windStoryForces.push(
+      { patternId: WIND_X_PATTERN_ID, direction: "X", forces: windResult.result.storyForces },
+      { patternId: WIND_Y_PATTERN_ID, direction: "Y", forces: windResult.result.storyForces }
+    );
+  } else {
+    warnings.push("Wind pattern তৈরি হয়নি — উপরের warning অনুযায়ী প্রয়োজনীয় geometry/Hub ডেটা পূরণ করুন।");
+  }
+
+  if (seismicResult.result) {
+    patterns.push(makePattern(EQ_X_PATTERN_ID, "Seismic X (EQX) — Auto", "earthquake", now));
+    patterns.push(makePattern(EQ_Y_PATTERN_ID, "Seismic Y (EQY) — Auto", "earthquake", now));
+    seismicStoryForces.push(
+      { patternId: EQ_X_PATTERN_ID, direction: "X", forces: seismicResult.result.storyForces },
+      { patternId: EQ_Y_PATTERN_ID, direction: "Y", forces: seismicResult.result.storyForces }
+    );
+  } else {
+    warnings.push("Seismic pattern তৈরি হয়নি — উপরের warning অনুযায়ী প্রয়োজনীয় geometry/element ডেটা পূরণ করুন।");
+  }
+
+  return { patterns, windStoryForces, seismicStoryForces, warnings };
+}
