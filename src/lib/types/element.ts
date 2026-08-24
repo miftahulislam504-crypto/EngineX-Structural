@@ -189,9 +189,18 @@ export interface CoreWallElement extends AreaElement {
  * (যদি থাকে, flight-দের মাঝে) এই মুহূর্তে আলাদা element হিসেবে আসে
  * না — parser landing-কে flight geometry-র বাইরে derive করে না, শুধু
  * Draw-এর raw flights[] সরাসরি map হয়।
+ *
+ * riserHeightM (ঐচ্ছিক, মিটার) — SlabElement.liveLoadOverride এর ঠিক
+ * একই প্যাটার্নে: Draw থেকে import-এর সময় আসে না (mapStair() শুধু
+ * vertices/thickness পাঠায়), তাই ইঞ্জিনিয়ার Stair Design panel থেকে
+ * এখানে বসান। undefined থাকলে deriveStairSelfWeightLoads() শুধু
+ * waist-slab flat weight ধরে, ধাপের triangular extra weight বাদ
+ * (warning সহ) — সেট করলে useAutoLoadSync পরের sync-এ পূর্ণ হিসাব
+ * করে। ২০২৬-০৮ যোগ হলো।
  */
 export interface StairElement extends AreaElement {
   category: "stair";
+  riserHeightM?: number;
 }
 
 /**
@@ -375,6 +384,39 @@ export function computePolygonPlanArea(vertices: Point3D[]): number {
     area += current.x * next.z - next.x * current.z;
   }
   return Math.abs(area / 2);
+}
+
+/**
+ * Newell's method — polygon যেই সমতলে থাকুক না কেন (অনুভূমিক Slab,
+ * উল্লম্ব Wall/ShearWall/CoreWall, বা tilted Stair waist-slab) সঠিক
+ * surface area দেয়, কারণ এটা XZ বা কোনো নির্দিষ্ট অক্ষ-জোড়ায় প্রজেক্ট
+ * না করে পুরো 3D normal vector-এর ম্যাগনিচিউড থেকে area বের করে
+ * (XZ-অনুভূমিক polygon-এ এটা computePolygonPlanArea()-এর মতোই ফলাফল
+ * দেয়, কারণ তখন normal vector শুধু Y-দিকে থাকে)।
+ *
+ * modelChecker.ts-এ এই একই ফর্মুলা zero-area geometry validation-এর
+ * জন্য আগে থেকেই ছিল (একটা লোকাল, non-exported ফাংশন হিসেবে) — এখানে
+ * একটা শেয়ার্ড, exported সংস্করণ হিসেবে তোলা হলো যাতে সত্যিকারের area
+ * হিসাব দরকার এমন জায়গা (যেমন stair waist-slab self-weight
+ * derivation, deriveStairSelfWeightLoads.ts দেখুন) computePolygonPlanArea()
+ * এর ভুল XZ-projection ব্যবহার না করে এটা ব্যবহার করতে পারে।
+ */
+export function computePolygonAreaAnyPlane(vertices: Point3D[]): number {
+  if (vertices.length < 3) {
+    return 0;
+  }
+
+  let nx = 0;
+  let ny = 0;
+  let nz = 0;
+  for (let i = 0; i < vertices.length; i++) {
+    const cur = vertices[i];
+    const next = vertices[(i + 1) % vertices.length];
+    nx += (cur.y - next.y) * (cur.z + next.z);
+    ny += (cur.z - next.z) * (cur.x + next.x);
+    nz += (cur.x - next.x) * (cur.y + next.y);
+  }
+  return Math.sqrt(nx * nx + ny * ny + nz * nz) / 2;
 }
 
 function makeElementId(): string {

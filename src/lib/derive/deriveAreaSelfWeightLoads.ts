@@ -20,11 +20,12 @@
  *   - Slab/Wall/Shear-Wall/Core-Wall/Parapet — এই পাঁচটাই AreaElement
  *     (vertices+thickness), তাই একই derivation logic প্রযোজ্য। Stair
  *     ইচ্ছাকৃতভাবে বাদ — StairElement ও AreaElement হলেও এটা inclined
- *     waist-slab geometry (flat plan area না), এবং stair-এর নিজস্ব
- *     dedicated self-weight derivation stair design module-এর অংশ
- *     হিসেবে আসা উচিত (waist slab thickness + landing slab + step-এর
- *     triangular extra weight — সাধারণ flat-area formula দিয়ে সঠিক
- *     হবে না)।
+ *     waist-slab geometry (flat plan area না)। এই gap এখন
+ *     deriveStairSelfWeightLoads.ts দিয়ে পূরণ হয়েছে (waist-slab true
+ *     inclined area, Newell's method + ধাপের triangular extra weight,
+ *     riser height ইঞ্জিনিয়ার-ইনপুট থেকে) — landing স্ল্যাব এখনো বাদ,
+ *     কারণ Draw থেকে landing এখনো কোনো element হিসেবে import হয় না
+ *     (সেই ফাইলের হেডার কমেন্ট দেখুন)।
  *   - Wall/Shear-Wall/Core-Wall/Parapet এর জন্যও এই ফাংশন plan-polygon
  *     area (computePolygonPlanArea) ব্যবহার করে, ঠিক Slab-এর মতোই। এটা
  *     ইচ্ছাকৃত সরলীকরণ: এই codebase-এ AreaElement সব সময় একটা
@@ -81,7 +82,7 @@ export function deriveAreaSelfWeightLoads(
   const stairCount = elements.filter((e) => e.category === "stair").length;
   if (stairCount > 0) {
     warnings.push(
-      `${stairCount}টা Stair element self-weight auto-generation এ বাদ পড়েছে — stair-এর self-weight stair design module (waist slab + landing) থেকে আলাদাভাবে আসা উচিত, সাধারণ flat-area formula দিয়ে সঠিক হবে না।`
+      `${stairCount}টা Stair element এখানে বাদ পড়েছে — deriveStairSelfWeightLoads() দিয়ে আলাদাভাবে এদের self-weight (waist slab + step) হিসাব করুন, সাধারণ flat-area formula (এই ফাংশন) দিয়ে সঠিক হবে না।`
     );
   }
 

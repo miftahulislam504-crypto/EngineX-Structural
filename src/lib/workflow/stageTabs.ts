@@ -24,6 +24,12 @@
  *     rebar-layout থেকে drawing-sync পর্যন্ত — ব্যবহারকারীর নির্দেশ
  *     অনুযায়ী এইগুলো Documentation এ যাবে, Detailing এ না; Detailing
  *     tab শুধু rebar viewport canvas, কোনো sub-tab নেই)।
+ *
+ * ২০২৬-০৮: "stair" DesignSubTab-এ যোগ হলো (StairDesignPanel.tsx) —
+ * আগে stair Draw থেকে import হতো কিন্তু কোনো design panel-ই ছিল না
+ * (dead-load derivation, design panel, drawing sheet — তিনটাই gap
+ * ছিল, একে একে ভরাট করা হচ্ছে; stairDesign.ts, stairGeometry.ts,
+ * deriveStairSelfWeightLoads.ts দেখুন)।
  */
 export type SidebarTab =
   | "geometry"
@@ -48,6 +54,7 @@ export type DesignSubTab =
   | "steel-column"
   | "slab"
   | "wall"
+  | "stair"
   | "footing"
   | "combined-footing"
   | "strip-footing"

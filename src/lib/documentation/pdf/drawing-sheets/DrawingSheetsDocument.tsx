@@ -21,11 +21,14 @@
  * রেফারেন্স ড্রয়িং সেট (ব্যবহারকারীর দেওয়া) একটাই bound sheet-set
  * হিসেবে ডেলিভার হয়।
  *
- * unmodeled sheet গুলো (S-12, S-17, S-18, S-19 — Machine Room/O.H.W.T
- * Beam+Slab Details, Stair, U.G.W.R) আলাদা ফাইল হিসেবে বানানো হয়নি,
+ * unmodeled sheet গুলো (S-12, S-17, S-19 — Machine Room/O.H.W.T
+ * Beam+Slab Details, U.G.W.R) আলাদা ফাইল হিসেবে বানানো হয়নি,
  * কারণ প্রতিটাই একই generic UnmodeledSheetPlaceholder.tsx কে
  * sheetIndex.ts এর entry দিয়ে parameterize করে — আলাদা ফাইলে ডুপ্লিকেট
  * করলে "titleblock + honest note" ছাড়া আর কিছুই আলাদা থাকত না।
+ * (S-18/Stair আগে এই দলে ছিল, Stair implementation Phase 4 (২০২৬-০৮)
+ * এ StairPlanSectionSheet.tsx হিসেবে নিজস্ব real content পেয়েছে —
+ * নিচে দেখুন।)
  *
  * প্রতিটা sheet এর "...Content" export ব্যবহার করা হয়েছে (Document
  * wrapper ছাড়া, শুধু ReportSheetPage/Fragment) — প্রতিটা sheet ফাইলের
@@ -61,6 +64,7 @@ import { RoofFloorBeamLayoutPlanSheetContent } from "@/lib/documentation/pdf/dra
 import { RoofFloorBeamDetailsSheetContent } from "@/lib/documentation/pdf/drawing-sheets/RoofFloorBeamDetailsSheet";
 import { RoofFloorSlabLayoutEWSheetContent } from "@/lib/documentation/pdf/drawing-sheets/RoofFloorSlabLayoutEWSheet";
 import { RoofFloorSlabLayoutNSSheetContent } from "@/lib/documentation/pdf/drawing-sheets/RoofFloorSlabLayoutNSSheet";
+import { StairPlanSectionSheetContent } from "@/lib/documentation/pdf/drawing-sheets/StairPlanSectionSheet";
 
 export interface DrawingSheetsDocumentProps {
   context: ReportContext;
@@ -102,7 +106,7 @@ export function DrawingSheetsDocument({ context, revisionNumber }: DrawingSheets
       <RoofFloorSlabLayoutEWSheetContent {...props} />
       <RoofFloorSlabLayoutNSSheetContent {...props} />
       <UnmodeledSheetPlaceholderContent {...props} entry={unmodeledEntry("S-17")} />
-      <UnmodeledSheetPlaceholderContent {...props} entry={unmodeledEntry("S-18")} />
+      <StairPlanSectionSheetContent {...props} />
       <UnmodeledSheetPlaceholderContent {...props} entry={unmodeledEntry("S-19")} />
       <BeamScheduleSheetContent {...props} />
       <ColumnSpliceDetailSheetContent {...props} />

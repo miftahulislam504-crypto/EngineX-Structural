@@ -19,9 +19,13 @@
  *   "full"        — layout+schedule পুরোপুরি real ডেটা দিয়ে বানানো যায়
  *   "partial"     — layout/schedule অংশ real ডেটা দিয়ে, detail/section
  *                    অংশ আংশিক (approximate sketch, honest caption সহ)
- *   "unmodeled"   — এই element category/সাব-সিস্টেম (স্টেয়ার, OHWT,
- *                    UGWR, machine room) app-এর data schema-তে কোথাও
- *                    মডেল করা নেই — placeholder sheet, titleblock+নোট
+ *   "unmodeled"   — এই element category/সাব-সিস্টেম (OHWT, UGWR,
+ *                    machine room) app-এর data schema-তে কোথাও মডেল
+ *                    করা নেই — placeholder sheet, titleblock+নোট
+ *                    (২০২৬-০৮: স্টেয়ার/S-18 আগে এই ক্যাটাগরিতে ছিল,
+ *                    Stair implementation Phase 1-4 এর পর এখন
+ *                    "partial" — waist-slab flight geometry+design
+ *                    real, landing beam এখনো মডেল করা নেই)
  */
 
 export type SheetDataStatus = "full" | "partial" | "unmodeled";
@@ -133,8 +137,9 @@ export const SHEET_INDEX: SheetIndexEntry[] = [
   {
     sheetNumber: "S-18",
     title: "Stair Plan & Section, Landing Beam (LB) Details",
-    dataStatus: "unmodeled",
-    limitationNote: "Stair and landing beam are not modeled element categories in this application's schema.",
+    dataStatus: "partial",
+    limitationNote:
+      "Landing beam (LB) schedule/details and a dedicated vertical section-cut view are not yet produced by this application — landings are not imported as a separate modeled element (Draw exports flight geometry only), and no section sketch exists for stairs yet. Flight plan + schedule (waist thickness, slope span/angle, riser, factored load, flexural reinforcement) reflect real model/design data (Stair implementation Phase 1-4, 2026-08).",
     originalSheetNumbers: "S.T-22",
   },
   {

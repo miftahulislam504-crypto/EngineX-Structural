@@ -10,6 +10,7 @@ import { SteelBeamDesignPanel } from "@/components/design-panel/SteelBeamDesignP
 import { SteelColumnDesignPanel } from "@/components/design-panel/SteelColumnDesignPanel";
 import { RcSlabDesignPanel } from "@/components/design-panel/RcSlabDesignPanel";
 import { RcWallDesignPanel } from "@/components/design-panel/RcWallDesignPanel";
+import { StairDesignPanel } from "@/components/design-panel/StairDesignPanel";
 import { FootingDesignPanel } from "@/components/design-panel/FootingDesignPanel";
 import { CombinedFootingDesignPanel } from "@/components/design-panel/CombinedFootingDesignPanel";
 import { StripFootingDesignPanel } from "@/components/design-panel/StripFootingDesignPanel";
@@ -33,6 +34,7 @@ const VALID_DESIGN_SUB_TABS: readonly DesignSubTab[] = [
   "steel-column",
   "slab",
   "wall",
+  "stair",
   "footing",
   "combined-footing",
   "strip-footing",
@@ -75,6 +77,8 @@ function DesignSubTabPanel({ subtab }: { subtab: DesignSubTab }) {
       return <RcSlabDesignPanel />;
     case "wall":
       return <RcWallDesignPanel />;
+    case "stair":
+      return <StairDesignPanel />;
     case "footing":
       return <FootingDesignPanel />;
     case "combined-footing":

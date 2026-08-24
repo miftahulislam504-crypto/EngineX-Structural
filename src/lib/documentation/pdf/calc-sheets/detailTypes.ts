@@ -30,6 +30,7 @@ import type { RcColumnDesignInput, RcColumnDesignReport } from "@/lib/design/rcC
 import type { RcSlabDesignInput, RcSlabDesignReport } from "@/lib/design/rcSlabDesign";
 import type { FootingDesignInput, FootingDesignReport } from "@/lib/design/footingDesign";
 import type { RcWallDesignInput, RcWallDesignReport } from "@/lib/design/rcWallDesign";
+import type { StairDesignInput, StairDesignReport } from "@/lib/design/stairDesign";
 
 function hasKeys(value: Record<string, unknown>, keys: string[]): boolean {
   return keys.every((k) => k in value);
@@ -96,5 +97,19 @@ export function asWallDetail(detail: Record<string, unknown>): WallCalcDetail | 
   const report = detail.report as Record<string, unknown>;
   return hasKeys(report, ["axialCapacity", "minReinforcement", "shearCapacity", "overallStatus"])
     ? (detail as unknown as WallCalcDetail)
+    : null;
+}
+
+export interface StairCalcDetail {
+  input: StairDesignInput;
+  report: StairDesignReport;
+}
+
+/** Stair implementation Phase 4 (২০২৬-০৮) — StairDesignPanel.tsx এর { input, report } persist প্যাটার্ন, S-18 sheet এর schedule টেবিলে input.effectiveCoverMm/factoredLoadKPa দেখাতে লাগে। */
+export function asStairDetail(detail: Record<string, unknown>): StairCalcDetail | null {
+  if (!hasKeys(detail, ["input", "report"])) return null;
+  const report = detail.report as Record<string, unknown>;
+  return hasKeys(report, ["geometry", "moments", "flexuralDesign", "minThickness", "overallStatus"])
+    ? (detail as unknown as StairCalcDetail)
     : null;
 }

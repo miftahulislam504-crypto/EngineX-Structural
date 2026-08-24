@@ -13,6 +13,7 @@
  */
 
 import type { StructuralElement } from "@/lib/types/element";
+import { computePolygonAreaAnyPlane } from "@/lib/types/element";
 import type { ValidationIssue } from "@/lib/validation/types";
 
 /** backend এর NodeGraph.index_of() এর সাথে সামঞ্জস্যপূর্ণ 3-decimal coordinate key। */
@@ -275,27 +276,10 @@ export function checkGeometry(elements: StructuralElement[]): ValidationIssue[] 
   return issues;
 }
 
-/**
- * Newell's method — polygon যেই সমতলে থাকুক না কেন (অনুভূমিক Slab,
- * উল্লম্ব Wall/ShearWall/CoreWall, বা tilted Stair waist-slab) সঠিক
- * area দেয়, কারণ এটা XZ বা কোনো নির্দিষ্ট অক্ষ-জোড়ায় প্রজেক্ট না করে
- * পুরো 3D normal vector-এর ম্যাগনিচিউড থেকে area বের করে (XZ-অনুভূমিক
- * polygon-এ এটা computePlanAreaXZ()-এর মতোই ফলাফল দেয়, কারণ তখন normal
- * vector শুধু Y-দিকে থাকে — তাই Slab-এর জন্য behavior অপরিবর্তিত)।
- */
-function computePolygonAreaAnyPlane(vertices: { x: number; y: number; z: number }[]): number {
-  let nx = 0;
-  let ny = 0;
-  let nz = 0;
-  for (let i = 0; i < vertices.length; i++) {
-    const cur = vertices[i];
-    const next = vertices[(i + 1) % vertices.length];
-    nx += (cur.y - next.y) * (cur.z + next.z);
-    ny += (cur.z - next.z) * (cur.x + next.x);
-    nz += (cur.x - next.x) * (cur.y + next.y);
-  }
-  return Math.sqrt(nx * nx + ny * ny + nz * nz) / 2;
-}
+// computePolygonAreaAnyPlane (Newell's method — polygon যেই সমতলে থাকুক
+// না কেন সঠিক area দেয়) এখন @/lib/types/element-এ একটা shared, exported
+// utility হিসেবে আছে (deriveStairSelfWeightLoads.ts-ও এটা ব্যবহার করে
+// waist-slab true area-র জন্য) — এখানে আর আলাদা লোকাল কপি রাখা হলো না।
 
 /**
  * Support existence check — backend এখন Y≈0 heuristic দিয়ে support

@@ -63,6 +63,7 @@ export const DESIGN_SUB_TAB_GROUPS: SubTabGroup<DesignSubTab>[] = [
       { id: "column", label: "RC Column" },
       { id: "slab", label: "RC Slab" },
       { id: "wall", label: "RC Wall" },
+      { id: "stair", label: "Stair" },
     ],
   },
   {
@@ -132,6 +133,7 @@ export const DESIGN_HUB_GROUPS: HubGroup<DesignSubTab>[] = [
       { id: "column", label: "RC Column", description: "P-M ইন্টারঅ্যাকশন, টাই স্পেসিং", icon: Columns },
       { id: "slab", label: "RC Slab", description: "ওয়ান-ওয়ে/টু-ওয়ে স্ল্যাব ডিজাইন", icon: Grid },
       { id: "wall", label: "RC Wall", description: "শিয়ার ওয়াল ডিজাইন", icon: Layout },
+      { id: "stair", label: "Stair", description: "ওয়েস্ট-স্ল্যাব সিঁড়ি ডিজাইন", icon: Layers },
     ],
   },
   {
