@@ -55,6 +55,7 @@ import { SYSTEM_ACTOR } from "./approval.types";
 import type { ContractStatus, SourceApp } from "./contract.types";
 import type { HubEvent, HubEventType } from "./event.types";
 import type { ModuleDataRecord } from "./module-data.types";
+import { stripUndefinedDeep } from "@/lib/utils";
 
 const OUR_APP = "structural" as const;
 
@@ -337,42 +338,15 @@ export function subscribeToModuleData(
 
 /**
  * data (ও তার nested object গুলো) থেকে সব `undefined`-valued key
- * বাদ দেয়। Firestore Web SDK ডিফল্টভাবে (ignoreUndefinedProperties
- * সেট না থাকলে, এই app-এর firebase/client.ts এ নেই) `setDoc()`/
- * `updateDoc()` এ top-level বা nested যেকোনো `undefined` field পেলে
- * পুরো write ব্যর্থ করে (FirebaseError: invalid-argument) — সরাসরি
- * SDK দিয়ে যাচাই করা হয়েছে (node দিয়ে সত্যিকার setDoc() কল করে)।
+ * বাদ দেয় — এখন @/lib/utils এ shared utility (২০২৬-০৮ move হলো,
+ * elements/firestore.ts ও একই সমস্যায় পড়ায়; পুরনো ডকুমেন্টেশন ও
+ * ব্যাখ্যা সেখানে দেখুন)।
  *
  * hub-module-export.ts এর মতো ফাইল ইচ্ছাকৃতভাবে খালি field-কে
- * `undefined` দিয়ে চিহ্নিত করে (Estimate app এর hub-module-export.ts
- * এও একই `?? undefined` প্যাটার্ন) — সেই object সরাসরি এখানে এলে
- * পুরো Hub sync silently ব্যর্থ হয়ে যেত (প্রথম undefined field পেলেই
- * পুরো setDoc() throw করে, শুধু সেই একটা field skip হয় না)। তাই
- * saveOwnModuleData() নিজেই defensively strip করে — প্রতিটা caller কে
- * আলাদাভাবে মনে রাখতে হবে না।
- *
- * null বনাম undefined: `null` ইচ্ছাকৃতভাবে রাখা হয় (Firestore null
- * সমর্থন করে, এবং কিছু ফিল্ড সত্যিই "নেই" বোঝাতে null ব্যবহার করে —
- * যেমন module-data.types.ts এর moduleId র বাইরের কিছু ক্ষেত্রে)।
- * শুধু `undefined` strip হয়, `null` অপরিবর্তিত থাকে।
+ * `undefined` দিয়ে চিহ্নিত করে — সেই object সরাসরি এখানে এলে পুরো
+ * Hub sync silently ব্যর্থ হয়ে যেত, তাই saveOwnModuleData() নিজেই
+ * defensively strip করে।
  */
-function stripUndefinedDeep<T>(value: T): T {
-  if (Array.isArray(value)) {
-    // Object key এর মতোই array element এও raw `undefined` বাদ দেওয়া
-    // হয় (শুধু .map() করলে [1, undefined, 2] এর মাঝের undefined
-    // element রয়ে যেত — Firestore সেটাও reject করে, নিচের নোট দেখুন)।
-    return value.filter((item) => item !== undefined).map((item) => stripUndefinedDeep(item)) as T;
-  }
-  if (value !== null && typeof value === "object" && !(value instanceof Date)) {
-    const result: Record<string, unknown> = {};
-    for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
-      if (val === undefined) continue;
-      result[key] = stripUndefinedDeep(val);
-    }
-    return result as T;
-  }
-  return value;
-}
 
 /**
  * এই app নিজের produce করা module data (concreteQuantities, bbs,

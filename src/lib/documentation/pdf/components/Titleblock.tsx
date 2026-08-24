@@ -63,15 +63,37 @@ const styles = StyleSheet.create({
   projectName: {
     fontSize: pdfFontSize.h3,
     fontFamily: "Helvetica-Bold",
+    // This titleblock repeats on every sheet page (it's `fixed`), so a
+    // single line is a hard requirement — a wrapped second line here
+    // would eat into the drawing area below on every page, not just
+    // one. This installed @react-pdf/renderer version has no
+    // numberOfLines prop (see this file's other overflow-guard notes),
+    // so the cap is CSS-style: maxHeight = one line's own height, with
+    // overflow hidden.
+    maxHeight: pdfFontSize.h3 * 1.25,
+    overflow: "hidden",
   },
   clientLine: {
     fontSize: pdfFontSize.caption,
     color: pdfColors.inkMuted,
     marginTop: 2,
+    maxHeight: pdfFontSize.caption * 1.25,
+    overflow: "hidden",
   },
   codeLine: {
     fontSize: pdfFontSize.caption,
     color: pdfColors.inkMuted,
+  },
+  drawnCheckedLine: {
+    fontSize: pdfFontSize.caption,
+    color: pdfColors.inkMuted,
+    // Caps a long drawn-by/checked-by name pair at 2 lines instead of
+    // wrapping to 3-4 and stretching this cell's row height unevenly
+    // against the fixed-content Sheet No. cell beside it — same
+    // maxHeight+overflow:hidden approach as projectName above, since
+    // this installed react-pdf version has no numberOfLines prop.
+    maxHeight: pdfFontSize.caption * 1.3 * 2,
+    overflow: "hidden",
   },
   sheetRow: {
     flexDirection: "row",
@@ -165,7 +187,7 @@ export function Titleblock({
         {(drawnBy || checkedBy) && (
           <View style={styles.metaCell}>
             <Text style={styles.metaLabel}>Drawn / Checked</Text>
-            <Text style={styles.codeLine}>
+            <Text style={styles.drawnCheckedLine}>
               {drawnBy ?? "—"} / {checkedBy ?? "—"}
             </Text>
           </View>

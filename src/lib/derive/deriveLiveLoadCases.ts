@@ -10,11 +10,16 @@
  * ইনপুট হিসেবে ব্যবহার করে।
  *
  * সততার সাথে সীমাবদ্ধতা:
- *   - সব Slab-এ একই occupancy value apply হয় (Hub-এর bnbc_settings
- *     প্রজেক্ট-লেভেল একটাই occupancy type ধরে নেয়, per-slab ভিন্ন
- *     occupancy — যেমন একই ভবনে residential + parking + roof আলাদা
- *     আলাদা — এই ফাইলের scope-এর বাইরে। ভবিষ্যতে SlabElement-এ
- *     নিজস্ব occupancyOverride ফিল্ড যোগ হলে এই ফাইল আপডেট করা উচিত)।
+ *   - ডিফল্টভাবে সব Slab-এ একই occupancy value apply হয় (Hub-এর
+ *     bnbc_settings প্রজেক্ট-লেভেল একটাই occupancy type ধরে নেয়)।
+ *     কোনো নির্দিষ্ট Slab-এ ভিন্ন occupancy দরকার হলে (যেমন একই
+ *     ভবনে residential + parking + roof) SlabElement.liveLoadOverride
+ *     (kN/m²) সেট করা যায় — সেট থাকলে সেই slab এ project-wide default
+ *     এর বদলে override মান ব্যবহার হয় (২০২৬-০৮ যোগ হলো)। override
+ *     ব্যবহারকারীর সরাসরি ইনপুট, তাই এটাকে "auto" না, তবু auto-sync
+ *     এর অংশ হিসেবেই resulting LoadCase-এ source: "auto" থাকে —
+ *     কারণ LoadCase নিজেই এখনো auto-derive/re-sync হওয়া (element
+ *     ডিলিট/geometry বদলালে recompute), শুধু magnitude-এর উৎস আলাদা।
  *   - intensity ঋণাত্মক (গ্র্যাভিটি লোড, deriveSelfWeightLoads.ts এর
  *     একই Y-অক্ষ কনভেনশন)।
  */
@@ -36,6 +41,8 @@ export interface DeriveLiveLoadCasesResult {
 /**
  * সব Slab element-এ occupancy live load case বানায়। plan area শূন্য
  * বা অবৈধ (vertices < 3) হলে সেই slab বাদ পড়ে (skipped এ কারণসহ)।
+ * প্রতিটা slab-এর liveLoadOverride সেট থাকলে সেই মান ব্যবহার হয়,
+ * না থাকলে project-wide derivedValue (Hub থেকে)।
  *
  * @param livePatternId - যে LoadPattern-এ এই load case গুলো যুক্ত হবে (category "live" হওয়া উচিত, caller নিশ্চিত করবে)
  */
@@ -51,14 +58,30 @@ export function deriveLiveLoadCases(
   const derivedValue = deriveLiveLoad(hubBnbcSettings);
   warnings.push(...derivedValue.warnings);
 
-  if (derivedValue.liveLoadValueKnM2 <= 0) {
+  const slabs = elements.filter((e): e is SlabElement => e.category === "slab");
+
+  const slabsWithOverride = slabs.filter((s) => s.liveLoadOverride !== undefined && s.liveLoadOverride !== null);
+  if (slabsWithOverride.length > 0) {
+    warnings.push(
+      `${slabsWithOverride.length}টা Slab-এ নিজস্ব liveLoadOverride সেট আছে — ঐ slab গুলোতে project-wide default (${derivedValue.liveLoadValueKnM2.toFixed(2)} kN/m²) এর বদলে তাদের নিজস্ব মান ব্যবহার হয়েছে।`
+    );
+  }
+
+  if (derivedValue.liveLoadValueKnM2 <= 0 && slabsWithOverride.length === 0) {
     warnings.push("Live load value শূন্য বা অনুপস্থিত — কোনো Slab এ auto live load বসানো হয়নি।");
     return { loadCases, liveLoadValueKnM2: derivedValue.liveLoadValueKnM2, skipped, warnings };
   }
 
-  const slabs = elements.filter((e): e is SlabElement => e.category === "slab");
-
   for (const slab of slabs) {
+    const effectiveValue = slab.liveLoadOverride !== undefined && slab.liveLoadOverride !== null
+      ? slab.liveLoadOverride
+      : derivedValue.liveLoadValueKnM2;
+
+    if (effectiveValue <= 0) {
+      // এই slab এ কোনো override নেই এবং project-wide default-ও শূন্য/অনুপস্থিত।
+      continue;
+    }
+
     const areaM2 = computePolygonPlanArea(slab.vertices);
     if (areaM2 <= 0) {
       skipped.push({
@@ -73,7 +96,7 @@ export function deriveLiveLoadCases(
       createUniformAreaLoad({
         patternId: livePatternId,
         elementId: slab.elementId,
-        intensity: -derivedValue.liveLoadValueKnM2,
+        intensity: -effectiveValue,
         source: "auto",
       })
     );

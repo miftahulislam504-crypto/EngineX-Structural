@@ -46,3 +46,36 @@ export function getStatusColor(status: string): string {
       return "bg-gray-100 text-gray-700 border-gray-200";
   }
 }
+
+/**
+ * data (ও তার nested object/array গুলো) থেকে সব `undefined`-valued
+ * key/element বাদ দেয়। Firestore Web SDK ডিফল্টভাবে (ignoreUndefinedProperties
+ * সেট না থাকলে, এই app-এর firebase/client.ts এ নেই) `setDoc()`/
+ * `updateDoc()` এ top-level বা nested যেকোনো `undefined` field পেলে
+ * পুরো write ব্যর্থ করে (FirebaseError: invalid-argument)।
+ *
+ * আগে এই ফাংশন শুধু hub-sdk-client.ts এ local ছিল (Hub module data
+ * sync এর জন্য)। elements/firestore.ts এও একই সমস্যা দরকার হলো
+ * (SlabElement.liveLoadOverride?: number — clear করতে undefined
+ * পাঠানো লাগে, ২০২৬-০৮), তাই এখানে shared utility হিসেবে move করা
+ * হলো — hub-sdk-client.ts এখন এখান থেকে re-export/import করে, দুই
+ * জায়গায় duplicate logic রাখা হয়নি।
+ *
+ * null বনাম undefined: `null` ইচ্ছাকৃতভাবে রাখা হয় (Firestore null
+ * সমর্থন করে, কিছু ফিল্ড সত্যিই "নেই" বোঝাতে null ব্যবহার করে)। শুধু
+ * `undefined` strip হয়, `null` অপরিবর্তিত থাকে।
+ */
+export function stripUndefinedDeep<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.filter((item) => item !== undefined).map((item) => stripUndefinedDeep(item)) as T;
+  }
+  if (value !== null && typeof value === "object" && !(value instanceof Date)) {
+    const result: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
+      if (val === undefined) continue;
+      result[key] = stripUndefinedDeep(val);
+    }
+    return result as T;
+  }
+  return value;
+}

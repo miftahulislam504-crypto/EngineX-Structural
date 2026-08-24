@@ -28,10 +28,24 @@
  *   site survey না থাকলে ইঞ্জিনিয়ারের এটা যাচাই করা উচিত।
  *
  * buildingWidth — grid coordinates থেকে (Hub-এর buildingWidth optional
- * field-এর ওপর নির্ভর না করে, Miftahul এর পছন্দ অনুযায়ী): X ও Y
- * direction grid-এর span থেকে যেটা ছোট সেটাকে "width" (windward face
- * এর দিকে perpendicular, রক্ষণশীল দিকে — ছোট width মানে বেশি Kz
- * exposure per unit area, safe দিকে) ধরা হয়েছে।
+ * field-এর ওপর নির্ভর না করে, Miftahul এর পছন্দ অনুযায়ী)।
+ *
+ * ২০২৬-০৮ পর্যন্ত: X ও Y span-এর মধ্যে ছোটটাকে একটাই "width" ধরে
+ * Wind X ও Wind Y উভয় pattern-এ একই magnitude বসানো হতো — এটা
+ * non-square (asymmetric plan) building-এ ভুল ছিল, কারণ একটা দিকের
+ * windward face আরেক দিকের চেয়ে বাস্তবে বেশি চওড়া/সরু হতে পারে।
+ *
+ * এখন direction-aware: Wind পরিভাষা distributeStoryForceToColumns.ts
+ * এর কনভেনশন অনুসরণ করে (forceX প্রযুক্ত হয় direction "X" এ, forceZ
+ * "Y" তে) — মানে বাতাস X-অক্ষ বরাবর বইলে সেটা windward face আঘাত করে
+ * যার width আসে Y-span থেকে (আর উল্টোটা Y-direction এর জন্য)। তাই:
+ *   Wind X (বাতাস X বরাবর) → buildingWidth = spanY
+ *   Wind Y (বাতাস Y বরাবর) → buildingWidth = spanX
+ * deriveWindLoadInput() এখন direction parameter নেয় ("X"|"Y") এবং সেই
+ * direction অনুযায়ী সঠিক perpendicular span বেছে computeWindLoad() এর
+ * জন্য buildingWidth ঠিক করে; deriveWindLoadBothDirections() উভয়
+ * direction একসাথে derive করে {x, y} shape এ রিটার্ন করে —
+ * autoGenerateWindSeismicPatterns.ts এখন সেই {x, y} গ্রহণ করে।
  */
 
 import type { WindLoadInput, WindLoadResult } from "@/lib/loads/windLoad";
@@ -49,6 +63,12 @@ export interface DerivedWindLoadInput {
 
 export interface DerivedWindLoadResult extends DerivedWindLoadInput {
   result: WindLoadResult | null;
+}
+
+/** X ও Y direction — উভয়ের জন্য আলাদা buildingWidth ব্যবহার করে derive করা result। */
+export interface DerivedWindLoadByDirection {
+  x: DerivedWindLoadResult;
+  y: DerivedWindLoadResult;
 }
 
 const KMH_TO_MS = 1000 / 3600;
@@ -80,14 +100,21 @@ function computeBuildingHeight(geometry: GeometryCore): { height: number; number
 }
 
 /**
- * Hub BNBC settings + geometry থেকে WindLoadInput derive করে। প্রয়োজনীয়
- * ডেটা (grid span কমপক্ষে ২টা লাইন প্রতি দিকে, কমপক্ষে ১টা story) না
- * থাকলে input: null, confidence: "insufficient-data" — caller তখন
- * pattern তৈরি করবে না, শুধু ব্যবহারকারীকে geometry সম্পূর্ণ করতে বলবে।
+ * Hub BNBC settings + geometry থেকে একটা নির্দিষ্ট direction-এর জন্য
+ * WindLoadInput derive করে। প্রয়োজনীয় ডেটা (grid span কমপক্ষে ২টা
+ * লাইন প্রতি দিকে, কমপক্ষে ১টা story) না থাকলে input: null,
+ * confidence: "insufficient-data" — caller তখন pattern তৈরি করবে
+ * না, শুধু ব্যবহারকারীকে geometry সম্পূর্ণ করতে বলবে।
+ *
+ * @param direction - "X" মানে বাতাস X-অক্ষ বরাবর বইছে (windward face
+ *   আঘাত পায় Y-span বরাবর, তাই buildingWidth = spanY), "Y" এর জন্য
+ *   উল্টো (buildingWidth = spanX)। distributeStoryForceToColumns.ts
+ *   এর direction কনভেনশনের সাথে সঙ্গতিপূর্ণ।
  */
 export function deriveWindLoadInput(
   hubBnbc: HubBnbcSettingsData,
-  geometry: GeometryCore
+  geometry: GeometryCore,
+  direction: "X" | "Y"
 ): DerivedWindLoadInput {
   const warnings: string[] = [];
 
@@ -109,14 +136,13 @@ export function deriveWindLoadInput(
     };
   }
 
-  // রক্ষণশীল দিকে: grid span এর মধ্যে ছোটটাকে "width" ধরা হচ্ছে (এই
-  // দুই span এর মধ্যে যেটা windward face এর সাথে লম্ব সেটাই আসল
-  // "width" — কিন্তু grid থেকে building orientation নিশ্চিতভাবে জানা
-  // যায় না, তাই worse-case (ছোট span → বেশি pressure concentration)
-  // ধরে নেওয়া হয়েছে)।
-  const buildingWidth = Math.min(footprint.spanX, footprint.spanY);
+  // direction-aware building width: বাতাস X বরাবর বইলে windward face
+  // এর width আসে Y-span থেকে (আর উল্টোটা Y-direction এর জন্য) — উপরের
+  // হেডার কমেন্টে ব্যাখ্যা করা হয়েছে। আগে দুই span এর মধ্যে ছোটটা
+  // উভয় direction-এ ব্যবহার করা হতো, যা asymmetric plan-এ ভুল ছিল।
+  const buildingWidth = direction === "X" ? footprint.spanY : footprint.spanX;
   warnings.push(
-    `Building width (${buildingWidth.toFixed(1)}m) grid span থেকে অনুমান করা হয়েছে — দুই দিকের span (${footprint.spanX.toFixed(1)}m × ${footprint.spanY.toFixed(1)}m) এর মধ্যে ছোটটা রক্ষণশীলভাবে বেছে নেওয়া হয়েছে। ভবনের প্রকৃত orientation অনুযায়ী নাও মিলতে পারে।`
+    `Wind ${direction} building width (${buildingWidth.toFixed(1)}m) grid span থেকে অনুমান করা হয়েছে (দুই দিকের span: ${footprint.spanX.toFixed(1)}m × ${footprint.spanY.toFixed(1)}m)। ভবনের প্রকৃত orientation grid থেকে নিশ্চিতভাবে জানা যায় না, তাই grid-axis-aligned rectangular footprint ধরে নেওয়া হয়েছে।`
   );
 
   // exposureCategory — উপরের হেডার কমেন্টে ব্যাখ্যা করা হয়েছে কেন এটা
@@ -139,14 +165,26 @@ export function deriveWindLoadInput(
   return { input, confidence: "approximate", warnings };
 }
 
-/** derive + compute একসাথে — caller সরাসরি ফলাফল ব্যবহার করতে পারবে। */
+/** derive + compute একসাথে (একটা direction) — caller সরাসরি ফলাফল ব্যবহার করতে পারবে। */
 export function deriveWindLoad(
   hubBnbc: HubBnbcSettingsData,
-  geometry: GeometryCore
+  geometry: GeometryCore,
+  direction: "X" | "Y"
 ): DerivedWindLoadResult {
-  const derived = deriveWindLoadInput(hubBnbc, geometry);
+  const derived = deriveWindLoadInput(hubBnbc, geometry, direction);
   if (!derived.input) {
     return { ...derived, result: null };
   }
   return { ...derived, result: computeWindLoad(derived.input) };
+}
+
+/** উভয় direction (X ও Y) একসাথে derive করে — useAutoLoadSync.ts এর মূল entry point। */
+export function deriveWindLoadBothDirections(
+  hubBnbc: HubBnbcSettingsData,
+  geometry: GeometryCore
+): DerivedWindLoadByDirection {
+  return {
+    x: deriveWindLoad(hubBnbc, geometry, "X"),
+    y: deriveWindLoad(hubBnbc, geometry, "Y"),
+  };
 }

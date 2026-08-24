@@ -135,8 +135,17 @@ interface AreaElement extends BaseElement {
   thickness: number; // mm
 }
 
+/**
+ * liveLoadOverride (kN/m², optional) — এই নির্দিষ্ট slab-এর জন্য
+ * project-wide Hub bnbcSettings.liveLoadValue বাদ দিয়ে একটা ভিন্ন
+ * occupancy live load বসাতে চাইলে ব্যবহার হয় (যেমন একই ভবনে
+ * residential floor + parking + roof — আলাদা আলাদা occupancy)।
+ * undefined/না থাকলে deriveLiveLoadCases.ts প্রজেক্ট-লেভেল default
+ * ব্যবহার করে (আগের আচরণ অপরিবর্তিত)। ২০২৬-০৮ যোগ হলো।
+ */
 export interface SlabElement extends AreaElement {
   category: "slab";
+  liveLoadOverride?: number;
 }
 
 export interface WallElement extends AreaElement {
@@ -310,8 +319,15 @@ export function distanceBetweenPoints(a: Point3D, b: Point3D): number {
   return Math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2 + (b.z - a.z) ** 2);
 }
 
-/** Beam/Column এর length (মিটারে, যেহেতু grid/story কোঅর্ডিনেট মিটারে)। */
-export function computeLineElementLength(element: BeamElement | ColumnElement): number {
+/**
+ * Beam/Column/Brace/Pile এর length (মিটারে, যেহেতু grid/story কোঅর্ডিনেট
+ * মিটারে)। চারটাই LineElement (startPoint/endPoint), তাই একই ফাংশন
+ * প্রযোজ্য — আগে parameter type শুধু Beam/Column এ সীমিত ছিল (কোনো
+ * real geometric কারণ ছাড়াই, শুধু তখন পর্যন্ত ব্যবহার না হওয়ায়), Brace/
+ * Pile self-weight যোগ করার সময় (deriveSelfWeightLoads.ts, ২০২৬-০৮)
+ * এই সীমাবদ্ধতা সরানো হলো।
+ */
+export function computeLineElementLength(element: BeamElement | ColumnElement | BraceElement | PileElement): number {
   return distanceBetweenPoints(element.startPoint, element.endPoint);
 }
 

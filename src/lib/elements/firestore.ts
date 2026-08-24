@@ -11,6 +11,7 @@ import {
 import { db } from "@/lib/firebase/client";
 import { firestorePaths } from "@/lib/firebase/schema";
 import type { StructuralElement } from "@/lib/types/element";
+import { stripUndefinedDeep } from "@/lib/utils";
 
 /**
  * NOTE: এই ফাইলে আগে ভুলবশত "use client" ডিরেক্টিভ ছিল (geometry/
@@ -32,12 +33,29 @@ import type { StructuralElement } from "@/lib/types/element";
  * সরাসরি, দ্রুত, এবং অন্য element প্রভাবিত হয় না।
  */
 
+/**
+ * stripUndefinedDeep() শুধু element-এর নিজস্ব field গুলোর ওপর প্রয়োগ
+ * করা হয়, updatedAt: serverTimestamp() যোগ করার আগে — serverTimestamp()
+ * একটা Firestore FieldValue sentinel object রিটার্ন করে, plain object
+ * না; পুরো merged object (sentinel সহ) stripUndefinedDeep() এ দিলে
+ * সেটাকেও ভুলভাবে সাধারণ object হিসেবে recurse করে ভেঙে ফেলত (hub-
+ * sdk-client.ts এর saveOwnModuleData() এও ঠিক এই কারণে stripUndefinedDeep()
+ * শুধু data ফিল্ডে প্রয়োগ হয়, top-level updatedAt এ না — একই প্যাটার্ন
+ * এখানে অনুসরণ করা হলো)।
+ *
+ * প্রয়োজন কেন: SlabElement.liveLoadOverride এর মতো optional field
+ * ("no override" মানে undefined) clear করতে caller undefined পাঠাতে
+ * পারে, যা Firestore-এর Web SDK ডিফল্টভাবে পুরো write reject করে দিত
+ * (ignoreUndefinedProperties সেট করা নেই, firebase/client.ts দেখুন)।
+ * strip না করলে liveLoadOverride ক্লিয়ার করার প্রতিটা চেষ্টা silently
+ * পুরো element save ব্যর্থ করত। (২০২৬-০৮ যোগ হলো)
+ */
 export async function saveElement(
   projectId: string,
   element: Omit<StructuralElement, "updatedAt">
 ): Promise<void> {
   const ref = doc(db(), firestorePaths.structuralElement(projectId, element.elementId));
-  await setDoc(ref, { ...element, updatedAt: serverTimestamp() });
+  await setDoc(ref, { ...stripUndefinedDeep(element), updatedAt: serverTimestamp() });
 }
 
 export async function deleteElement(projectId: string, elementId: string): Promise<void> {

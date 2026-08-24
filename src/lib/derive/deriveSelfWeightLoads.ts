@@ -14,14 +14,14 @@
  * ফাইল সেই gap পূরণ করে, নতুন mechanism বানানো হয়নি।
  *
  * সততার সাথে সীমাবদ্ধতা:
- *   - শুধু BeamElement ও ColumnElement সমর্থিত (computeLineElementLength
- *     শুধু এই দুটোর জন্য সংজ্ঞায়িত, element.ts এ) — Brace/Pile বাদ,
- *     কারণ তাদের length হিসাবের helper এখনো নেই। ব্যবহার করার সময়
- *     warning এ স্পষ্ট বলা হয়।
- *   - Slab/Wall self-weight এখানে নেই (area load, ভিন্ন mechanism —
- *     dead load per area = thickness × unitWeight, কিন্তু SlabElement/
- *     WallElement এ thickness field এখনো এই ফাইলে verify করা হয়নি,
- *     future Phase এ যোগ হতে পারে)।
+ *   - Beam/Column/Brace/Pile — চারটাই LineElement, computeLineElementLength
+ *     এখন চারটার জন্যই সংজ্ঞায়িত (২০২৬-০৮ পর্যন্ত শুধু Beam/Column
+ *     সমর্থিত ছিল, কোনো real geometric কারণ ছাড়াই — সেই সীমাবদ্ধতা
+ *     সরানো হয়েছে)।
+ *   - Slab/Wall/Shear-Wall/Core-Wall self-weight এখানে নেই — সেগুলো
+ *     area load (ভিন্ন mechanism, dead load per area = thickness ×
+ *     unitWeight), deriveAreaSelfWeightLoads.ts এ আলাদাভাবে handled
+ *     (২০২৬-০৮ যোগ হলো)।
  *   - Composite/Prestressed/Cold-Formed section এ computeSectionProperties
  *     throw করে (section.ts এর ডকুমেন্টেড সীমাবদ্ধতা) — সেই element
  *     skip করা হয় warning সহ, crash না করে।
@@ -32,7 +32,7 @@
  *     self-weight" বাটনে কল করে ফলাফল preview/persist করা যাবে।
  */
 
-import type { StructuralElement, BeamElement, ColumnElement } from "@/lib/types/element";
+import type { StructuralElement, BeamElement, ColumnElement, BraceElement, PileElement } from "@/lib/types/element";
 import { computeLineElementLength } from "@/lib/types/element";
 import type { StructuralMaterial } from "@/lib/types/material";
 import type { StructuralSection } from "@/lib/types/section";
@@ -40,7 +40,7 @@ import { computeSectionProperties } from "@/lib/types/section";
 import type { UniformLineLoadCase } from "@/lib/types/load";
 import { createUniformLineLoad } from "@/lib/types/load";
 
-const SELF_WEIGHT_SUPPORTED_CATEGORIES = new Set(["beam", "column"]);
+const SELF_WEIGHT_SUPPORTED_CATEGORIES = new Set(["beam", "column", "brace", "pile"]);
 
 export interface DeriveSelfWeightLoadsResult {
   loadCases: UniformLineLoadCase[];
@@ -49,8 +49,8 @@ export interface DeriveSelfWeightLoadsResult {
 }
 
 /**
- * সব Beam/Column element-এর জন্য self-weight uniform-line load
- * তৈরি করে। প্রতিটা element-এর material.unitWeight (kN/m³) ও
+ * সব Beam/Column/Brace/Pile element-এর জন্য self-weight uniform-line
+ * load তৈরি করে। প্রতিটা element-এর material.unitWeight (kN/m³) ও
  * section.area (mm² → m² এ convert) থেকে intensity (kN/m) হিসাব:
  *
  *   intensity = -(area_m2 × unitWeight_kNm3) × selfWeightMultiplier
@@ -74,17 +74,9 @@ export function deriveSelfWeightLoads(
   const warnings: string[] = [];
 
   const lineElements = elements.filter(
-    (e): e is BeamElement | ColumnElement => SELF_WEIGHT_SUPPORTED_CATEGORIES.has(e.category)
+    (e): e is BeamElement | ColumnElement | BraceElement | PileElement =>
+      SELF_WEIGHT_SUPPORTED_CATEGORIES.has(e.category)
   );
-
-  const unsupportedCount = elements.filter(
-    (e) => e.category === "brace" || e.category === "pile"
-  ).length;
-  if (unsupportedCount > 0) {
-    warnings.push(
-      `${unsupportedCount}টা Brace/Pile element self-weight auto-generation এ বাদ পড়েছে — শুধু Beam/Column সমর্থিত (computeLineElementLength এই দুটোর জন্যই সংজ্ঞায়িত)। প্রয়োজনে ম্যানুয়ালি Point/Uniform Load যোগ করুন।`
-    );
-  }
 
   for (const element of lineElements) {
     const material = materials.find((m) => m.materialId === element.materialId);

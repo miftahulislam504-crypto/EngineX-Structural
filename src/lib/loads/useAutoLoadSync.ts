@@ -12,9 +12,10 @@
  * siteInfo) — এই ছয়টার যেকোনো একটা বদলালেই স্বয়ংক্রিয়ভাবে re-derive
  * করে:
  *   1. Self-weight (Dead pattern) — সব Beam/Column এ (deriveSelfWeightLoads.ts)
- *   2. Occupancy Live Load — সব Slab এ (deriveLiveLoadCases.ts)
- *   3. Wind X/Y pattern + story-force column distribution (deriveWindLoad.ts + distributeStoryForceToColumns.ts)
- *   4. Seismic X/Y pattern + story-force column distribution (deriveSeismicLoad.ts + distributeStoryForceToColumns.ts)
+ *   1a. Self-weight (Dead pattern) — সব Slab/Wall/Shear-Wall/Core-Wall এ (deriveAreaSelfWeightLoads.ts, ২০২৬-০৮ যোগ হলো)
+ *   2. Occupancy Live Load — সব Slab এ, per-slab liveLoadOverride থাকলে সেটাই ব্যবহার হয় (deriveLiveLoadCases.ts, override ২০২৬-০৮ যোগ হলো)
+ *   3. Wind X/Y pattern + story-force Column/Brace distribution (deriveWindLoad.ts + distributeStoryForceToColumns.ts, Brace stiffness ২০২৬-০৮ যোগ হলো)
+ *   4. Seismic X/Y pattern + story-force Column/Brace distribution (deriveSeismicLoad.ts + distributeStoryForceToColumns.ts)
  *
  * নিরাপত্তা নীতি (autoReanalysisLoop.ts এর প্রতিষ্ঠিত নীতির সাথে
  * সামঞ্জস্যপূর্ণ, Miftahul এর সাথে Step 3 শুরুর আগে কনফার্ম করা):
@@ -48,8 +49,9 @@ import { useHubBnbcSettings, useHubSiteInfo } from "@/lib/hub/useHubModuleSubscr
 import { saveLoadCase, deleteLoadCase, upsertLoadPattern, saveLoadPatternLibrary } from "@/lib/loads/firestore";
 import type { LoadCase, LoadPattern } from "@/lib/types/load";
 import { deriveSelfWeightLoads } from "@/lib/derive/deriveSelfWeightLoads";
+import { deriveAreaSelfWeightLoads } from "@/lib/derive/deriveAreaSelfWeightLoads";
 import { deriveLiveLoadCases } from "@/lib/derive/deriveLiveLoadCases";
-import { deriveWindLoad } from "@/lib/derive/deriveWindLoad";
+import { deriveWindLoadBothDirections } from "@/lib/derive/deriveWindLoad";
 import { deriveSeismicLoad } from "@/lib/derive/deriveSeismicLoad";
 import { autoGenerateWindSeismicPatterns } from "@/lib/derive/autoGenerateWindSeismicPatterns";
 import { distributeWindStoryForces, distributeSeismicStoryForces } from "@/lib/derive/distributeStoryForceToColumns";
@@ -188,9 +190,13 @@ export function useAutoLoadSync(projectId: string): AutoLoadSyncStatus {
       const materials = materialLibrary.materials;
       const sections = sectionLibrary.sections;
 
-      // ---- 1. Self-weight (Dead) ----
+      // ---- 1. Self-weight (Dead) — Beam/Column ----
       const selfWeightResult = deriveSelfWeightLoads(elements, materials, sections, DEAD_PATTERN_ID);
       warnings.push(...selfWeightResult.warnings);
+
+      // ---- 1a. Self-weight (Dead) — Slab/Wall/Shear-Wall/Core-Wall ----
+      const areaSelfWeightResult = deriveAreaSelfWeightLoads(elements, materials, DEAD_PATTERN_ID);
+      warnings.push(...areaSelfWeightResult.warnings);
 
       // ---- 2. Occupancy Live Load (Slab) ----
       const liveLoadResult = deriveLiveLoadCases(
@@ -206,7 +212,7 @@ export function useAutoLoadSync(projectId: string): AutoLoadSyncStatus {
       let seismicAutoCases: LoadCase[] = [];
 
       if (hubBnbc.data) {
-        const windDerived = deriveWindLoad(hubBnbc.data, geometry);
+        const windDerived = deriveWindLoadBothDirections(hubBnbc.data, geometry);
         const seismicDerived = deriveSeismicLoad(hubBnbc.data, hubSiteInfo.data, geometry, elements, materials, sections);
         const windSeismicPatterns = autoGenerateWindSeismicPatterns(windDerived, seismicDerived);
         warnings.push(...windSeismicPatterns.warnings);
@@ -246,6 +252,7 @@ export function useAutoLoadSync(projectId: string): AutoLoadSyncStatus {
       // ---- LoadCase diff + write ----
       const nextAutoCases = [
         ...selfWeightResult.loadCases,
+        ...areaSelfWeightResult.loadCases,
         ...liveLoadResult.loadCases,
         ...windAutoCases,
         ...seismicAutoCases,

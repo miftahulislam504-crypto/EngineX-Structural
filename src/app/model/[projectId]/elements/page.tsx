@@ -27,7 +27,7 @@ import { DualPanelViewportShell } from "@/components/viewport/DualPanelViewportS
 export default function ElementsPage({ params }: PageProps<"/model/[projectId]/elements">) {
   const { projectId } = use(params);
 
-  const { addElement, removeElement } = useElementsCore(projectId);
+  const { addElement, updateElement, removeElement } = useElementsCore(projectId);
   const isElementsLoading = useElementsStore((s) => s.isLoading);
 
   // Beam/Column এর auto-section-assign (autoAssignSection.ts) লাইব্রেরিতে
@@ -41,7 +41,7 @@ export default function ElementsPage({ params }: PageProps<"/model/[projectId]/e
   ) : (
     <div className="space-y-6">
       <ElementPanel onAddElement={addElement} onDeleteElement={removeElement} onAddSection={addSection} />
-      <AreaElementPanel onAddElement={addElement} onDeleteElement={removeElement} />
+      <AreaElementPanel onAddElement={addElement} onUpdateElement={updateElement} onDeleteElement={removeElement} />
       <FootingPanel onAddElement={addElement} onDeleteElement={removeElement} />
       <CombinedFootingPanel onAddElement={addElement} onDeleteElement={removeElement} />
       <StripFootingPanel onAddElement={addElement} onDeleteElement={removeElement} />

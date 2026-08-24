@@ -13,6 +13,7 @@ import { useElementsStore } from "@/lib/elements/useElementsStore";
 
 interface AreaElementPanelProps {
   onAddElement: (element: StructuralElement) => void;
+  onUpdateElement: (element: StructuralElement) => void;
   onDeleteElement: (elementId: string) => void;
 }
 
@@ -39,7 +40,7 @@ function makeElementId(): string {
  * পরিবর্তিত মান ভুলভাবে ব্যবহৃত হতো। কোনো story সিলেক্টেড না থাকলে
  * elevation=0 (base level) এ আঁকা হয় এবং storyId undefined থাকে।
  */
-export function AreaElementPanel({ onAddElement, onDeleteElement }: AreaElementPanelProps) {
+export function AreaElementPanel({ onAddElement, onUpdateElement, onDeleteElement }: AreaElementPanelProps) {
   const materials = useLibraryStore((s) => s.materialLibrary.materials);
   const stories = useGeometryStore((s) => s.geometry.stories);
   const selection = useSelectionStore((s) => s.selection);
@@ -55,6 +56,10 @@ export function AreaElementPanel({ onAddElement, onDeleteElement }: AreaElementP
   const [thickness, setThickness] = useState("150");
   const [label, setLabel] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  // Slab-এর liveLoadOverride ইনলাইন এডিটের জন্য — deriveLiveLoadCases.ts
+  // এর SlabElement.liveLoadOverride ফিল্ড, ২০২৬-০৮ যোগ হলো। elementId →
+  // draft string (input এ কী টাইপ করা হচ্ছে, commit না হওয়া পর্যন্ত)।
+  const [overrideDrafts, setOverrideDrafts] = useState<Record<string, string>>({});
 
   const areaElements = elements.filter(
     (e) =>
@@ -122,6 +127,30 @@ export function AreaElementPanel({ onAddElement, onDeleteElement }: AreaElementP
     setFormError(null);
   }
 
+  /** Slab-এর liveLoadOverride commit করে (খালি input দিলে override সরিয়ে দেয়, project-wide default এ ফিরে যায়)। */
+  function handleCommitOverride(element: StructuralElement) {
+    if (element.category !== "slab") return;
+    const draft = overrideDrafts[element.elementId];
+    if (draft === undefined) return; // কোনো এডিট হয়নি, কিছু করার নেই
+
+    const trimmed = draft.trim();
+    if (trimmed !== "" && (Number.isNaN(Number(trimmed)) || Number(trimmed) < 0)) {
+      // অবৈধ ইনপুট (সংখ্যা না, বা ঋণাত্মক) — commit না করে draft অপরিবর্তিত রাখা হচ্ছে, ইউজার ঠিক করে আবার blur করবেন।
+      return;
+    }
+    const updated: StructuralElement =
+      trimmed === ""
+        ? { ...element, liveLoadOverride: undefined, updatedAt: new Date().toISOString() }
+        : { ...element, liveLoadOverride: Number(trimmed), updatedAt: new Date().toISOString() };
+
+    onUpdateElement(updated);
+    setOverrideDrafts((prev) => {
+      const next = { ...prev };
+      delete next[element.elementId];
+      return next;
+    });
+  }
+
   return (
     <div className="space-y-4">
       <div>
@@ -140,6 +169,9 @@ export function AreaElementPanel({ onAddElement, onDeleteElement }: AreaElementP
                 element.category === "mat-foundation";
               if (!isAreaElement) return null;
               const area = computePolygonPlanArea(element.vertices);
+              const isSlab = element.category === "slab";
+              const currentOverride = element.category === "slab" ? element.liveLoadOverride : undefined;
+              const draftValue = overrideDrafts[element.elementId] ?? (currentOverride !== undefined ? String(currentOverride) : "");
               return (
                 <li
                   key={element.elementId}
@@ -152,14 +184,30 @@ export function AreaElementPanel({ onAddElement, onDeleteElement }: AreaElementP
                       {area.toFixed(1)} m²)
                     </span>
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => onDeleteElement(element.elementId)}
-                    className="text-xs text-red-500/70 hover:text-red-600 px-1"
-                    title="ডিলিট করুন"
-                  >
-                    ✕
-                  </button>
+                  <span className="flex items-center gap-2">
+                    {isSlab && (
+                      <span className="flex items-center gap-1" title="Live Load Override (kN/m²) — খালি রাখলে project-wide default ব্যবহার হবে">
+                        <input
+                          type="number"
+                          step="0.1"
+                          placeholder="default"
+                          value={draftValue}
+                          onChange={(e) => setOverrideDrafts((prev) => ({ ...prev, [element.elementId]: e.target.value }))}
+                          onBlur={() => handleCommitOverride(element)}
+                          className="w-16 rounded-md bg-surface-card border border-surface-border px-1.5 py-0.5 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-500/20"
+                        />
+                        <span className="text-[10px] text-text-muted">kN/m²</span>
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => onDeleteElement(element.elementId)}
+                      className="text-xs text-red-500/70 hover:text-red-600 px-1"
+                      title="ডিলিট করুন"
+                    >
+                      ✕
+                    </button>
+                  </span>
                 </li>
               );
             })}

@@ -46,10 +46,24 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
     marginTop: 8,
     marginBottom: 4,
+    lineHeight: 1.15,
+    // @react-pdf/renderer wraps long text onto multiple lines by
+    // default (it doesn't clip), so a long project name was already
+    // safe from running off the page — but with no cap it could wrap
+    // to 3-4 lines and visually crowd the subtitle right below it.
+    // This installed version's <Text> has no numberOfLines/line-clamp
+    // prop, so the cap is done the CSS way instead: fontSize * lineHeight
+    // * 2 lines as maxHeight, with overflow hidden. Comfortably fits the
+    // overwhelming majority of project names (1 line) while still
+    // degrading gracefully — not by clipping mid-character, just capping
+    // at a clean 2-line height — for the rare very long one.
+    maxHeight: 26 * 1.15 * 2,
+    overflow: "hidden",
   },
   subtitle: {
     fontSize: pdfFontSize.h3,
     color: pdfColors.inkMuted,
+    marginTop: 2,
   },
   metaBlock: {
     marginTop: 60,
