@@ -43,11 +43,13 @@ function isAreaElement(
  * না, বরং legitimate cantilever/isolated-column-on-support হতে পারে।
  *
  * Area element (Slab/Wall) এর জন্য connectivity check সরল করা হয়েছে:
- * অন্তত একটা vertex যদি কোনো line element endpoint বা base level এর
- * সাথে না মেলে, সেটা "possibly floating" হিসেবে info-level এ flag
- * হয় (error না, কারণ area element এর mesh-generated internal node
- * গুলো এমনিতেই কোনো line endpoint এর সাথে মিলবে না — এটা একটা
- * heuristic হিসেবে conservative রাখা হয়েছে, false positive এড়াতে)।
+ * অন্তত একটা vertex যদি কোনো line element endpoint, অন্য কোনো area
+ * element এর vertex (wall-to-wall corner, wall-to-slab base ইত্যাদি),
+ * বা base level এর সাথে না মেলে, সেটা "possibly floating" হিসেবে
+ * info-level এ flag হয় (error না, কারণ area element এর mesh-generated
+ * internal node গুলো এমনিতেই কোনো line endpoint এর সাথে মিলবে না —
+ * এটা একটা heuristic হিসেবে conservative রাখা হয়েছে, false positive
+ * এড়াতে)।
  */
 export function checkConnectivity(elements: StructuralElement[]): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
@@ -98,22 +100,44 @@ export function checkConnectivity(elements: StructuralElement[]): ValidationIssu
     }
   }
 
-  // Area elements: heuristic — কোনো vertex যদি কোনো line-element node
-  // বা base level এর কাছাকাছি না থাকে, info হিসেবে জানানো (conservative,
-  // কারণ ভবিষ্যতে area-to-area shared-edge connectivity একটা বৈধ কেস
-  // যা এই সরল চেক ধরতে পারে না)।
+  // বাগফিক্স: আগে coordUsage শুধু line-element (Beam/Column) endpoint
+  // দিয়ে বানানো হতো, তাই এই নিচের area-element heuristic কোনো wall-to-
+  // wall বা wall-to-slab shared-edge connectivity চিনতোই না — একটা
+  // সম্পূর্ণ সংযুক্ত wall (যেমন corner-এ আরেকটা wall-এর সাথে জোড়া লাগা,
+  // বা slab-এর বেসে বসা) শুধু কোনো column/beam node স্পর্শ না করলেই
+  // "no vertex matching" info পেত, যা প্রতিটা প্রায় সাধারণ wall-এই আসত
+  // (false positive, যদিও severity "info" বলে ব্লক করত না)। এখন প্রতিটা
+  // area-element vertex-ও coordUsage-এ যোগ করা হচ্ছে (নিজের elementId
+  // সহ), যাতে area-to-area shared vertex সঠিকভাবে "connected" ধরা যায় —
+  // heuristic এখনো conservative থাকছে (edge-এর মাঝামাঝি কোনো vertex
+  // ছাড়া touch এখনও ধরবে না), কিন্তু সবচেয়ে সাধারণ কেস (wall corner,
+  // wall-slab base) আর false-flag হবে না।
   const areaElements = elements.filter(isAreaElement);
+  for (const e of areaElements) {
+    for (const v of e.vertices) {
+      const key = coordKey(v.x, v.y, v.z);
+      const list = coordUsage.get(key) ?? [];
+      list.push(e.elementId);
+      coordUsage.set(key, list);
+    }
+  }
+
   for (const e of areaElements) {
     const anyVertexConnectedOrBase = e.vertices.some((v) => {
       const key = coordKey(v.x, v.y, v.z);
-      return (coordUsage.get(key)?.length ?? 0) > 0 || v.y <= 1e-3;
+      const usedBy = coordUsage.get(key) ?? [];
+      // নিজের ছাড়া অন্তত আরেকটা element (line বা area) এই coordinate
+      // শেয়ার করছে কিনা — নিজের নিজের vertex গোনা (যা এখন coordUsage-এ
+      // নিজেই যোগ হয়েছে) "connected" হিসেবে ধরা ঠিক না।
+      const sharedWithOther = usedBy.some((id) => id !== e.elementId);
+      return sharedWithOther || v.y <= 1e-3;
     });
     if (!anyVertexConnectedOrBase) {
       issues.push({
         id: `connectivity:${e.elementId}:area`,
         severity: "info",
         category: "connectivity",
-        message: `${elementLabel(e)} has no vertex matching a line-element node or base level — verify it is actually attached to the structure.`,
+        message: `${elementLabel(e)} has no vertex matching another element's node or base level — verify it is actually attached to the structure.`,
         elementIds: [e.elementId],
       });
     }
@@ -223,12 +247,26 @@ export function checkGeometry(elements: StructuralElement[]): ValidationIssue[] 
       });
       continue;
     }
-    if (computePlanAreaXZ(e.vertices) <= 1e-6) {
+    // বাগফিক্স: আগে এখানে computePlanAreaXZ() (শুধু X,Z ব্যবহার করে
+    // shoelace) দিয়ে সব area element (Slab/Wall/ShearWall/CoreWall/Stair)
+    // চেক হতো। এটা Slab-এর জন্য ঠিক (Slab সবসময় অনুভূমিক, তাই তার ৪+
+    // vertex সত্যিকারের ভিন্ন X,Z-এ থাকে), কিন্তু Wall/ShearWall/CoreWall
+    // উল্লম্ব সমতলে থাকে — hub-geometry-parser.ts এর mapWall() vertices
+    // বানায় [startBase, endBase, endTop, startTop] হিসেবে, যেখানে
+    // startBase.x===startTop.x এবং endBase.x===endTop.x (একই কারণে Z-ও),
+    // শুধু Y (elevation) আলাদা। ফলে X,Z প্রজেকশনে চারটা vertex মাত্র
+    // দুইটা ইউনিক বিন্দুতে পড়ে যায় (collinear), আর shoelace সবসময় ~0
+    // দিত — প্রতিটা legitimate, non-degenerate wall-ই false positive
+    // "zero plan area" error পেত (Stair-এর inclined waist-slab-ও একই
+    // কারণে প্রভাবিত)। সমাধান: polygon যেই সমতলে আসলে আছে সেই সমতলে
+    // area মাপা (computePolygonAreaAnyPlane — 3D cross-product ভিত্তিক,
+    // vertical বা tilted পলিগনেও সঠিক), শুধু XZ-প্রজেকশনে না।
+    if (computePolygonAreaAnyPlane(e.vertices) <= 1e-6) {
       issues.push({
         id: `geometry:${e.elementId}:zero-area`,
         severity: "error",
         category: "geometry",
-        message: `${elementLabel(e)} has zero (or near-zero) plan area — vertices may be collinear.`,
+        message: `${elementLabel(e)} has zero (or near-zero) area — vertices may be collinear.`,
         elementIds: [e.elementId],
       });
     }
@@ -237,15 +275,26 @@ export function checkGeometry(elements: StructuralElement[]): ValidationIssue[] 
   return issues;
 }
 
-/** Shoelace formula, element.ts এর computePolygonPlanArea এর সাথে সামঞ্জস্যপূর্ণ। */
-function computePlanAreaXZ(vertices: { x: number; z: number }[]): number {
-  let area = 0;
+/**
+ * Newell's method — polygon যেই সমতলে থাকুক না কেন (অনুভূমিক Slab,
+ * উল্লম্ব Wall/ShearWall/CoreWall, বা tilted Stair waist-slab) সঠিক
+ * area দেয়, কারণ এটা XZ বা কোনো নির্দিষ্ট অক্ষ-জোড়ায় প্রজেক্ট না করে
+ * পুরো 3D normal vector-এর ম্যাগনিচিউড থেকে area বের করে (XZ-অনুভূমিক
+ * polygon-এ এটা computePlanAreaXZ()-এর মতোই ফলাফল দেয়, কারণ তখন normal
+ * vector শুধু Y-দিকে থাকে — তাই Slab-এর জন্য behavior অপরিবর্তিত)।
+ */
+function computePolygonAreaAnyPlane(vertices: { x: number; y: number; z: number }[]): number {
+  let nx = 0;
+  let ny = 0;
+  let nz = 0;
   for (let i = 0; i < vertices.length; i++) {
     const cur = vertices[i];
     const next = vertices[(i + 1) % vertices.length];
-    area += cur.x * next.z - next.x * cur.z;
+    nx += (cur.y - next.y) * (cur.z + next.z);
+    ny += (cur.z - next.z) * (cur.x + next.x);
+    nz += (cur.x - next.x) * (cur.y + next.y);
   }
-  return Math.abs(area / 2);
+  return Math.sqrt(nx * nx + ny * ny + nz * nz) / 2;
 }
 
 /**

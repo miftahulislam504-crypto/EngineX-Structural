@@ -59,6 +59,8 @@ export function ArchitecturalImportPanel({ projectId, onAddElement }: Architectu
     setItemMaterial,
     setItemSection,
     setItemIncludeAsShearWall,
+    setGroupMaterial,
+    setGroupSection,
     buildMergedGeometry,
     resolvedElements,
     excludedWallCount,
@@ -111,7 +113,10 @@ export function ArchitecturalImportPanel({ projectId, onAddElement }: Architectu
           জ্যামিতি আনুন। কোনো ডেটা সরাসরি লেখা হবে না — প্রতিটা element-এর Material/Section বেছে
           দিয়ে নিশ্চিত করার পরেই মডেলে যোগ হবে। সাধারণ (architectural) wall ডিফল্টে মডেলে যোগ হয়
           না — শুধু যেগুলোকে আপনি &quot;Shear Wall হিসেবে import করুন&quot; চেকপয়েন্ট দেবেন সেগুলোই
-          shear wall হিসেবে মডেলে যোগ হবে, বাকি সব ETABS-এর মতোই বাদ থাকবে।
+          shear wall হিসেবে মডেলে যোগ হবে, বাকি সব ETABS-এর মতোই বাদ থাকবে। প্রতিটা category (Wall,
+          Column, Beam, Slab, Stairs) এর উপরে একটা bulk Material/Section সিলেক্টর আছে — যেহেতু এই
+          import সবসময় একটা preliminary ধাপ, একবারে পুরো category-তে একই selection বসিয়ে দ্রুত শুরু
+          করুন, পরে প্রয়োজনে নিচে নির্দিষ্ট item আলাদা করে বদলে নিন।
         </p>
         <button
           type="button"
@@ -235,6 +240,14 @@ export function ArchitecturalImportPanel({ projectId, onAddElement }: Architectu
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
                     {CATEGORY_LABELS[category] ?? category} ({items.length})
                   </h3>
+                  <GroupBulkAssignRow
+                    category={category}
+                    items={items}
+                    materials={materials}
+                    sections={sections}
+                    onGroupMaterialChange={(materialId) => setGroupMaterial(category, materialId)}
+                    onGroupSectionChange={(sectionId) => setGroupSection(category, sectionId)}
+                  />
                   {items.map((item) => (
                     <ImportItemRow
                       key={item.original.elementId}
@@ -271,6 +284,95 @@ export function ArchitecturalImportPanel({ projectId, onAddElement }: Architectu
           </button>
         </>
       )}
+    </div>
+  );
+}
+
+interface GroupBulkAssignRowProps {
+  category: string;
+  items: ImportReviewItem[];
+  materials: { materialId: string; name: string }[];
+  sections: { sectionId: string; name: string }[];
+  onGroupMaterialChange: (materialId: string) => void;
+  onGroupSectionChange: (sectionId: string) => void;
+}
+
+/**
+ * প্রতিটা category group-এর উপরে একটা bulk Material/Section সিলেক্টর —
+ * নতুন সংযোজন। Hub থেকে import সবসময় একটা preliminary ধাপ ধরা হয় (এই
+ * মুহূর্তে EngineXDraw কোনো material/section metadata পাঠায়ই না, parser
+ * সবসময় UNRESOLVED বসায়) — তাই বাস্তবে ইঞ্জিনিয়ার সাধারণত পুরো Wall
+ * group-এ এক material, পুরো Column group-এ এক section+material, ইত্যাদি
+ * দিয়ে দ্রুত শুরু করেন, পরে ডিজাইন পর্যায়ে নির্দিষ্ট element আলাদা করে
+ * বদলান। এই dropdown একবার বাছাই করলেই এই category-র সব item-এ (এখনই
+ * তৈরি হওয়া, পরে group-এ যোগ হওয়া কোনো item না — যেহেতু import একবারের
+ * snapshot) সেই মান বসিয়ে দেয় — নিচের প্রতিটা ImportItemRow-এর নিজস্ব
+ * dropdown অপরিবর্তিত থাকে, ইঞ্জিনিয়ার যেকোনো একটা পরে আলাদাভাবে বদলাতে
+ * পারবেন। "নির্বাচন করুন" (খালি value) ইচ্ছাকৃতভাবে bulk-apply করে না —
+ * শুধু প্রকৃত material/section বাছাই হলেই group-wide সেট হয়, যাতে ভুলে
+ * এই dropdown ছুঁয়ে সবার বাছাই খালি করে না ফেলে।
+ *
+ * Section selector শুধু তখনই দেখানো হয় যখন group-এর অন্তত একটা item-এর
+ * sectionId !== null (অর্থাৎ line category — Beam/Column) — Wall/Slab/
+ * Stairs group-এ section কখনো প্রযোজ্য না, তাই dropdown-ই দেখানো হয় না।
+ */
+function GroupBulkAssignRow({
+  items,
+  materials,
+  sections,
+  onGroupMaterialChange,
+  onGroupSectionChange,
+}: GroupBulkAssignRowProps) {
+  const hasSectionInGroup = items.some((it) => it.sectionId !== null);
+
+  return (
+    <div className="rounded-lg border border-dashed border-surface-border bg-surface-card/30 p-2.5">
+      <p className="text-[11px] text-text-muted mb-1.5">
+        সবার জন্য একই (preliminary) — নিচে আলাদা করে যেকোনোটা বদলানো যাবে
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="block text-[11px] text-text-muted mb-1">Material (সব {items.length}টায়)</label>
+          <select
+            defaultValue=""
+            onChange={(e) => {
+              if (e.target.value === "") return;
+              onGroupMaterialChange(e.target.value);
+              e.target.value = "";
+            }}
+            className={SELECT_CLASS}
+          >
+            <option value="">নির্বাচন করুন</option>
+            {materials.map((m) => (
+              <option key={m.materialId} value={m.materialId}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {hasSectionInGroup && (
+          <div>
+            <label className="block text-[11px] text-text-muted mb-1">Section (সব {items.length}টায়)</label>
+            <select
+              defaultValue=""
+              onChange={(e) => {
+                if (e.target.value === "") return;
+                onGroupSectionChange(e.target.value);
+                e.target.value = "";
+              }}
+              className={SELECT_CLASS}
+            >
+              <option value="">নির্বাচন করুন</option>
+              {sections.map((s) => (
+                <option key={s.sectionId} value={s.sectionId}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -273,6 +273,48 @@ export function useArchitecturalImport(projectId: string) {
   }, []);
 
   /**
+   * Bulk/group material assignment — নতুন সংযোজন (ইঞ্জিনিয়ারের অনুরোধে)।
+   * যেহেতু Hub import সবসময় একটা preliminary/প্রাথমিক ধাপ (সব Wall
+   * একই material, সব Column একই section+material, সব Beam/Slab/Stairs
+   * নিজ নিজ একই সিলেকশন দিয়ে শুরু করে পরে ইঞ্জিনিয়ার আলাদা আলাদা করে
+   * override করবেন — প্রতিটা element এক এক করে বেছে দেওয়া অপ্রয়োজনীয়
+   * সময়ক্ষেপণ), এই ফাংশন একটা category-র (categoryOverride প্রয়োগ করা
+   * effective category — panel-এর groupedItems ঠিক এই একই key ব্যবহার
+   * করে, নিচে ArchitecturalImportPanel.tsx দেখুন) সব item-এ এক লহমায়
+   * একই materialId বসিয়ে দেয়। পরে ইঞ্জিনিয়ার চাইলে setItemMaterial()
+   * দিয়ে যেকোনো একটা item আলাদাভাবে বদলাতে পারবেন — bulk assignment তার
+   * পথ আটকায় না, শুধু starting point দ্রুত করে।
+   */
+  const setGroupMaterial = useCallback((category: string, materialId: string) => {
+    setState((s) => ({
+      ...s,
+      items: s.items.map((it) =>
+        (it.categoryOverride ?? it.original.category) === category ? { ...it, materialId } : it
+      ),
+    }));
+  }, []);
+
+  /**
+   * Bulk/group section assignment — setGroupMaterial()-এর মতোই, কিন্তু
+   * শুধু line category (Beam/Column — sectionId !== null ওয়ালা item)-এ
+   * প্রযোজ্য। Wall/Slab/Stairs-এর sectionId নেই (area/point element),
+   * তাই তাদের category-তে এই ফাংশন কল করলে কোনো item-ই মেলে না (map
+   * করার সময় sectionId !== null চেক আগে থেকেই আছে বলে নিরাপদ, কিন্তু
+   * caller-side (panel) এ শুধু sectionId !== null থাকা group-এই dropdown
+   * দেখানো হবে যাতে বিভ্রান্তিকর no-op UI না দেখায়)।
+   */
+  const setGroupSection = useCallback((category: string, sectionId: string) => {
+    setState((s) => ({
+      ...s,
+      items: s.items.map((it) =>
+        (it.categoryOverride ?? it.original.category) === category && it.sectionId !== null
+          ? { ...it, sectionId }
+          : it
+      ),
+    }));
+  }, []);
+
+  /**
    * "Shear Wall হিসেবে import করুন" চেকপয়েন্ট — শুধু category === "wall"
    * item-এ প্রযোজ্য। checked করলে categoryOverride "shear-wall"-এ সেট
    * হয় (ঠিক আগের override যুক্তিই ব্যবহার করে, thickness-issue থাকুক বা
@@ -378,6 +420,8 @@ export function useArchitecturalImport(projectId: string) {
     setItemSection,
     setItemCategoryOverride,
     setItemIncludeAsShearWall,
+    setGroupMaterial,
+    setGroupSection,
     buildMergedGeometry,
     resolvedElements,
     excludedWallCount,
