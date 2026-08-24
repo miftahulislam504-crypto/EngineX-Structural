@@ -30,7 +30,7 @@
  *     না দিলে সেই wall confirmImport()-এ silently বাদ পড়ে (skip, block
  *     না)। চেকপয়েন্ট দিলে categoryOverride "shear-wall"-এ সেট হয় এবং
  *     ঠিক অন্য elements-এর মতোই material/section resolve করে import
- *     হয়। non-wall category (beam/column/slab/stairs/shear-wall
+ *     হয়। non-wall category (beam/column/slab/stairs/shear-wall/parapet
  *     সরাসরি parser থেকে যদি কখনো আসে) এই ফ্ল্যাগ ছোঁয় না, স্বাভাবিকভাবে
  *     import হয়।
  *   - re-import নিরাপদ: elementId Draw-এর BuildingElementRef.id থেকে
@@ -148,8 +148,11 @@ function buildReviewItems(result: ParseGeometryResult): {
         : ""
       : null,
     categoryOverride: null,
-    // "wall" ছাড়া বাকি সব category (beam/column/slab/stairs/shear-wall)
-    // সবসময় include — শুধু সাধারণ wall ডিফল্টে বাদ, চেকপয়েন্ট দিলে যোগ।
+    // "wall" ছাড়া বাকি সব category (beam/column/slab/stairs/shear-wall/
+    // parapet) সবসময় include — শুধু সাধারণ wall ডিফল্টে বাদ, চেকপয়েন্ট
+    // দিলে যোগ। parapet কখনো shear-wall candidate হয় না (mapParapet()
+    // দেখুন, hub-geometry-parser.ts), তাই এই wall-only gate তার জন্য
+    // প্রযোজ্য না — বাকি সব category-র মতোই সবসময় true।
     includeAsShearWall: el.category !== "wall",
     issue: issueByElementId.get(el.elementId) ?? null,
   }));

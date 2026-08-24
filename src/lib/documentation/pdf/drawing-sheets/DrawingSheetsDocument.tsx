@@ -9,10 +9,13 @@
  * তৈরি হয়েছে — general-notes/GeneralNotesSheet.tsx), S-20 (Beam
  * Schedule, Phase B2), S-21 (Column Starter/Splice Detail, Phase B3),
  * S-22 (Column Reinforcement Detail, Phase B4), S-23 (Beam-Column
- * Joint Detail, Phase B5), এবং S-24 (Wall/Shear Wall Layout Plan,
+ * Joint Detail, Phase B5), S-24 (Wall/Shear Wall Layout Plan,
  * Phase B1 — এর পেয়ার Wall Calc Sheet CalcSheetsDocument.tsx এ, এই
- * drawing-sheets বান্ডলে না, calc-sheets এর নিজস্ব বান্ডলে) — সবগুলো
- * মূল ২০-এন্ট্রি reference set এর বাইরে — সবগুলো sheet কে একটাই
+ * drawing-sheets বান্ডলে না, calc-sheets এর নিজস্ব বান্ডলে), এবং S-25
+ * (Parapet Layout Plan, 2026-08-24 — S-24-এর ঠিক একই প্যাটার্নে, Wall
+ * Calc Sheet-এর মতো কোনো পেয়ার calc sheet নেই কারণ parapet-এর নিজস্ব
+ * কোনো design check এই App-এ নেই, শুধু self-weight contribution) —
+ * সবগুলো মূল ২০-এন্ট্রি reference set এর বাইরে — সবগুলো sheet কে একটাই
  * react-pdf Document এ, ধারাবাহিক ক্রমে জুড়ে একটা single downloadable
  * "Structural Working Drawings" PDF বানায় — ঠিক যেভাবে আসল MICON
  * রেফারেন্স ড্রয়িং সেট (ব্যবহারকারীর দেওয়া) একটাই bound sheet-set
@@ -51,6 +54,7 @@ import { ColumnSpliceDetailSheetContent } from "@/lib/documentation/pdf/drawing-
 import { ColumnReinforcementDetailSheetContent } from "@/lib/documentation/pdf/drawing-sheets/ColumnReinforcementDetailSheet";
 import { BeamColumnJointDetailSheetContent } from "@/lib/documentation/pdf/drawing-sheets/BeamColumnJointDetailSheet";
 import { WallLayoutPlanSheetContent } from "@/lib/documentation/pdf/drawing-sheets/WallLayoutPlanSheet";
+import { ParapetLayoutPlanSheetContent } from "@/lib/documentation/pdf/drawing-sheets/ParapetLayoutPlanSheet";
 import { TypicalFloorSlabLayoutEWSheetContent } from "@/lib/documentation/pdf/drawing-sheets/TypicalFloorSlabLayoutEWSheet";
 import { TypicalFloorSlabLayoutNSSheetContent } from "@/lib/documentation/pdf/drawing-sheets/TypicalFloorSlabLayoutNSSheet";
 import { RoofFloorBeamLayoutPlanSheetContent } from "@/lib/documentation/pdf/drawing-sheets/RoofFloorBeamLayoutPlanSheet";
@@ -105,6 +109,7 @@ export function DrawingSheetsDocument({ context, revisionNumber }: DrawingSheets
       <ColumnReinforcementDetailSheetContent {...props} />
       <BeamColumnJointDetailSheetContent {...props} />
       <WallLayoutPlanSheetContent {...props} />
+      <ParapetLayoutPlanSheetContent {...props} />
     </Document>
   );
 }

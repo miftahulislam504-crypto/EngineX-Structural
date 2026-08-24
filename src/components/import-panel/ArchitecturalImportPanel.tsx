@@ -37,6 +37,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   "shear-wall": "Shear Wall",
   slab: "Slab",
   stair: "Stairs",
+  parapet: "Parapet",
 };
 
 interface ArchitecturalImportPanelProps {

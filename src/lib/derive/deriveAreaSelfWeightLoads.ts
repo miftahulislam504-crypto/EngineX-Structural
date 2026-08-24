@@ -17,33 +17,38 @@
  * এর একই Y-অক্ষ কনভেনশন)।
  *
  * সততার সাথে সীমাবদ্ধতা:
- *   - Slab/Wall/Shear-Wall/Core-Wall — এই চারটাই AreaElement (vertices+
- *     thickness), তাই একই derivation logic প্রযোজ্য। Stair ইচ্ছাকৃতভাবে
- *     বাদ — StairElement ও AreaElement হলেও এটা inclined waist-slab
- *     geometry (flat plan area না), এবং stair-এর নিজস্ব dedicated
- *     self-weight derivation stair design module-এর অংশ হিসেবে আসা
- *     উচিত (waist slab thickness + landing slab + step-এর triangular
- *     extra weight — সাধারণ flat-area formula দিয়ে সঠিক হবে না)।
- *   - Wall/Shear-Wall/Core-Wall এর জন্যও এই ফাংশন plan-polygon area
- *     (computePolygonPlanArea) ব্যবহার করে, ঠিক Slab-এর মতোই। এটা
+ *   - Slab/Wall/Shear-Wall/Core-Wall/Parapet — এই পাঁচটাই AreaElement
+ *     (vertices+thickness), তাই একই derivation logic প্রযোজ্য। Stair
+ *     ইচ্ছাকৃতভাবে বাদ — StairElement ও AreaElement হলেও এটা inclined
+ *     waist-slab geometry (flat plan area না), এবং stair-এর নিজস্ব
+ *     dedicated self-weight derivation stair design module-এর অংশ
+ *     হিসেবে আসা উচিত (waist slab thickness + landing slab + step-এর
+ *     triangular extra weight — সাধারণ flat-area formula দিয়ে সঠিক
+ *     হবে না)।
+ *   - Wall/Shear-Wall/Core-Wall/Parapet এর জন্যও এই ফাংশন plan-polygon
+ *     area (computePolygonPlanArea) ব্যবহার করে, ঠিক Slab-এর মতোই। এটা
  *     ইচ্ছাকৃত সরলীকরণ: এই codebase-এ AreaElement সব সময় একটা
  *     vertices+thickness polygon হিসেবেই সংজ্ঞায়িত (element.ts),
  *     vertical/horizontal orientation ভিন্ন করে model করা হয়নি — তাই
- *     "plan area" ধরে নেওয়া Slab ও Wall উভয়ের জন্যই একই ফাংশন সঠিকভাবে
- *     কাজ করে (Wall-এর ক্ষেত্রে এই "plan area" আসলে elevation-এ থাকা
- *     surface area, কিন্তু গাণিতিকভাবে computePolygonPlanArea সেই একই
- *     vertices polygon area হিসাব করে, orientation নির্বিশেষে)।
+ *     "plan area" ধরে নেওয়া Slab ও Wall/Parapet উভয়ের জন্যই একই ফাংশন
+ *     সঠিকভাবে কাজ করে (Wall/Parapet-এর ক্ষেত্রে এই "plan area" আসলে
+ *     elevation-এ থাকা surface area, কিন্তু গাণিতিকভাবে
+ *     computePolygonPlanArea সেই একই vertices polygon area হিসাব করে,
+ *     orientation নির্বিশেষে)। Parapet-এর vertices mapParapet()
+ *     (hub-geometry-parser.ts) থেকেই Wall-এর ঠিক একই rectangular-plane
+ *     আকারে আসে (base+elevation থেকে height পর্যন্ত), তাই এখানে কোনো
+ *     বাড়তি বিশেষ-ব্যবস্থার দরকার হয়নি।
  *   - Composite/Prestressed/Cold-Formed material এর জন্য effectiveUnitWeight
  *     ব্যবহার (deriveSelfWeightLoads.ts এর সাথে সঙ্গতিপূর্ণ)।
  */
 
-import type { StructuralElement, SlabElement, WallElement, ShearWallElement, CoreWallElement } from "@/lib/types/element";
+import type { StructuralElement, SlabElement, WallElement, ShearWallElement, CoreWallElement, ParapetElement } from "@/lib/types/element";
 import { computePolygonPlanArea } from "@/lib/types/element";
 import type { StructuralMaterial } from "@/lib/types/material";
 import type { UniformAreaLoadCase } from "@/lib/types/load";
 import { createUniformAreaLoad } from "@/lib/types/load";
 
-const AREA_SELF_WEIGHT_SUPPORTED_CATEGORIES = new Set(["slab", "wall", "shear-wall", "core-wall"]);
+const AREA_SELF_WEIGHT_SUPPORTED_CATEGORIES = new Set(["slab", "wall", "shear-wall", "core-wall", "parapet"]);
 
 export interface DeriveAreaSelfWeightLoadsResult {
   loadCases: UniformAreaLoadCase[];

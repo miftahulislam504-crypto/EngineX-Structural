@@ -185,4 +185,12 @@ export const SHEET_INDEX: SheetIndexEntry[] = [
       "Added in Report-Audit Phase B1 (2026-08-20) — not part of the original 20-sheet MICON reference set (no Wall Layout Plan existed at all, unlike Column's S-02). Walls are plotted as a single plan-view centerline (the two farthest-apart vertices in XZ projection) — this application has no general 3D vertical-plane area renderer (documented pre-existing gap in quantitySummary.ts), so wall thickness/elevation extent is not drawn, only position/length. See the paired Wall Calc Sheet (in Calculation Sheets) for thickness, axial/shear capacity, and reinforcement.",
     originalSheetNumbers: "N/A — new in this application, not in the original 20-sheet reference set",
   },
+  {
+    sheetNumber: "S-25",
+    title: "Parapet Layout Plan",
+    dataStatus: "partial",
+    limitationNote:
+      "Added following the Draw→Structural Parapet gap closure (2026-08-24) — not part of the original 20-sheet MICON reference set, and Parapet was not modeled or exported to Hub at all before this. Parapet is plotted the same way as Wall/Shear Wall (S-24) — a single plan-view centerline, no thickness/elevation extent drawn. This application has no dedicated structural design check for parapets (no wind/seismic guard-rail capacity check) — parapet self-weight is included in the building's dead load only.",
+    originalSheetNumbers: "N/A — new in this application, not in the original 20-sheet reference set",
+  },
 ];

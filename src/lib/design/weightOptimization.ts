@@ -214,6 +214,19 @@ export function computeWeightTakeoff(
       continue;
     }
 
+    if (element.category === "parapet") {
+      // Wall-এর ঠিক একই AreaElement geometry (mapParapet() দেখুন,
+      // hub-geometry-parser.ts — vertical rectangular plane, ৪-vertex),
+      // তাই computePlanarPolygon3DAreaM2() একই ভাবে সঠিক surface area
+      // দেয়। deriveAreaSelfWeightLoads.ts এর dead-load derivation এর
+      // সাথে সঙ্গতিপূর্ণ থাকতে এই takeoff-ও একই formula ব্যবহার করছে।
+      const areaM2 = computePlanarPolygon3DAreaM2(element.vertices);
+      const volumeM3 = areaM2 * (element.thickness / 1000);
+      const weightKN = volumeM3 * getUnitWeightKNPerM3(material);
+      addToCategory(element.category, material.type, volumeM3, weightKN);
+      continue;
+    }
+
     if (element.category === "footing" || element.category === "pile-cap") {
       const volumeM3 = (element.width / 1000) * (element.length / 1000) * (element.thickness / 1000);
       const weightKN = volumeM3 * getUnitWeightKNPerM3(material);

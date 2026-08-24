@@ -68,6 +68,25 @@ export interface DrawWallGeometry {
   fireRatingMinutes?: number;
 }
 
+/**
+ * BuildingElementRef.type === 'parapet' এর geometry payload — Draw-এর
+ * Parapet টাইপ থেকে হুবহু verified (hub-write.ts: `geometry: { start,
+ * end, elevation, height, thickness, materialLabel, libraryItemId }`)।
+ * Wall-এর মতোই একটা linear run, কিন্তু elevation ফিল্ড আছে (Wall-এ
+ * নেই) কারণ parapet-এর base floor level-এ না, ছাদের কিনারায় বসে —
+ * DrawStairGeometry-র মতো Wall-ভিত্তিক না হয়ে independent elevation
+ * দরকার হয়।
+ */
+export interface DrawParapetGeometry {
+  start: DrawPoint2D;
+  end: DrawPoint2D;
+  elevation: number; // মিটার — floor level থেকে parapet-এর নিজস্ব base
+  height: number; // মিটার
+  thickness: number; // মিটার
+  materialLabel?: string;
+  libraryItemId?: string;
+}
+
 /** BuildingElementRef.type === 'slab' এর geometry payload — Draw-এর Slab টাইপ থেকে হুবহু verified। */
 export interface DrawSlabGeometry {
   boundary: DrawPoint2D[]; // polygon vertices, ক্রমানুসারে, auto-closed না

@@ -70,6 +70,7 @@ const COLOR_WALL = "#78716c";
 const COLOR_SHEAR_WALL = "#dc2626";
 const COLOR_CORE_WALL = "#b91c1c";
 const COLOR_STAIR = "#a855f7"; // purple — ElementsLayer.tsx এর COLOR_STAIR এর সাথে সামঞ্জস্যপূর্ণ
+const COLOR_PARAPET = "#57534e"; // ElementsLayer.tsx এর COLOR_PARAPET এর সাথে সামঞ্জস্যপূর্ণ
 const COLOR_FOOTING = "#a16207";
 const COLOR_COMBINED_FOOTING = "#b45309";
 const COLOR_STRIP_FOOTING = "#92400e";
@@ -289,6 +290,21 @@ export function VisualizationElementsLayer({
               />
             );
 
+          case "parapet":
+            // Stair-এর ঠিক একই কারণে deformPoint() wrap ছাড়া — parapet
+            // dead-load-only element (deriveAreaSelfWeightLoads.ts), FE
+            // analysis shell হিসেবে solve হয় না, তাই কোনো deformed shape
+            // নেই দেখানোর মতো — raw modeled vertices দেখানো হচ্ছে।
+            return (
+              <AreaElementMesh
+                key={element.elementId}
+                vertices={element.vertices}
+                thickness={element.thickness}
+                materialProps={materialProps}
+                onSelect={() => onSelectElement(element.elementId)}
+              />
+            );
+
           case "pile-group":
             return (
               <PileGroupMesh
@@ -336,6 +352,8 @@ function getElementColor(category: StructuralElement["category"]): string {
       return COLOR_CORE_WALL;
     case "stair":
       return COLOR_STAIR;
+    case "parapet":
+      return COLOR_PARAPET;
     case "footing":
       return COLOR_FOOTING;
     case "combined-footing":

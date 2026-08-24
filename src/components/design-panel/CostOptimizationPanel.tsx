@@ -17,6 +17,7 @@ const CATEGORY_LABELS: Record<ElementCategory, string> = {
   "shear-wall": "Shear Wall",
   "core-wall": "Core Wall",
   stair: "Stair",
+  parapet: "Parapet",
   footing: "Footing",
   "combined-footing": "Combined Footing",
   "strip-footing": "Strip Footing",

@@ -26,6 +26,7 @@ const COLOR_WALL = "#78716c"; // stone
 const COLOR_SHEAR_WALL = "#dc2626"; // red — lateral system এর গুরুত্বপূর্ণ অংশ হিসেবে দৃষ্টি আকর্ষণ করে
 const COLOR_CORE_WALL = "#b91c1c"; // darker red — shear wall এর কাছাকাছি কিন্তু distinguishable
 const COLOR_STAIR = "#a855f7"; // purple — inclined AreaElement হলেও দৃষ্টিগতভাবে স্পষ্ট আলাদা (Slab/Wall এর সাথে গুলিয়ে না যায়)
+const COLOR_PARAPET = "#57534e"; // COLOR_WALL-এর কাছাকাছি কিন্তু গাঢ় (stone-700-ish) — geometরিকভাবে Wall-এর মতোই একটা vertical plane, তাই কাছাকাছি hue রাখা হলো, কিন্তু distinguishable যাতে ছাদের কিনারার parapet সাধারণ wall এর সাথে না গুলিয়ে যায়
 const COLOR_FOOTING = "#a16207"; // amber-brown
 const COLOR_COMBINED_FOOTING = "#b45309"; // amber-700 — isolated footing এর কাছাকাছি কিন্তু distinguishable
 const COLOR_STRIP_FOOTING = "#92400e"; // amber-800
@@ -78,6 +79,7 @@ export function ElementsLayer({
           case "shear-wall":
           case "core-wall":
           case "stair":
+          case "parapet":
             return (
               <AreaElementMesh
                 key={element.elementId}
@@ -199,7 +201,7 @@ function getLineElementColor(category: "beam" | "column" | "brace" | "pile"): st
   }
 }
 
-function getAreaElementColor(category: "slab" | "wall" | "shear-wall" | "core-wall" | "stair"): string {
+function getAreaElementColor(category: "slab" | "wall" | "shear-wall" | "core-wall" | "stair" | "parapet"): string {
   switch (category) {
     case "slab":
       return COLOR_SLAB;
@@ -211,6 +213,8 @@ function getAreaElementColor(category: "slab" | "wall" | "shear-wall" | "core-wa
       return COLOR_CORE_WALL;
     case "stair":
       return COLOR_STAIR;
+    case "parapet":
+      return COLOR_PARAPET;
   }
 }
 

@@ -55,6 +55,7 @@ export type ElementCategory =
   | "shear-wall"
   | "core-wall"
   | "stair"
+  | "parapet"
   | "footing"
   | "combined-footing"
   | "strip-footing"
@@ -193,6 +194,29 @@ export interface StairElement extends AreaElement {
   category: "stair";
 }
 
+/**
+ * Parapet — ছাদের কিনারায় বসা নিচু guard-rail wall। Wall-এর মতোই
+ * AreaElement (vertices + thickness — mapParapet() দেখুন,
+ * hub-geometry-parser.ts), কিন্তু আলাদা category, কারণ:
+ *   (১) এটা lateral-load-resisting সিস্টেমের অংশ না (Wall-এর thickness
+ *       review-threshold logic এখানে প্রযোজ্য না — parapet কখনো
+ *       shear-wall candidate না, তাই review-recommended thickness
+ *       warning এখানে যোগ হয় না),
+ *   (২) এর নিজস্ব base floor level-এ না, ছাদের উপরে — তাই Wall-এর
+ *       মতো শুধু storyId base elevation থেকে vertices বসালে হয় না,
+ *       নিজস্ব `elevation` (মিটার, floor level থেকে) দরকার হয়
+ *       (DrawParapetGeometry-র সাথে মেলানো, hub-module-shapes.ts)।
+ * এই v1-এ শুধু self-weight/dead-load contribution-এর জন্য মডেল করা
+ * হয়েছে (deriveAreaSelfWeightLoads.ts) — wind/seismic-এ parapet-এর
+ * নিজস্ব ভূমিকা (যেমন wind suction on a roof-edge guard-rail) এই
+ * scope-এ ধরা হয়নি, ভবিষ্যতে দরকার হলে আলাদা design check হিসেবে
+ * যোগ করা যাবে।
+ */
+export interface ParapetElement extends AreaElement {
+  category: "parapet";
+  elevation: number; // মিটার — floor level থেকে parapet-এর নিজস্ব base (roof-এর উপরে বসে)
+}
+
 /** Isolated Footing — একটা পয়েন্টে বসে, নিজস্ব plan dimension ও thickness থাকে। */
 export interface FootingElement extends BaseElement {
   category: "footing";
@@ -307,6 +331,7 @@ export type StructuralElement =
   | ShearWallElement
   | CoreWallElement
   | StairElement
+  | ParapetElement
   | FootingElement
   | CombinedFootingElement
   | StripFootingElement

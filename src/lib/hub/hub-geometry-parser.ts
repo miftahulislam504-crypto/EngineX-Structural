@@ -92,9 +92,31 @@
  * waist-slab thickness Draw পাঠায় না (architectural drawing-এ অপ্রাসঙ্গিক)
  * — DEFAULT_STAIR_WAIST_THICKNESS_M ধরে নেওয়া হয়, সবসময় review-recommended
  * issue সহ (thickness ইঞ্জিনিয়ারকে নিশ্চিত করতে হবে)।
+ *
+ * ═══════════════════════════════════════════════════════════════════
+ * Parapet mapping — mapParapet() দ্রষ্টব্য
+ * ═══════════════════════════════════════════════════════════════════
+ * Draw-এর Parapet (packages/object-model/src/geometry.ts, Audit Gap
+ * Closure Phase 5 item 16) আগে কখনো Hub-এ export হতো না (hub-write.ts
+ * এ parapetCrud ছিল কিন্তু floorElements() পড়তো না) — এখন সেই gap
+ * বন্ধ হয়েছে, এই ফাইলে সেই অনুযায়ী consume করা হচ্ছে।
+ *
+ * Wall-এর geometric mapping-ই পুনর্ব্যবহার করা হয়েছে (linear run →
+ * vertical rectangular AreaElement plane) কারণ জ্যামিতিকভাবে parapet
+ * একটা ছোট wall-ই। কিন্তু দুইটা গুরুত্বপূর্ণ পার্থক্য:
+ *   (১) elevation — parapet floor level-এ বসে না, ছাদের কিনারায়
+ *       (Draw-এর নিজস্ব `elevation` ফিল্ড থেকে আসে, Wall-এর মতো শুধু
+ *       floor base elevation ধরে নেওয়া যায় না)।
+ *   (২) কোনো shear-wall-review threshold check নেই — parapet কখনোই
+ *       lateral system-এর অংশ বিবেচিত হয় না (ফাইলের এই সেকশনের ওপরের
+ *       Wall→Wall/ShearWall নোট parapet-এ প্রযোজ্য না), তাই mapWall()-
+ *       এর THICK_WALL_REVIEW_THRESHOLD_M লজিক এখানে বাদ।
+ * v1 স্কোপ: শুধু modeling + self-weight/dead-load (deriveAreaSelfWeightLoads.ts
+ * দেখুন) — কোনো design check parapet-এর নিজস্ব নয়, শুধু building-এর
+ * overall dead load-এ contribute করে।
  */
 
-import type { StructuralElement, Point3D, WallElement, SlabElement, StairElement } from "@/lib/types/element";
+import type { StructuralElement, Point3D, WallElement, SlabElement, StairElement, ParapetElement } from "@/lib/types/element";
 import type { StructuralGrid, StructuralStory } from "@/lib/types/geometry";
 import type { BuildingElementRef } from "./contract.types";
 import type {
@@ -105,6 +127,7 @@ import type {
   DrawColumnGeometry,
   DrawBeamGeometry,
   DrawStairGeometry,
+  DrawParapetGeometry,
 } from "./hub-module-shapes";
 import { getModuleData, subscribeToModuleData } from "./hub-sdk-client";
 import { mapArchitecturalGeometry } from "./hub-module-mapper";
@@ -306,6 +329,63 @@ function mapWall(
     storyId: ref.levelId || undefined,
     vertices: [startBase, endBase, endTop, startTop],
     thickness: g.thickness * 1000, // mm — element.ts এর AreaElement.thickness একক
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  };
+}
+
+/**
+ * Parapet → ParapetElement। mapWall()-এর জ্যামিতিক অংশ পুনর্ব্যবহার করে
+ * (linear run → vertical rectangular plane), কিন্তু base elevation
+ * হিসেবে floor base না, floor base + Draw-এর নিজস্ব parapet elevation
+ * ব্যবহার করে (ফাইল হেডারের Parapet mapping নোট দেখুন) — এবং কোনো
+ * shear-wall-review threshold check নেই।
+ */
+function mapParapet(
+  ref: BuildingElementRef,
+  baseElevationM: number,
+  issues: ParsedElementIssue[],
+  nowIso: string,
+): ParapetElement | null {
+  const g = ref.geometry as DrawParapetGeometry | undefined;
+  if (!g || !isDrawPoint2D(g.start) || !isDrawPoint2D(g.end)) {
+    warnSkipped(issues, ref, "start/end পয়েন্ট অনুপস্থিত বা ভুল shape");
+    return null;
+  }
+  if (!isFiniteNumber(g.thickness) || g.thickness <= 0) {
+    warnSkipped(issues, ref, "thickness অনুপস্থিত বা অবৈধ (সংখ্যা হতে হবে, > 0)");
+    return null;
+  }
+  if (!isFiniteNumber(g.height) || g.height <= 0) {
+    warnSkipped(issues, ref, "height অনুপস্থিত বা অবৈধ (সংখ্যা হতে হবে, > 0)");
+    return null;
+  }
+  // elevation না থাকলে/অবৈধ হলে 0 ধরে নেওয়া হয় (floor level-এ, roof-এর
+  // নিজস্ব elevation-এর সমান — Parapet-এর object-model কমেন্ট অনুযায়ী
+  // এটাই সাধারণ কনভেনশন) — skip না করে review-recommended issue যোগ
+  // করা হয়, কারণ elevation ভুল হলে parapet ভুল উচ্চতায় বসবে কিন্তু
+  // dead-load contribution (যা v1-এর মূল উদ্দেশ্য) তবুও অর্থপূর্ণ থাকে।
+  let elevationM = g.elevation;
+  if (!isFiniteNumber(elevationM)) {
+    warnReview(issues, ref, "elevation অনুপস্থিত বা অবৈধ — 0 (floor level) ধরে নেওয়া হলো, ইঞ্জিনিয়ার নিশ্চিত করুন");
+    elevationM = 0;
+  }
+
+  const parapetBaseM = baseElevationM + elevationM;
+  const startBase = toPoint3D(g.start, parapetBaseM);
+  const endBase = toPoint3D(g.end, parapetBaseM);
+  const startTop = toPoint3D(g.start, parapetBaseM + g.height);
+  const endTop = toPoint3D(g.end, parapetBaseM + g.height);
+
+  return {
+    elementId: ref.id,
+    category: "parapet",
+    label: ref.id,
+    materialId: UNRESOLVED_MATERIAL_ID,
+    storyId: ref.levelId || undefined,
+    vertices: [startBase, endBase, endTop, startTop],
+    thickness: g.thickness * 1000, // mm — element.ts এর AreaElement.thickness একক
+    elevation: elevationM,
     createdAt: nowIso,
     updatedAt: nowIso,
   };
@@ -541,14 +621,16 @@ function mapBeam(ref: BuildingElementRef, baseElevationM: number, issues: Parsed
  * fetchLatestArchitecturalExport()-এর কাজ) — শুধু pure transformation,
  * unit-testable।
  *
- * শুধু ৫টা category হ্যান্ডল করা হয় (wall, slab, column, beam, stair) —
- * প্ল্যানের Phase 2 স্কোপ অনুযায়ী প্রথম দুটো (wall→wall/shear-wall,
- * slab→area) মূল আইটেম, column/beam বোনাস হিসেবে যোগ করা হয়েছে কারণ
- * mapping একই রকম straightforward এবং Draw ইতিমধ্যে পাঠায়। stair
- * পরে যোগ হয়েছে (mapStair() দেখুন — প্রতিটা flight একটা inclined
+ * শুধু ৬টা category হ্যান্ডল করা হয় (wall, slab, column, beam, stair,
+ * parapet) — প্ল্যানের Phase 2 স্কোপ অনুযায়ী প্রথম দুটো (wall→wall/
+ * shear-wall, slab→area) মূল আইটেম, column/beam বোনাস হিসেবে যোগ করা
+ * হয়েছে কারণ mapping একই রকম straightforward এবং Draw ইতিমধ্যে পাঠায়।
+ * stair পরে যোগ হয়েছে (mapStair() দেখুন — প্রতিটা flight একটা inclined
  * StairElement, ETABS-এর মতো beam/column/slab/stairs/shear-wall
- * প্রয়োজন অনুযায়ী)। door/window/room/roof/ceiling/foundation/footing/
- * ইত্যাদি ইচ্ছাকৃতভাবে বাদ —
+ * প্রয়োজন অনুযায়ী)। parapet সবচেয়ে সাম্প্রতিক সংযোজন (mapParapet()
+ * দেখুন — dead-load contribution-এর জন্য, Audit Gap Closure Phase 5
+ * item 16-এর Structural-দিকের বাস্তবায়ন)। door/window/room/roof/
+ * ceiling/foundation/footing/ইত্যাদি ইচ্ছাকৃতভাবে বাদ —
  * এগুলো হয় structural element না (door/window/room), অথবা এই App-এর
  * নিজস্ব foundation design workflow-এর (FootingElement ইত্যাদি) সাথে
  * architectural geometry সরাসরি না মেলা উচিত (foundation sizing এই
@@ -607,6 +689,9 @@ export function parseArchitecturalExport(data: DrawArchitecturalExport): ParseGe
         break;
       case "beam":
         mapped = mapBeam(ref, baseElevationM, issues, nowIso);
+        break;
+      case "parapet":
+        mapped = mapParapet(ref, baseElevationM, issues, nowIso);
         break;
       default:
         // door/window/room/roof/ceiling/foundation/footing/ইত্যাদি —
