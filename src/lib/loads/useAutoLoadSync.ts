@@ -14,6 +14,7 @@
  *   1. Self-weight (Dead pattern) — সব Beam/Column এ (deriveSelfWeightLoads.ts)
  *   1a. Self-weight (Dead pattern) — সব Slab/Wall/Shear-Wall/Core-Wall এ (deriveAreaSelfWeightLoads.ts, ২০২৬-০৮ যোগ হলো)
  *   1b. Self-weight (Dead pattern) — সব Stair (waist slab + step) এ, riserHeightM দেওয়া element-এ পূর্ণ, না দেওয়া থাকলে flat-only + warning (deriveStairSelfWeightLoads.ts, ২০২৬-০৮ যোগ হলো)
+ *   1c. Self-weight (Dead pattern, point load) — সব Footing/Pile-Cap/Mat-Foundation এ, Combined/Strip Footing বাদ (dimension sizing calculation থেকে আসে, element এ সংরক্ষিত না) (deriveFootingSelfWeightLoads.ts, Miftahul এর structural audit গ্যাপ-ক্লোজিং, ২০২৬-০৮)
  *   2. Occupancy Live Load — সব Slab এ, per-slab liveLoadOverride থাকলে সেটাই ব্যবহার হয় (deriveLiveLoadCases.ts, override ২০২৬-০৮ যোগ হলো)
  *   3. Wind X/Y pattern + story-force Column/Brace distribution (deriveWindLoad.ts + distributeStoryForceToColumns.ts, Brace stiffness ২০২৬-০৮ যোগ হলো)
  *   4. Seismic X/Y pattern + story-force Column/Brace distribution (deriveSeismicLoad.ts + distributeStoryForceToColumns.ts)
@@ -52,6 +53,7 @@ import type { LoadCase, LoadPattern } from "@/lib/types/load";
 import { deriveSelfWeightLoads } from "@/lib/derive/deriveSelfWeightLoads";
 import { deriveAreaSelfWeightLoads } from "@/lib/derive/deriveAreaSelfWeightLoads";
 import { deriveStairSelfWeightLoads } from "@/lib/derive/deriveStairSelfWeightLoads";
+import { deriveFootingSelfWeightLoads } from "@/lib/derive/deriveFootingSelfWeightLoads";
 import { deriveLiveLoadCases } from "@/lib/derive/deriveLiveLoadCases";
 import { deriveWindLoadBothDirections } from "@/lib/derive/deriveWindLoad";
 import { deriveSeismicLoad } from "@/lib/derive/deriveSeismicLoad";
@@ -204,6 +206,10 @@ export function useAutoLoadSync(projectId: string): AutoLoadSyncStatus {
       const stairSelfWeightResult = deriveStairSelfWeightLoads(elements, materials, DEAD_PATTERN_ID);
       warnings.push(...stairSelfWeightResult.warnings);
 
+      // ---- 1c. Self-weight (Dead, point load) — Footing/Pile-Cap/Mat-Foundation ----
+      const footingSelfWeightResult = deriveFootingSelfWeightLoads(elements, materials, DEAD_PATTERN_ID);
+      warnings.push(...footingSelfWeightResult.warnings);
+
       // ---- 2. Occupancy Live Load (Slab) ----
       const liveLoadResult = deriveLiveLoadCases(
         elements,
@@ -260,6 +266,7 @@ export function useAutoLoadSync(projectId: string): AutoLoadSyncStatus {
         ...selfWeightResult.loadCases,
         ...areaSelfWeightResult.loadCases,
         ...stairSelfWeightResult.loadCases,
+        ...footingSelfWeightResult.loadCases,
         ...liveLoadResult.loadCases,
         ...windAutoCases,
         ...seismicAutoCases,

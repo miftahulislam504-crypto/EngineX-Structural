@@ -56,7 +56,15 @@ export interface DrawPoint2D {
   y: number;
 }
 
-/** BuildingElementRef.type === 'wall' এর geometry payload — Draw-এর Wall টাইপ থেকে হুবহু verified। */
+/**
+ * BuildingElementRef.type === 'wall' | 'shear-wall' এর geometry payload —
+ * Draw-এর Wall টাইপ থেকে হুবহু verified। দুইটা type-ই একই shape পাঠায়
+ * (hub-write.ts) — Draw-এ Wall.isShearWall true হলে 'shear-wall', নাহলে
+ * 'wall' হিসেবে export হয় (Miftahul, 2026-08-25)। এই App-এ mapWall()
+ * সেই অনুযায়ী category বসায় (mapWall() এর নিজস্ব file comment দ্রষ্টব্য) —
+ * আর কোনো thickness-ভিত্তিক অনুমান বা review-time checkbox override নেই,
+ * classification সম্পূর্ণভাবে Draw-এর ইঞ্জিনিয়ারের এক্সপ্লিসিট flag থেকে আসে।
+ */
 export interface DrawWallGeometry {
   start: DrawPoint2D;
   end: DrawPoint2D;

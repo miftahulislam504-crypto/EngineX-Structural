@@ -18,21 +18,29 @@
  *     থাকা অবস্থায় confirm করা যায় না — প্রতিটা element-এর materialId/
  *     sectionId (line element হলে) আসল library entry-তে resolve হতে
  *     হবে।
- *   - thickness ≥150mm ওয়ালা wall-এ parser "review-recommended" issue
- *     দেয় (সম্ভাব্য shear wall) — এই hook সেই wall-গুলোর জন্য category
- *     override (wall ⇄ shear-wall) টগল সমর্থন করে, ডিফল্ট category
- *     parser যা দিয়েছে তাই থাকে (কখনো automatic পাল্টায় না)।
- *   - Draw থেকে আসা "সাধারণ" (architectural/partition) wall কখনোই
- *     মডেলে যোগ হয় না — ETABS-এর মতো এই মডেলেও শুধু beam/column/slab/
- *     stairs/shear-wall structural analysis element হিসেবে থাকে। তাই
- *     category "wall" ওয়ালা প্রতিটা item ডিফল্ট includeAsShearWall:
- *     false নিয়ে শুরু হয় — ইঞ্জিনিয়ার explicitly "Shear Wall" চেকপয়েন্ট
- *     না দিলে সেই wall confirmImport()-এ silently বাদ পড়ে (skip, block
- *     না)। চেকপয়েন্ট দিলে categoryOverride "shear-wall"-এ সেট হয় এবং
- *     ঠিক অন্য elements-এর মতোই material/section resolve করে import
- *     হয়। non-wall category (beam/column/slab/stairs/shear-wall/parapet/footing
- *     সরাসরি parser থেকে যদি কখনো আসে) এই ফ্ল্যাগ ছোঁয় না, স্বাভাবিকভাবে
- *     import হয়।
+ *   - সব category (wall/shear-wall/slab/column/beam/stair/stair-landing/
+ *     parapet/footing) সবসময় import হয় — কোনো category-ভিত্তিক
+ *     ম্যানুয়াল include/exclude gate নেই।
+ *
+ * ⚠️ সংশোধনী নোট (Miftahul, 2026-08-25 — নিচের ইতিহাস প্রসঙ্গের জন্য
+ * রাখা হলো, বর্তমান আচরণ না): আগে category "wall" ওয়ালা প্রতিটা item
+ * ডিফল্ট includeAsShearWall: false নিয়ে শুরু হতো, আর ইঞ্জিনিয়ার
+ * explicitly "Shear Wall" চেকপয়েন্ট না দিলে confirmImport()-এ silently
+ * বাদ পড়তো (ETABS-এর মতো শুধু beam/column/slab/stairs/shear-wall
+ * analysis model-এ থাকে ধরে নিয়ে) — কারণ Draw-এ তখন shear-wall
+ * classification করার কোনো উপায়ই ছিল না, thickness দিয়ে অনুমান
+ * অনির্ভরযোগ্য প্রমাণিত হয়েছিল (hub-geometry-parser.ts-এর পুরনো header
+ * নোট দেখুন)।
+ *
+ * এখন Draw-এ Wall.isShearWall (ইঞ্জিনিয়ারের explicit flag) থাকায়
+ * classification Hub-এ আসার আগেই ঠিক হয়ে যায় — parser নিজেই সঠিক
+ * category ("wall" বা "shear-wall") বসিয়ে দেয় (mapWall(), hub-geometry-
+ * parser.ts)। তাই এই hook-এ আর কোনো wall-only include/exclude gate,
+ * categoryOverride, বা "Shear Wall হিসেবে import করুন" চেকপয়েন্ট নেই —
+ * category "wall" এখন থেকে বাকি সব category-র মতোই সবসময় import হয়
+ * (self-weight/dead-load contributor হিসেবে, ঠিক Beam/Column/Slab-এর
+ * মতো — lateral design/capacity check শুধু "shear-wall"/"core-wall"-এ
+ * প্রযোজ্য, element.ts-এর ShearWallElement কমেন্ট দেখুন)।
  *   - re-import নিরাপদ: elementId Draw-এর BuildingElementRef.id থেকে
  *     সরাসরি আসে (parser অপরিবর্তিত রাখে), তাই একই element আবার import
  *     করলে saveElement() (setDoc) ওভাররাইট করবে, ডুপ্লিকেট হবে না।
@@ -75,24 +83,11 @@ function isLineCategory(category: StructuralElement["category"]): boolean {
   return category === "beam" || category === "column" || category === "brace" || category === "pile";
 }
 
-/** ImportReviewItem-এ category override সমর্থন শুধু wall ⇄ shear-wall-এর মধ্যে — parser-এর হেডার কমেন্টের সীমাবদ্ধতা অনুযায়ী, অন্য কোনো category-জোড়ার মধ্যে অনুমতিপ্রাপ্ত পরিবর্তন নেই। */
-export type OverridableCategory = "wall" | "shear-wall";
-
 export interface ImportReviewItem {
-  /** parser-এর দেওয়া মূল element — materialId/sectionId/category override এখানে প্রয়োগ করে চূড়ান্ত রূপ বের করা হয়, মূল কপি অপরিবর্তিত থাকে (Reset বাটনের জন্য)। */
+  /** parser-এর দেওয়া মূল element — materialId/sectionId এখানে প্রয়োগ করে চূড়ান্ত রূপ বের করা হয়, মূল কপি অপরিবর্তিত থাকে (Reset বাটনের জন্য)। category parser-এই চূড়ান্ত (mapWall() Draw-এর isShearWall flag থেকে সরাসরি "wall"/"shear-wall" ঠিক করে দেয়) — এখানে আর কোনো override নেই। */
   original: StructuralElement;
   materialId: string;
   sectionId: string | null; // null মানে এই category-র sectionId লাগে না (area/point element)
-  categoryOverride: OverridableCategory | null;
-  /**
-   * শুধু category === "wall" item-এ প্রাসঙ্গিক (বাকি সবার জন্য সবসময়
-   * true, নিচে buildReviewItems() দেখুন)। false থাকা মানে এই wall-টা
-   * "সাধারণ" (architectural) — ইঞ্জিনিয়ার এখনো একে shear wall হিসেবে
-   * চেকপয়েন্ট করেননি, তাই confirmImport()-এ এটা বাদ পড়বে। true মানে
-   * ইঞ্জিনিয়ার চেকপয়েন্ট দিয়েছেন — categoryOverride "shear-wall"-এ সেট
-   * থাকবে এবং এটা বাকি elements-এর মতোই normally import হবে।
-   */
-  includeAsShearWall: boolean;
   /** এই elementId-র সাথে সম্পর্কিত issue(s), যদি থাকে (review-recommended) — skipped issue এখানে আসে না, কারণ skipped element কখনো elements[]-এ ঢোকেই না। */
   issue: ParsedElementIssue | null;
 }
@@ -147,13 +142,6 @@ function buildReviewItems(result: ParseGeometryResult): {
         ? (el as StructuralElement & { sectionId: string }).sectionId
         : ""
       : null,
-    categoryOverride: null,
-    // "wall" ছাড়া বাকি সব category (beam/column/slab/stairs/shear-wall/footing/
-    // parapet) সবসময় include — শুধু সাধারণ wall ডিফল্টে বাদ, চেকপয়েন্ট
-    // দিলে যোগ। parapet কখনো shear-wall candidate হয় না (mapParapet()
-    // দেখুন, hub-geometry-parser.ts), তাই এই wall-only gate তার জন্য
-    // প্রযোজ্য না — বাকি সব category-র মতোই সবসময় true।
-    includeAsShearWall: el.category !== "wall",
     issue: issueByElementId.get(el.elementId) ?? null,
   }));
 
@@ -161,30 +149,18 @@ function buildReviewItems(result: ParseGeometryResult): {
 }
 
 /**
- * item-টা confirmImport()-এ আদৌ model-এ যাবে কিনা — শুধু un-checked
- * সাধারণ wall (includeAsShearWall false) বাদ পড়ে, বাকি সব category
- * (beam/column/slab/stairs/footing, ও checkpoint-করা shear-wall) সবসময় true।
- * material/section resolve, model-check input, এবং চূড়ান্ত save — এই
- * তিন জায়গাতেই একই filter ব্যবহার করা হয় যাতে "কী গণনা হচ্ছে" এবং "কী
- * সেভ হচ্ছে" কখনো আলাদা না হয়ে যায়।
- */
-function willImport(item: ImportReviewItem): boolean {
-  return item.includeAsShearWall;
-}
-
-/**
- * চূড়ান্ত StructuralElement তৈরি করে (category override প্রয়োগ করে) —
- * module-scope pure function (আগে hook-এর ভিতরে useCallback হিসেবে
- * ছিল, এখানে বের করা হলো যাতে fetchAndParse() ভিতর থেকেও এটা ব্যবহার
- * করে runModelChecks()-এর জন্য resolved elements বানাতে পারে, hook এর
- * নিজস্ব state/closure এর ওপর নির্ভর না করে)। materialId এখানে item এর
+ * item-এর চূড়ান্ত StructuralElement — module-scope pure function (আগে
+ * hook-এর ভিতরে useCallback হিসেবে ছিল, এখানে বের করা হলো যাতে
+ * fetchAndParse() ভিতর থেকেও এটা ব্যবহার করে runModelChecks()-এর জন্য
+ * resolved elements বানাতে পারে, hook এর নিজস্ব state/closure এর ওপর
+ * নির্ভর না করে)। category এখানে পাল্টানো হয় না — parser (mapWall())
+ * ইতিমধ্যে চূড়ান্ত category বসিয়ে দিয়েছে। materialId এখানে item এর
  * বর্তমান মান (হয়তো এখনো খালি স্ট্রিং, resolve না হলে) বসায় — এটা ঠিক
  * আছে কারণ modelChecker.ts geometry-driven, materialId/sectionId ছোঁয়
  * না (নিচে fetchAndParse এর কমেন্ট দেখুন)।
  */
 function resolveItem(item: ImportReviewItem): StructuralElement {
-  const category = item.categoryOverride ?? item.original.category;
-  const base = { ...item.original, category, materialId: item.materialId } as StructuralElement;
+  const base = { ...item.original, materialId: item.materialId } as StructuralElement;
   if (item.sectionId !== null && "sectionId" in base) {
     return { ...base, sectionId: item.sectionId } as StructuralElement;
   }
@@ -217,21 +193,16 @@ export function useArchitecturalImport(projectId: string) {
       const { items, skippedIssues } = buildReviewItems(result);
 
       // Model Checker (Phase 5) — connectivity/duplicate/geometry/support
-      // check resolved elements এর ওপর (category override সহ, যদি কেউ
-      // ইতিমধ্যে থাকে — নতুন fetch এ items সবে বানানো হলো তাই এই মুহূর্তে
-      // categoryOverride সবসময় null, কিন্তু resolveItem() ব্যবহার করাই
-      // ভবিষ্যতে ধারাবাহিক থাকবে যদি re-fetch flow পরে override-aware হয়)।
-      // materialId/sectionId এখনো unresolved (খালি স্ট্রিং) থাকতে পারে —
-      // modelChecker.ts এই দুটো ফিল্ড ছোঁয় না (pure geometry check), তাই
-      // material/section resolve হওয়ার আগেই নিরাপদে চালানো যায়। এভাবে
-      // ইঞ্জিনিয়ার material/section পূরণ করার আগেই geometry সমস্যা
-      // (floating wall, duplicate element, zero-length beam, no base
-      // support) সম্পর্কে জানতে পারবেন — শুধু Validation Panel ম্যানুয়ালি
-      // খুললে তবে জানা যেত এমন না।
-      // model-check শুধু সেই elements-এর ওপর চালানো হয় যেগুলো আসলে
-      // import হবে (un-checked সাধারণ wall বাদ) — নাহলে কখনো import না
-      // হওয়া wall-এর জন্য ভুল floating/connectivity error দেখানো হতো।
-      const resolvedForCheck = items.filter(willImport).map(resolveItem);
+      // check resolved elements এর ওপর। materialId/sectionId এখনো
+      // unresolved (খালি স্ট্রিং) থাকতে পারে — modelChecker.ts এই দুটো
+      // ফিল্ড ছোঁয় না (pure geometry check), তাই material/section resolve
+      // হওয়ার আগেই নিরাপদে চালানো যায়। এভাবে ইঞ্জিনিয়ার material/section
+      // পূরণ করার আগেই geometry সমস্যা (floating wall, duplicate element,
+      // zero-length beam, no base support) সম্পর্কে জানতে পারবেন — শুধু
+      // Validation Panel ম্যানুয়ালি খুললে তবে জানা যেত এমন না। সব item
+      // এখন import হবে (আর কোনো wall-only include/exclude gate নেই),
+      // তাই পুরো items[] সরাসরি check-এ যায়।
+      const resolvedForCheck = items.map(resolveItem);
       const modelCheckReport = buildValidationReport(runModelChecks(resolvedForCheck));
 
       setState({
@@ -268,22 +239,15 @@ export function useArchitecturalImport(projectId: string) {
     }));
   }, []);
 
-  const setItemCategoryOverride = useCallback((elementId: string, category: OverridableCategory | null) => {
-    setState((s) => ({
-      ...s,
-      items: s.items.map((it) => (it.original.elementId === elementId ? { ...it, categoryOverride: category } : it)),
-    }));
-  }, []);
-
   /**
    * Bulk/group material assignment — নতুন সংযোজন (ইঞ্জিনিয়ারের অনুরোধে)।
    * যেহেতু Hub import সবসময় একটা preliminary/প্রাথমিক ধাপ (সব Wall
    * একই material, সব Column একই section+material, সব Beam/Slab/Stairs
    * নিজ নিজ একই সিলেকশন দিয়ে শুরু করে পরে ইঞ্জিনিয়ার আলাদা আলাদা করে
    * override করবেন — প্রতিটা element এক এক করে বেছে দেওয়া অপ্রয়োজনীয়
-   * সময়ক্ষেপণ), এই ফাংশন একটা category-র (categoryOverride প্রয়োগ করা
-   * effective category — panel-এর groupedItems ঠিক এই একই key ব্যবহার
-   * করে, নিচে ArchitecturalImportPanel.tsx দেখুন) সব item-এ এক লহমায়
+   * সময়ক্ষেপণ), এই ফাংশন একটা category-র (original.category — panel-এর
+   * groupedItems ঠিক এই একই key ব্যবহার করে, নিচে
+   * ArchitecturalImportPanel.tsx দেখুন) সব item-এ এক লহমায়
    * একই materialId বসিয়ে দেয়। পরে ইঞ্জিনিয়ার চাইলে setItemMaterial()
    * দিয়ে যেকোনো একটা item আলাদাভাবে বদলাতে পারবেন — bulk assignment তার
    * পথ আটকায় না, শুধু starting point দ্রুত করে।
@@ -292,7 +256,7 @@ export function useArchitecturalImport(projectId: string) {
     setState((s) => ({
       ...s,
       items: s.items.map((it) =>
-        (it.categoryOverride ?? it.original.category) === category ? { ...it, materialId } : it
+        it.original.category === category ? { ...it, materialId } : it
       ),
     }));
   }, []);
@@ -310,7 +274,7 @@ export function useArchitecturalImport(projectId: string) {
     setState((s) => ({
       ...s,
       items: s.items.map((it) =>
-        (it.categoryOverride ?? it.original.category) === category && it.sectionId !== null
+        it.original.category === category && it.sectionId !== null
           ? { ...it, sectionId }
           : it
       ),
@@ -318,35 +282,12 @@ export function useArchitecturalImport(projectId: string) {
   }, []);
 
   /**
-   * "Shear Wall হিসেবে import করুন" চেকপয়েন্ট — শুধু category === "wall"
-   * item-এ প্রযোজ্য। checked করলে categoryOverride "shear-wall"-এ সেট
-   * হয় (ঠিক আগের override যুক্তিই ব্যবহার করে, thickness-issue থাকুক বা
-   * না থাকুক) এবং includeAsShearWall true হয়ে item confirmImport()-এ
-   * অন্তর্ভুক্ত হয়। uncheck করলে categoryOverride আবার null এবং
-   * includeAsShearWall false — item confirmImport()-এ silently বাদ
-   * পড়ে (Confirm বাটন কখনো এর জন্য disabled হয় না, নিচে
-   * materialsSectionsResolved/allResolved দেখুন)।
-   */
-  const setItemIncludeAsShearWall = useCallback((elementId: string, include: boolean) => {
-    setState((s) => ({
-      ...s,
-      items: s.items.map((it) =>
-        it.original.elementId === elementId
-          ? { ...it, includeAsShearWall: include, categoryOverride: include ? "shear-wall" : null }
-          : it
-      ),
-    }));
-  }, []);
-
-  /**
-   * প্রতিটা import-হতে-যাওয়া item-এ (willImport() — un-checked সাধারণ
-   * wall বাদ, সেগুলোর material/section কখনো লাগবেই না কারণ সেগুলো
-   * confirmImport()-এ ছোঁয়াই হয় না) materialId (সব category) এবং
-   * sectionId (শুধু line category — beam/column/brace/pile) পূরণ করা
-   * আছে কিনা।
+   * প্রতিটা item-এ materialId (সব category) এবং sectionId (শুধু line
+   * category — beam/column/brace/pile) পূরণ করা আছে কিনা — সব item এখন
+   * import হবে (আর কোনো category-ভিত্তিক gate নেই), তাই সরাসরি
+   * state.items.every() ব্যবহার হয়।
    */
   const materialsSectionsResolved = state.items
-    .filter(willImport)
     .every((it) => it.materialId.trim() !== "" && (it.sectionId === null || it.sectionId.trim() !== ""));
 
   /**
@@ -398,17 +339,13 @@ export function useArchitecturalImport(projectId: string) {
   );
 
   /**
-   * চূড়ান্ত save-এ যাওয়া elements — un-checked সাধারণ wall বাদ (কখনো
-   * addElement() কল হয় না তাদের জন্য), বাকি সব (beam/column/slab/
-   * stairs, checkpoint-করা shear-wall) resolveItem() দিয়ে category
-   * override + material/section প্রয়োগ করে রিটার্ন হয়।
+   * চূড়ান্ত save-এ যাওয়া elements — সব item resolveItem() দিয়ে
+   * material/section প্রয়োগ করে রিটার্ন হয় (category আর এখানে পাল্টায়
+   * না, parser-এই চূড়ান্ত হয়ে গেছে)।
    */
   const resolvedElements = useCallback((): StructuralElement[] => {
-    return state.items.filter(willImport).map(resolveItem);
+    return state.items.map(resolveItem);
   }, [state.items]);
-
-  /** UI-তে "X টা wall বাদ যাবে" জাতীয় সারাংশ দেখানোর জন্য — কখনো model-এ যাবে না, শুধু তথ্যের জন্য। */
-  const excludedWallCount = state.items.filter((it) => !willImport(it)).length;
 
   const reset = useCallback(() => setState(INITIAL_STATE), []);
 
@@ -421,13 +358,10 @@ export function useArchitecturalImport(projectId: string) {
     fetchAndParse,
     setItemMaterial,
     setItemSection,
-    setItemCategoryOverride,
-    setItemIncludeAsShearWall,
     setGroupMaterial,
     setGroupSection,
     buildMergedGeometry,
     resolvedElements,
-    excludedWallCount,
     reset,
   };
 }

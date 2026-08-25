@@ -61,12 +61,10 @@ export function ArchitecturalImportPanel({ projectId, onAddElement }: Architectu
     fetchAndParse,
     setItemMaterial,
     setItemSection,
-    setItemIncludeAsShearWall,
     setGroupMaterial,
     setGroupSection,
     buildMergedGeometry,
     resolvedElements,
-    excludedWallCount,
     reset,
   } = useArchitecturalImport(projectId);
 
@@ -77,7 +75,7 @@ export function ArchitecturalImportPanel({ projectId, onAddElement }: Architectu
   const groupedItems = useMemo(() => {
     const groups = new Map<string, ImportReviewItem[]>();
     for (const item of state.items) {
-      const key = item.categoryOverride ?? item.original.category;
+      const key = item.original.category;
       const list = groups.get(key) ?? [];
       list.push(item);
       groups.set(key, list);
@@ -165,12 +163,6 @@ export function ArchitecturalImportPanel({ projectId, onAddElement }: Architectu
               {state.fetchedAt ? ` — সর্বশেষ প্রকাশিত: ${new Date(state.fetchedAt).toLocaleString("bn-BD")}` : ""}
               {state.moduleVersion !== null ? ` (version ${state.moduleVersion})` : ""}
             </p>
-            {excludedWallCount > 0 && (
-              <p className="text-text-muted">
-                {excludedWallCount}টা সাধারণ wall চেকপয়েন্ট দেওয়া হয়নি — এগুলো আমদানিতে বাদ যাবে
-                (নিচে চাইলে &quot;Shear Wall হিসেবে import করুন&quot; দিয়ে যোগ করুন)।
-              </p>
-            )}
           </div>
 
           {state.skippedIssues.length > 0 && (
@@ -259,9 +251,6 @@ export function ArchitecturalImportPanel({ projectId, onAddElement }: Architectu
                       sections={sections}
                       onMaterialChange={(materialId) => setItemMaterial(item.original.elementId, materialId)}
                       onSectionChange={(sectionId) => setItemSection(item.original.elementId, sectionId)}
-                      onIncludeAsShearWallChange={(include) =>
-                        setItemIncludeAsShearWall(item.original.elementId, include)
-                      }
                     />
                   ))}
                 </div>
@@ -386,7 +375,6 @@ interface ImportItemRowProps {
   sections: { sectionId: string; name: string }[];
   onMaterialChange: (materialId: string) => void;
   onSectionChange: (sectionId: string) => void;
-  onIncludeAsShearWallChange: (include: boolean) => void;
 }
 
 function ImportItemRow({
@@ -395,44 +383,13 @@ function ImportItemRow({
   sections,
   onMaterialChange,
   onSectionChange,
-  onIncludeAsShearWallChange,
 }: ImportItemRowProps) {
-  // চেকপয়েন্ট গেট শুধু আসল (override-না-করা) category "wall" item-এই
-  // দেখানো হয় — categoryOverride ইতিমধ্যে "shear-wall" থাকলে সেটা এই
-  // চেকবক্স দিয়েই সেট হয়েছে, তাই সেই item স্বাভাবিক shear-wall row হিসেবে
-  // দেখানো হয় (নিচে isWallGate false)।
-  const isWallGate = item.original.category === "wall";
-  const included = item.includeAsShearWall;
-
   return (
-    <div
-      className={`rounded-lg border p-2.5 space-y-2 ${
-        isWallGate && !included
-          ? "border-surface-border/60 bg-surface-card/40 opacity-70"
-          : "border-surface-border bg-surface-card"
-      }`}
-    >
+    <div className="rounded-lg border border-surface-border bg-surface-card p-2.5 space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-sm text-text-primary font-medium">{item.original.label}</span>
         <span className="text-[10px] text-text-muted">{item.original.elementId}</span>
       </div>
-
-      {isWallGate && (
-        <div className="flex items-start justify-between gap-2 rounded-md bg-surface-card/60 border border-surface-border px-2 py-1.5">
-          <p className="text-[11px] text-text-muted flex-1">
-            সাধারণ (architectural) wall — চেকপয়েন্ট না দিলে আমদানির সময় বাদ যাবে, মডেলে যোগ হবে না।
-          </p>
-          <label className="flex items-center gap-1.5 text-[11px] text-text-primary whitespace-nowrap flex-shrink-0">
-            <input
-              type="checkbox"
-              checked={included}
-              onChange={(e) => onIncludeAsShearWallChange(e.target.checked)}
-              className="accent-amber-600"
-            />
-            Shear Wall হিসেবে import করুন
-          </label>
-        </div>
-      )}
 
       {item.issue && (
         <div className="rounded-md bg-status-holdBg border border-status-holdBorder/40 px-2 py-1.5">
@@ -440,43 +397,41 @@ function ImportItemRow({
         </div>
       )}
 
-      {(!isWallGate || included) && (
-        <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="block text-[11px] text-text-muted mb-1">Material</label>
+          <select
+            value={item.materialId}
+            onChange={(e) => onMaterialChange(e.target.value)}
+            className={SELECT_CLASS}
+          >
+            <option value="">নির্বাচন করুন</option>
+            {materials.map((m) => (
+              <option key={m.materialId} value={m.materialId}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {item.sectionId !== null && (
           <div>
-            <label className="block text-[11px] text-text-muted mb-1">Material</label>
+            <label className="block text-[11px] text-text-muted mb-1">Section</label>
             <select
-              value={item.materialId}
-              onChange={(e) => onMaterialChange(e.target.value)}
+              value={item.sectionId}
+              onChange={(e) => onSectionChange(e.target.value)}
               className={SELECT_CLASS}
             >
               <option value="">নির্বাচন করুন</option>
-              {materials.map((m) => (
-                <option key={m.materialId} value={m.materialId}>
-                  {m.name}
+              {sections.map((s) => (
+                <option key={s.sectionId} value={s.sectionId}>
+                  {s.name}
                 </option>
               ))}
             </select>
           </div>
-
-          {item.sectionId !== null && (
-            <div>
-              <label className="block text-[11px] text-text-muted mb-1">Section</label>
-              <select
-                value={item.sectionId}
-                onChange={(e) => onSectionChange(e.target.value)}
-                className={SELECT_CLASS}
-              >
-                <option value="">নির্বাচন করুন</option>
-                {sections.map((s) => (
-                  <option key={s.sectionId} value={s.sectionId}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

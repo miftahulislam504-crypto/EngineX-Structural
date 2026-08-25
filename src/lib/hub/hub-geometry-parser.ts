@@ -49,36 +49,34 @@
  * simple axis-swap-এর জায়গায় প্রকৃত rotation matrix বসাতে হবে।
  *
  * ═══════════════════════════════════════════════════════════════════
- * Wall → Wall/ShearWall সিদ্ধান্ত — কেন কোনো automatic classification নেই
+ * Wall → Wall/ShearWall সিদ্ধান্ত — এখন Draw-এর explicit flag থেকে আসে
  * ═══════════════════════════════════════════════════════════════════
- * Draw-এর Wall.type শুধু 'EXTERIOR' | 'INTERIOR' | 'PARTITION' —
- * architectural ব্যবহার (কোন দেয়াল বাইরের, কোনটা ঘর ভাগ করে) বোঝায়,
- * lateral-load-resisting ভূমিকা না। কোনো dedicated shear-wall flag Draw-
- * এর geometry.ts-এ নেই (structuralNote/tags free-text, নির্ভরযোগ্য না)।
+ * ⚠️ সংশোধনী নোট (Miftahul, 2026-08-25 — নিচের ইতিহাস প্রসঙ্গের জন্য
+ * রাখা হলো, বর্তমান আচরণ না): আগে Draw-এ কোনো dedicated shear-wall flag
+ * ছিল না (Wall.type শুধু architectural ব্যবহার বোঝাতো — EXTERIOR/
+ * INTERIOR/PARTITION, lateral role না), আর thickness দিয়ে অনুমান করাও
+ * অনির্ভরযোগ্য প্রমাণিত হয়েছিল (RC shear wall 150-400mm বনাম বাংলাদেশের
+ * প্রচলিত brick/block wall 125-250mm — যথেষ্ট overlap করে)। তাই এই parser
+ * তখন সবসময় category: "wall" বসাতো, thickness ভারী হলে শুধু review-
+ * recommended warning যোগ করতো, আর প্রকৃত classification ছিল
+ * useArchitecturalImport.ts-এর import-review UI তে ইঞ্জিনিয়ারের ম্যানুয়াল
+ * চেকপয়েন্ট (ডিফল্ট un-checked, checkpoint দিলে "shear-wall" override)।
  *
- * thickness দিয়ে অনুমান করাও অনির্ভরযোগ্য — ওয়েব রেফারেন্স যাচাই করে
- * দেখা গেছে বাস্তব RC shear wall thickness সাধারণত 150-400mm রেঞ্জে,
- * কিন্তু বাংলাদেশে প্রচলিত সাধারণ (non-structural) brick/block দেয়ালও
- * 125-250mm রেঞ্জে পড়ে (5"-10" brick wall) — দুই রেঞ্জ যথেষ্ট overlap
- * করে, তাই একটা নির্দিষ্ট thickness threshold "shear wall" এর নির্ভরযোগ্য
- * indicator না। ভুল classification-এর ফলাফল গুরুতর (shear wall-কে সাধারণ
- * Wall ধরলে lateral system-এর একটা অংশ analysis থেকে বাদ পড়ে যাবে,
- * বা উল্টোটা — সাধারণ দেয়ালকে shear wall ধরলে ভুল stiffness যোগ হবে)।
- *
- * তাই এই parser **সবসময়** category: "wall" বসায় (কখনো "shear-wall"
- * automatically না), কিন্তু thickness ≥ THICK_WALL_REVIEW_THRESHOLD_M
- * হলে একটা 'approximate' সতর্কতা যোগ করে যাতে ইঞ্জিনিয়ার নিজে review
- * করে প্রয়োজনে ShearWallElement-এ পরিবর্তন করতে পারেন (এই ফাইলে সেই
- * পরিবর্তন ম্যানুয়াল — parser নিজে করে না)।
- *
- * ⚠️ ডাউনস্ট্রিম নীতি (এই ফাইলের বাইরে, useArchitecturalImport.ts):
- * category "wall" ওয়ালা element এখানে সবসময় তৈরি হয় (parser কখনো
- * silently বাদ দেয় না), কিন্তু import review UI-তে ডিফল্ট un-checked
- * থাকে — ইঞ্জিনিয়ার explicitly "Shear Wall হিসেবে import করুন" চেকপয়েন্ট
- * না দিলে confirmImport()-এ বাদ পড়ে (ETABS-এর মতো শুধু beam/column/
- * slab/stairs/shear-wall analysis model-এ থাকে, সাধারণ/architectural
- * wall না)। parser নিজে এই gate প্রয়োগ করে না — শুধু category বসায়,
- * gate hook-স্তরে।
+ * এখন Draw-এ Wall.isShearWall (explicit boolean, ইঞ্জিনিয়ার নিজে সেট
+ * করেন — geometry.ts এর ফিল্ড কমেন্ট দেখুন) যোগ হয়েছে, আর hub-write.ts
+ * সেই অনুযায়ী ref.type "wall" বা "shear-wall" পাঠায়। তাই classification
+ * এখন Hub-এ আসার আগেই, উৎসেই ঠিক — এই App-এ আর কোনো thickness-ভিত্তিক
+ * অনুমান বা review-time checkbox override নেই। mapWall() (নিচে) সরাসরি
+ * ref.type read করে category বসায়, দুই category-র geometry mapping
+ * হুবহু একই (ShearWallElement জ্যামিতিকভাবে WallElement থেকে ভিন্ন না)।
+ * useArchitecturalImport.ts-এও এখন wall/shear-wall উভয়ই বাকি সব
+ * category-র মতোই সবসময় import হয় — কোনো wall silently বাদ পড়ে না,
+ * কারণ "সাধারণ wall structural analysis model-এ থাকা উচিত না" ধারণাটাই
+ * পাল্টেছে: সাধারণ wall (category "wall") এখন self-weight/dead-load
+ * contributor হিসেবে সবসময় মডেল হয় (Beam/Column/Slab-এর মতোই), শুধু
+ * lateral design/capacity check (Design Engine, weightOptimization.ts)
+ * "shear-wall"/"core-wall" ছাড়া প্রযোজ্য হয় না — এই পার্থক্যটা category
+ * ট্যাগেই ধরা আছে, import-time gate দিয়ে না।
  *
  * ═══════════════════════════════════════════════════════════════════
  * Stair mapping — mapStair() দ্রষ্টব্য
@@ -107,16 +105,16 @@
  *   (১) elevation — parapet floor level-এ বসে না, ছাদের কিনারায়
  *       (Draw-এর নিজস্ব `elevation` ফিল্ড থেকে আসে, Wall-এর মতো শুধু
  *       floor base elevation ধরে নেওয়া যায় না)।
- *   (২) কোনো shear-wall-review threshold check নেই — parapet কখনোই
- *       lateral system-এর অংশ বিবেচিত হয় না (ফাইলের এই সেকশনের ওপরের
- *       Wall→Wall/ShearWall নোট parapet-এ প্রযোজ্য না), তাই mapWall()-
- *       এর THICK_WALL_REVIEW_THRESHOLD_M লজিক এখানে বাদ।
+ *   (২) category সবসময় "parapet" — কখনো "shear-wall" হয় না, parapet
+ *       lateral system-এর অংশ বিবেচিত হয় না (mapWall()-এর মতো ref.type
+ *       থেকে category নির্ণয়ের প্রয়োজন এখানে নেই, Draw কখনো parapet-কে
+ *       shear-wall হিসেবে export করে না)।
  * v1 স্কোপ: শুধু modeling + self-weight/dead-load (deriveAreaSelfWeightLoads.ts
  * দেখুন) — কোনো design check parapet-এর নিজস্ব নয়, শুধু building-এর
  * overall dead load-এ contribute করে।
  */
 
-import type { StructuralElement, Point3D, WallElement, SlabElement, StairElement, LandingElement, ParapetElement, FootingElement } from "@/lib/types/element";
+import type { StructuralElement, Point3D, WallElement, ShearWallElement, SlabElement, StairElement, LandingElement, ParapetElement, FootingElement } from "@/lib/types/element";
 import type { StructuralGrid, StructuralStory } from "@/lib/types/geometry";
 import type { BuildingElementRef } from "./contract.types";
 import type {
@@ -236,17 +234,6 @@ const UNRESOLVED_MATERIAL_ID = "__unresolved_material__";
 const UNRESOLVED_SECTION_ID = "__unresolved_section__";
 
 /**
- * এই thickness-এর উপরে/সমান হলে "এটা হয়তো shear wall হতে পারে, review
- * করুন" সতর্কতা যোগ হয় — কিন্তু category কখনো automatically পাল্টায় না
- * (ফাইল হেডারের ব্যাখ্যা দেখুন)। 150mm বেছে নেওয়া হয়েছে কারণ এটা RC
- * shear wall-এর প্রচলিত সর্বনিম্ন থ্রেশহোল্ড (একাধিক রেফারেন্সে
- * 150-400mm রেঞ্জ পাওয়া গেছে, 150mm সবচেয়ে রক্ষণশীল নিম্নসীমা) —
- * এর নিচে থাকা দেয়াল review-এর জন্যও flag করা হয় না, কারণ shear wall
- * হওয়ার সম্ভাবনা তুলনামূলক কম।
- */
-const THICK_WALL_REVIEW_THRESHOLD_M = 0.15;
-
-/**
  * Stair waist-slab thickness — Draw কখনো এই মান পাঠায় না (architectural
  * drawing-এ দরকার হয় না, শুধু structural design-এ)। BNBC 2020-context
  * সাধারণ RC waist slab span/20 rough rule অনুযায়ী প্রচলিত রেঞ্জ
@@ -279,16 +266,30 @@ function isDrawPoint2D(v: unknown): v is DrawPoint2D {
 }
 
 /**
- * Wall → WallElement। এখানেই "Wall→Wall/ShearWall" নিয়মের বাস্তবায়ন —
- * সবসময় category: "wall", কখনো "shear-wall" না (কারণ ফাইল হেডারে
- * ব্যাখ্যা করা)। thickness ভারী হলে review-recommended issue যোগ হয়।
+ * Wall/Shear-Wall → WallElement | ShearWallElement।
+ *
+ * ⚠️ সংশোধনী নোট (Miftahul, 2026-08-25 — পুরনো "কখনো automatic
+ * classification না" নীতি প্রতিস্থাপিত): আগে এই ফাংশন সবসময়
+ * category: "wall" বসাতো এবং thickness ভারী হলে শুধু review-recommended
+ * issue যোগ করতো — classification ছিল useArchitecturalImport.ts এর
+ * import-review UI তে ইঞ্জিনিয়ারের ম্যানুয়াল চেকপয়েন্ট (wall ⇄ shear-wall
+ * override)। এখন classification Draw-এ উৎসেই ঠিক হয়ে যায়: Draw এর
+ * Wall.isShearWall (ইঞ্জিনিয়ার নিজে সেট করেন, কখনো thickness থেকে
+ * অনুমান না — geometry.ts এর ফিল্ড কমেন্ট দেখুন) অনুযায়ী hub-write.ts
+ * ref.type "wall" বা "shear-wall" পাঠায়। এই ফাংশন সরাসরি সেই type read
+ * করে category বসায় — geometry mapping (vertices/thickness) দুই
+ * category-র জন্যই হুবহু একই (ShearWallElement জ্যামিতিকভাবে WallElement
+ * থেকে আলাদা না, element.ts এর ShearWallElement কমেন্ট দেখুন), শুধু
+ * category ট্যাগ ভিন্ন। thickness-ভিত্তিক review-recommended warning আর
+ * নেই — classification এখন থেকে Draw-এর explicit flag, thickness অনুমান
+ * না, তাই সেই সতর্কতা আর প্রাসঙ্গিক না।
  */
 function mapWall(
   ref: BuildingElementRef,
   baseElevationM: number,
   issues: ParsedElementIssue[],
   nowIso: string,
-): WallElement | null {
+): WallElement | ShearWallElement | null {
   const g = ref.geometry as DrawWallGeometry | undefined;
   if (!g || !isDrawPoint2D(g.start) || !isDrawPoint2D(g.end)) {
     warnSkipped(issues, ref, "start/end পয়েন্ট অনুপস্থিত বা ভুল shape");
@@ -303,14 +304,6 @@ function mapWall(
     return null;
   }
 
-  if (g.thickness >= THICK_WALL_REVIEW_THRESHOLD_M) {
-    warnReview(
-      issues,
-      ref,
-      `thickness ${(g.thickness * 1000).toFixed(0)}mm — RC shear wall-এর প্রচলিত রেঞ্জে (≥150mm) পড়ে। lateral system-এর অংশ কিনা ইঞ্জিনিয়ার review করে প্রয়োজনে "shear-wall" category-তে পরিবর্তন করুন — এই parser automatically পরিবর্তন করে না।`,
-    );
-  }
-
   // vertices: Wall একটা vertical rectangular plane — start/end (base
   // elevation-এ) থেকে height যোগ করে উপরের দুই কোণা বের করা হচ্ছে,
   // counter-clockwise ক্রমে (element.ts এর AreaElement.vertices কমেন্ট
@@ -323,9 +316,11 @@ function mapWall(
   const startTop = toPoint3D(g.start, baseElevationM + g.height);
   const endTop = toPoint3D(g.end, baseElevationM + g.height);
 
+  const category: "wall" | "shear-wall" = ref.type === "shear-wall" ? "shear-wall" : "wall";
+
   return {
     elementId: ref.id,
-    category: "wall",
+    category,
     label: ref.id,
     materialId: UNRESOLVED_MATERIAL_ID,
     storyId: ref.levelId || undefined,
@@ -753,9 +748,9 @@ function mapFooting(ref: BuildingElementRef, baseElevationM: number, issues: Par
  * fetchLatestArchitecturalExport()-এর কাজ) — শুধু pure transformation,
  * unit-testable।
  *
- * শুধু ৭টা category হ্যান্ডল করা হয় (wall, slab, column, beam, stair,
- * stair-landing, parapet) — প্ল্যানের Phase 2 স্কোপ অনুযায়ী প্রথম দুটো
- * (wall→wall/shear-wall, slab→area) মূল আইটেম, column/beam বোনাস
+ * শুধু ৮টা category হ্যান্ডল করা হয় (wall, shear-wall, slab, column, beam,
+ * stair, stair-landing, parapet) — প্ল্যানের Phase 2 স্কোপ অনুযায়ী প্রথম
+ * দুটো (wall/shear-wall, slab→area) মূল আইটেম, column/beam বোনাস
  * হিসেবে যোগ করা হয়েছে কারণ mapping একই রকম straightforward এবং Draw
  * ইতিমধ্যে পাঠায়। stair পরে যোগ হয়েছে (mapStair() দেখুন — প্রতিটা
  * flight একটা inclined StairElement, ETABS-এর মতো beam/column/slab/
@@ -817,6 +812,7 @@ export function parseArchitecturalExport(data: DrawArchitecturalExport): ParseGe
     let mapped: StructuralElement | null;
     switch (ref.type) {
       case "wall":
+      case "shear-wall":
         mapped = mapWall(ref, baseElevationM, issues, nowIso);
         break;
       case "slab":
