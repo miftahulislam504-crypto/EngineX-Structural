@@ -30,7 +30,7 @@
  *     না দিলে সেই wall confirmImport()-এ silently বাদ পড়ে (skip, block
  *     না)। চেকপয়েন্ট দিলে categoryOverride "shear-wall"-এ সেট হয় এবং
  *     ঠিক অন্য elements-এর মতোই material/section resolve করে import
- *     হয়। non-wall category (beam/column/slab/stairs/shear-wall/parapet
+ *     হয়। non-wall category (beam/column/slab/stairs/shear-wall/parapet/footing
  *     সরাসরি parser থেকে যদি কখনো আসে) এই ফ্ল্যাগ ছোঁয় না, স্বাভাবিকভাবে
  *     import হয়।
  *   - re-import নিরাপদ: elementId Draw-এর BuildingElementRef.id থেকে
@@ -148,7 +148,7 @@ function buildReviewItems(result: ParseGeometryResult): {
         : ""
       : null,
     categoryOverride: null,
-    // "wall" ছাড়া বাকি সব category (beam/column/slab/stairs/shear-wall/
+    // "wall" ছাড়া বাকি সব category (beam/column/slab/stairs/shear-wall/footing/
     // parapet) সবসময় include — শুধু সাধারণ wall ডিফল্টে বাদ, চেকপয়েন্ট
     // দিলে যোগ। parapet কখনো shear-wall candidate হয় না (mapParapet()
     // দেখুন, hub-geometry-parser.ts), তাই এই wall-only gate তার জন্য
@@ -163,7 +163,7 @@ function buildReviewItems(result: ParseGeometryResult): {
 /**
  * item-টা confirmImport()-এ আদৌ model-এ যাবে কিনা — শুধু un-checked
  * সাধারণ wall (includeAsShearWall false) বাদ পড়ে, বাকি সব category
- * (beam/column/slab/stairs, ও checkpoint-করা shear-wall) সবসময় true।
+ * (beam/column/slab/stairs/footing, ও checkpoint-করা shear-wall) সবসময় true।
  * material/section resolve, model-check input, এবং চূড়ান্ত save — এই
  * তিন জায়গাতেই একই filter ব্যবহার করা হয় যাতে "কী গণনা হচ্ছে" এবং "কী
  * সেভ হচ্ছে" কখনো আলাদা না হয়ে যায়।

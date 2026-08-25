@@ -116,7 +116,7 @@
  * overall dead load-এ contribute করে।
  */
 
-import type { StructuralElement, Point3D, WallElement, SlabElement, StairElement, LandingElement, ParapetElement } from "@/lib/types/element";
+import type { StructuralElement, Point3D, WallElement, SlabElement, StairElement, LandingElement, ParapetElement, FootingElement } from "@/lib/types/element";
 import type { StructuralGrid, StructuralStory } from "@/lib/types/geometry";
 import type { BuildingElementRef } from "./contract.types";
 import type {
@@ -129,6 +129,7 @@ import type {
   DrawStairGeometry,
   DrawStairLandingGeometry,
   DrawParapetGeometry,
+  DrawFootingGeometry,
 } from "./hub-module-shapes";
 import { getModuleData, subscribeToModuleData } from "./hub-sdk-client";
 import { mapArchitecturalGeometry } from "./hub-module-mapper";
@@ -694,6 +695,56 @@ function mapBeam(ref: BuildingElementRef, baseElevationM: number, issues: Parsed
   };
 }
 
+/**
+ * Footing → FootingElement (reference import)।
+ *
+ * এটা বাকি mapper গুলো থেকে গুণগতভাবে আলাদা — column/beam/wall/slab
+ * এর dimension সরাসরি structural analysis-এ ব্যবহারযোগ্য (শুধু
+ * material/section resolve বাকি), কিন্তু Draw-এর footing শুধু একজন
+ * স্থপতির architectural sketch — bearing capacity/soil data ছাড়া
+ * width/depth "ঠিক" কিনা এই App যাচাই করতে পারে না। তাই এই mapper
+ * dimension বদলায় না (Draw যা পাঠিয়েছে হুবহু তাই বসে), কিন্তু সবসময়
+ * "review-recommended" issue যোগ করে (Wall thickness-review প্যাটার্ন
+ * অনুসরণ করে) — যাতে Import Review UI ইঞ্জিনিয়ারকে স্পষ্ট মনে করিয়ে
+ * দেয় যে এই dimension একটা sketch reference, footingDesign.ts এর
+ * bearing-capacity check দিয়ে যাচাই না করে সরাসরি নির্মাণে ব্যবহার
+ * করা উচিত না। elevation বাদবাকি sub-grade element (Foundation) এর
+ * মতোই baseElevationM এর সাপেক্ষে অফসেট (সাধারণত ঋণাত্মক)।
+ */
+function mapFooting(ref: BuildingElementRef, baseElevationM: number, issues: ParsedElementIssue[], nowIso: string): FootingElement | null {
+  const g = ref.geometry as DrawFootingGeometry | undefined;
+  if (!g || !isDrawPoint2D(g.center)) {
+    warnSkipped(issues, ref, "center পয়েন্ট অনুপস্থিত বা ভুল shape");
+    return null;
+  }
+  if (!isFiniteNumber(g.width) || g.width <= 0 || !isFiniteNumber(g.depth) || g.depth <= 0 || !isFiniteNumber(g.thickness) || g.thickness <= 0) {
+    warnSkipped(issues, ref, "width/depth/thickness অনুপস্থিত বা অবৈধ (সংখ্যা হতে হবে, > 0)");
+    return null;
+  }
+
+  const elevationM = baseElevationM + (isFiniteNumber(g.elevation) ? g.elevation : 0);
+
+  warnReview(
+    issues,
+    ref,
+    "Draw-এর architectural sketch থেকে reference হিসেবে import করা হয়েছে — এই width/depth/thickness bearing-capacity বা BNBC check দিয়ে যাচাই করা হয়নি। নির্মাণের আগে Footing Design প্যানেলে (footingDesign.ts) sizing verify/re-calculate করুন।",
+  );
+
+  return {
+    elementId: ref.id,
+    category: "footing",
+    label: ref.id,
+    materialId: UNRESOLVED_MATERIAL_ID,
+    storyId: ref.levelId || undefined,
+    location: toPoint3D(g.center, elevationM),
+    width: g.width * 1000, // mm — element.ts এর FootingElement.width একক
+    length: g.depth * 1000, // mm — Draw-এর "depth" এই App-এর "length" (plan Z-দিক)
+    thickness: g.thickness * 1000, // mm
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  };
+}
+
 // ─── Top-level entry point ────────────────────────────────────────────
 
 /**
@@ -710,17 +761,20 @@ function mapBeam(ref: BuildingElementRef, baseElevationM: number, issues: Parsed
  * flight একটা inclined StairElement, ETABS-এর মতো beam/column/slab/
  * stairs/shear-wall প্রয়োজন অনুযায়ী)। parapet dead-load contribution-এর
  * জন্য (mapParapet() দেখুন, Audit Gap Closure Phase 5 item 16-এর
- * Structural-দিকের বাস্তবায়ন)। stair-landing সবচেয়ে সাম্প্রতিক সংযোজন
- * (mapStairLanding() দেখুন — Stair implementation gap-closing pass,
- * ২০২৬-০৮, শুধু mid-run 'turn' landing, DrawStairLandingGeometry এর
- * কমেন্ট দ্রষ্টব্য কেন bottom/top landing বাদ)। door/window/room/roof/
- * ceiling/foundation/footing/ইত্যাদি ইচ্ছাকৃতভাবে বাদ —
- * এগুলো হয় structural element না (door/window/room), অথবা এই App-এর
- * নিজস্ব foundation design workflow-এর (FootingElement ইত্যাদি) সাথে
- * architectural geometry সরাসরি না মেলা উচিত (foundation sizing এই
- * App-এর হিসাব, Draw-এর architectural foundation sketch থেকে সরাসরি
- * import করা বিভ্রান্তিকর — ভবিষ্যতে আলাদা "reference only" ধরনের
- * ব্যবহারের সুযোগ থাকতে পারে, কিন্তু এখন parse করা হচ্ছে না)।
+ * Structural-দিকের বাস্তবায়ন)। stair-landing (mapStairLanding() দেখুন —
+ * Stair implementation gap-closing pass, ২০২৬-০৮, শুধু mid-run 'turn'
+ * landing, DrawStairLandingGeometry এর কমেন্ট দ্রষ্টব্য কেন bottom/top
+ * landing বাদ)। footing সবচেয়ে সাম্প্রতিক সংযোজন (mapFooting() দেখুন —
+ * Footing Reference Import gap-closing pass, ২০২৬-০৮) — dimension
+ * পরিবর্তন না করে হুবহু "reference" হিসেবে import হয়, সবসময়
+ * review-recommended issue সহ, কারণ bearing-capacity/BNBC sizing এই
+ * App-এর নিজস্ব footingDesign.ts workflow-এর কাজ, Draw-এর architectural
+ * sketch সেটা প্রতিস্থাপন করে না (DrawFootingGeometry এর কমেন্ট
+ * দ্রষ্টব্য)। door/window/room/roof/ceiling/foundation/ইত্যাদি এখনো
+ * ইচ্ছাকৃতভাবে বাদ — এগুলো structural element না (door/window/room),
+ * অথবা foundation (mat/raft-type) এর জন্য এখনো কোনো structural
+ * counterpart mapping সংজ্ঞায়িত হয়নি (ভবিষ্যতে MatFoundationElement-এর
+ * সাথে একইভাবে reference-mapping যোগ হতে পারে)।
  */
 export function parseArchitecturalExport(data: DrawArchitecturalExport): ParseGeometryResult {
   const nowIso = new Date().toISOString();
@@ -780,8 +834,11 @@ export function parseArchitecturalExport(data: DrawArchitecturalExport): ParseGe
       case "stair-landing":
         mapped = mapStairLanding(ref, baseElevationM, issues, nowIso);
         break;
+      case "footing":
+        mapped = mapFooting(ref, baseElevationM, issues, nowIso);
+        break;
       default:
-        // door/window/room/roof/ceiling/foundation/footing/ইত্যাদি —
+        // door/window/room/roof/ceiling/foundation/ইত্যাদি —
         // ইচ্ছাকৃতভাবে স্কিপ, ফাইল হেডারে ব্যাখ্যা করা কারণে। এটা
         // warning-যোগ্য "সমস্যা" না, তাই issues-এ যোগ হয় না — শুধু
         // পরিকল্পিতভাবে out-of-scope।

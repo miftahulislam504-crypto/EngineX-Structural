@@ -115,6 +115,33 @@ export interface DrawBeamGeometry {
 }
 
 /**
+ * BuildingElementRef.type === 'footing' এর geometry payload — Draw-এর
+ * Footing টাইপ (object-model/geometry.ts) থেকে হুবহু verified
+ * (hub-write.ts: `geometry: { center, width, depth, thickness,
+ * elevation }`)। Column-এর মতোই point element — center + plan
+ * dimension দিয়ে সংজ্ঞায়িত, boundary polygon না।
+ *
+ * এটা আগে (Phase 2 আর্কিটেকচারাল ইম্পোর্টে) ইচ্ছাকৃতভাবে বাদ ছিল, কারণ
+ * এই App-এর নিজস্ব FootingElement sizing calculation-এর আউটপুট
+ * (footingSizing.ts) — Draw-এর architectural sketch থেকে সরাসরি
+ * width/depth বসিয়ে দিলে ভুলবশত engineered dimension মনে হতে পারত।
+ * এখন mapFooting() (hub-geometry-parser.ts) এটাকে "reference"
+ * হিসেবে import করে — width/depth/thickness ঠিক Draw যা পাঠিয়েছে তাই
+ * বসে (sizing override হয় না), কিন্তু importFootingReviewItem-এ সবসময়
+ * "review-recommended" issue যোগ হয় যাতে ইঞ্জিনিয়ার এই dimension
+ * bearing-capacity/BNBC check দিয়ে যাচাই না করে যেন সরাসরি design-এ
+ * ব্যবহার না করেন (footingDesign.ts এর সাইজিং ওয়ার্কফ্লো আলাদা এবং
+ * এখনো bearing capacity/soil data লাগে যা Draw পাঠায় না)।
+ */
+export interface DrawFootingGeometry {
+  center: DrawPoint2D;
+  width: number; // মিটার — plan dimension X-দিকে
+  depth: number; // মিটার — plan dimension Z-দিকে (element.ts এ "length")
+  thickness: number; // মিটার
+  elevation: number; // মিটার — floor level থেকে, সাধারণত ঋণাত্মক (মাটির নিচে)
+}
+
+/**
  * Draw-এর একটা StairFlight — bottom→top একটা সরল ধাপ-সারি। Draw-এর
  * object-model প্যাকেজ (geometry.ts, Stair.flights) থেকে হুবহু
  * verified — riserHeight মিটার/ধাপ, treadDepth/waist-thickness Draw

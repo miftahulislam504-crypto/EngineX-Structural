@@ -321,6 +321,106 @@ function elementLabel(e: StructuralElement): string {
   return `${e.category} "${e.label}"`;
 }
 
+/**
+ * Draw-এর isColumnSupportedByFooting() (structural-coordination.ts,
+ * SUPPORT_ALIGNMENT_TOLERANCE_M) এর সাথে সামঞ্জস্যপূর্ণ tolerance —
+ * দুটো App আলাদা কোঅর্ডিনেট সিস্টেমে (Draw: plan XY, এই App: plan XZ,
+ * ফাইল হেডার কমেন্ট দেখুন) একই "কতটা কাছাকাছি হলে aligned ধরা হবে"
+ * প্রশ্নের একই উত্তর দেওয়া উচিত।
+ */
+const FOOTING_ALIGNMENT_TOLERANCE_M = 0.15;
+
+/**
+ * Footing Coverage Check — Column/Footing Mismatch Warning।
+ *
+ * Draw-এ একটা column-এর নিচে footing আঁকা থাকতে পারে (স্থপতির
+ * architectural sketch), কিন্তু Structural-এ mapFooting() এখন সেটা
+ * import করলেও (hub-geometry-parser.ts, Footing Reference Import
+ * gap-closing pass, ২০২৬-০৮) কখনো auto-write হয় না — ইঞ্জিনিয়ারকে
+ * Import Review UI-তে confirm করতে হয়, এবং un-checked সাধারণ wall-এর
+ * মতোই re-import বাদ দিলে বা কেউ ম্যানুয়ালি delete করলে column নিচে
+ * কোনো footing ছাড়াই থেকে যেতে পারে। এই চেক সেই ফাঁক ধরে — base-level
+ * (Y≈0) প্রতিটা column-এর নিচে কাছাকাছি (tolerance-এর মধ্যে) কোনো
+ * footing element আছে কিনা যাচাই করে।
+ *
+ * severity সবসময় "warning" (checkSupports()-এর no-base-level error এর
+ * মতো "block" না) — কারণ:
+ *   (১) ইঞ্জিনিয়ার হয়তো ইচ্ছাকৃতভাবে এখনো footing মডেল করেননি (design
+ *       workflow-এ পরের ধাপ, প্রথমে analysis দিয়ে reaction বের করে তারপর
+ *       footing size করা প্রচলিত অনুক্রম),
+ *   (২) column-এর নিচে যদি সত্যিই কিছু না থাকে (raft/mat foundation বা
+ *       pile cap ব্যবহার হচ্ছে), সেক্ষেত্রে isolated footing না থাকাই
+ *       সঠিক — এই চেক সেই পার্থক্য বুঝতে পারে না (mat/pile-cap element
+ *       category দেখেই বাদ দেওয়া হয়, নিচের ফিল্টার দেখুন), তাই ভুল
+ *       positive এড়াতে block না করে শুধু জানানো।
+ * Draw-এর isColumnSupportedByFooting()-এর মতোই "column কখনো footing
+ * বাধ্যতামূলক করে না" নীতি এখানেও বজায় থাকে — শুধু সতর্ক করা হয়।
+ */
+export function checkFootingCoverage(elements: StructuralElement[]): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+
+  const baseLevelColumns = elements.filter(
+    (e) => e.category === "column" && isLineElement(e) && (e.startPoint.y <= 1e-3 || e.endPoint.y <= 1e-3)
+  );
+  if (baseLevelColumns.length === 0) return issues;
+
+  // mat-foundation/pile-cap/pile-group থাকলে সেই এলাকার column-এর জন্য
+  // isolated footing না থাকা প্রত্যাশিতই — এই v1-এ শুধু "প্রজেক্টে কোনো
+  // mat/pile-cap system আছে কিনা" গ্লোবাল চেক (per-column area-membership
+  // যাচাই future scope, এখনকার জন্য conservative: থাকলে পুরো চেক নিরব)।
+  const hasAlternateFoundationSystem = elements.some(
+    (e) => e.category === "mat-foundation" || e.category === "pile-cap" || e.category === "pile-group"
+  );
+  if (hasAlternateFoundationSystem) return issues;
+
+  const footings = elements.filter((e) => e.category === "footing" && "location" in e);
+  const combinedOrStripFootings = elements.filter(
+    (e) => e.category === "combined-footing" || e.category === "strip-footing"
+  );
+
+  for (const column of baseLevelColumns) {
+    if (!isLineElement(column)) continue;
+    const base = column.startPoint.y <= column.endPoint.y ? column.startPoint : column.endPoint;
+
+    const coveredByIsolated = footings.some((f) => {
+      const loc = (f as Extract<StructuralElement, { location: { x: number; y: number; z: number } }>).location;
+      const dx = loc.x - base.x;
+      const dz = loc.z - base.z;
+      return Math.hypot(dx, dz) <= FOOTING_ALIGNMENT_TOLERANCE_M;
+    });
+    if (coveredByIsolated) continue;
+
+    // Combined/Strip footing-এর ক্ষেত্রে column location তার নিজস্ব
+    // endpoint/columnA/columnB এর কাছাকাছি কিনা — এই দুই category জ্যামিতিকভাবে
+    // আলাদা shape (BaseElement, location field নেই), তাই আলাদা করে চেক করা হয়।
+    const coveredByCombinedOrStrip = combinedOrStripFootings.some((f) => {
+      if (f.category === "combined-footing") {
+        const cf = f as Extract<StructuralElement, { columnALocation: { x: number; y: number; z: number } }>;
+        const dA = Math.hypot(cf.columnALocation.x - base.x, cf.columnALocation.z - base.z);
+        const dB = Math.hypot(cf.columnBLocation.x - base.x, cf.columnBLocation.z - base.z);
+        return dA <= FOOTING_ALIGNMENT_TOLERANCE_M || dB <= FOOTING_ALIGNMENT_TOLERANCE_M;
+      }
+      // strip-footing: column line-এর কাছাকাছি কিনা (point-to-segment না,
+      // conservative point tolerance — future refinement scope)।
+      const sf = f as Extract<StructuralElement, { startPoint: { x: number; y: number; z: number }; endPoint: { x: number; y: number; z: number } }>;
+      const dStart = Math.hypot(sf.startPoint.x - base.x, sf.startPoint.z - base.z);
+      const dEnd = Math.hypot(sf.endPoint.x - base.x, sf.endPoint.z - base.z);
+      return dStart <= FOOTING_ALIGNMENT_TOLERANCE_M || dEnd <= FOOTING_ALIGNMENT_TOLERANCE_M;
+    });
+    if (coveredByCombinedOrStrip) continue;
+
+    issues.push({
+      id: `footing-coverage:${column.elementId}`,
+      severity: "warning",
+      category: "support",
+      message: `${elementLabel(column)} base level-এ (Y≈0) কোনো footing/combined-footing/strip-footing দিয়ে কাভার্ড না — Draw-এ এই কলামের নিচে footing sketch থাকতে পারে যা এখনো এই App-এ import/model করা হয়নি, অথবা isolated footing ইচ্ছাকৃতভাবে বাদ (mat/pile-cap ব্যবহার হলে)। Foundation modeling সম্পূর্ণ কিনা যাচাই করুন।`,
+      elementIds: [column.elementId],
+    });
+  }
+
+  return issues;
+}
+
 /** Model Checker এর সব সাব-চেক একসাথে চালায়। */
 export function runModelChecks(elements: StructuralElement[]): ValidationIssue[] {
   return [
@@ -328,5 +428,6 @@ export function runModelChecks(elements: StructuralElement[]): ValidationIssue[]
     ...checkDuplicates(elements),
     ...checkGeometry(elements),
     ...checkSupports(elements),
+    ...checkFootingCoverage(elements),
   ];
 }
