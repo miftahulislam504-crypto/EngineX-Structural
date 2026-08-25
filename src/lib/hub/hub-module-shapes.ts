@@ -134,12 +134,33 @@ export interface DrawStairFlight {
  * s.width, flights: s.flights }`)। flights bottom-to-top ক্রমে, একটা
  * এন্ট্রি মানে সোজা এক-flight সিঁড়ি, ২+ মানে L/U-shaped (turn সহ)।
  * elevation নেই (wall-এর মতোই levelId থেকে base elevation resolve
- * হয়) — landing geometry এখানে raw আসে না (Draw-এর core-engine
- * deriveStairLandings()-এ derive হয়, export-এ শুধু raw flights)।
+ * হয়)।
  */
 export interface DrawStairGeometry {
   width: number; // মিটার — পুরো stair-এর জন্য একটাই, সব flight/landing-এ সমান
   flights: DrawStairFlight[];
+}
+
+/**
+ * BuildingElementRef.type === 'stair-landing' এর geometry payload —
+ * Stair implementation gap-closing pass (২০২৬-০৮)। আগে landing geometry
+ * এখানে raw আসত না (এই কমেন্টেই আগে সেটা documented ছিল) — Draw-এর
+ * core-engine এ deriveStairLandings() ইতিমধ্যে ছিল (2D plan + 3D
+ * rendering-এর জন্য), কিন্তু hub-write.ts এটা কখনো কল করত না। এখন
+ * করে, শুধু 'turn' kind landing-এর জন্য (দুই flight-এর মাঝের mid-run
+ * প্ল্যাটফর্ম) — 'bottom'/'top' landing ইচ্ছাকৃতভাবে বাদ, কারণ সেগুলো
+ * স্টোরির নিজস্ব floor level-এ বসে (elevation 0 বা stairTotalRise,
+ * অর্থাৎ নিচের/উপরের তলার floor slab-এর সমান) এবং সেই floor-এর নিজস্ব
+ * Slab element দিয়ে ইতিমধ্যে কাঠামোগতভাবে কভার্ড — আবার নতুন element
+ * হিসেবে পাঠালে ডুপ্লিকেট self-weight/design হয়ে যেত (hub-write.ts এর
+ * নিজস্ব কমেন্টে এই যুক্তি বিস্তারিত)। boundary CCW/CW ordering
+ * deriveStairLandings()-এর buildTurnLandingBoundary() থেকে যেমন আসে
+ * তেমনই — parser (mapStairLanding(), hub-geometry-parser.ts) নিজে
+ * ordering ঠিক করে না, ধরে নেয় Draw সঠিক দেয়।
+ */
+export interface DrawStairLandingGeometry {
+  boundary: DrawPoint2D[];
+  elevation: number; // মিটার — stair-এর নিজস্ব floor level থেকে, StairFlight-এর মতোই
 }
 
 /**

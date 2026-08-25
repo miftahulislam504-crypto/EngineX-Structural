@@ -5,36 +5,47 @@
  * Details") এতদিন `dataStatus: "unmodeled"` ছিল — কোনো stair design
  * module-ই ছিল না বলে UnmodeledSheetPlaceholder.tsx দিয়ে honest
  * placeholder দেখানো হতো। Phase 1-3 (self-weight derivation, stair
- * design module, StairDesignPanel.tsx) দিয়ে এখন waist-slab flight
- * design data বাস্তবে আছে — তাই এই ফাইল ColumnScheduleSheet.tsx
- * (schedule table) আর RoofFloorSlabLayoutEWSheet.tsx (SlabOutlineSketch
- * প্ল্যান) এর প্যাটার্ন মিলিয়ে একটা real S-18 বানায়।
+ * design module, StairDesignPanel.tsx) দিয়ে waist-slab flight design
+ * data বাস্তবে আছে — এই ফাইল ColumnScheduleSheet.tsx (schedule table)
+ * আর RoofFloorSlabLayoutEWSheet.tsx (SlabOutlineSketch প্ল্যান) এর
+ * প্যাটার্ন মিলিয়ে real S-18 বানায়।
  *
- * dataStatus তবু "full" না, "partial" — কারণ:
- *   (1) Landing (মূল sheet title-এর "Landing Beam (LB) Details" অংশ)
- *       কোনো element হিসেবেই import হয় না (hub-geometry-parser.ts এর
- *       mapStair() কমেন্ট — Draw landing কে flight geometry-র বাইরে
- *       আলাদা করে পাঠায় না) — তাই landing beam schedule/detail এখানে
- *       সম্পূর্ণ বাদ, honest note হিসেবে জানানো হয়েছে।
- *   (2) Section cut (সিঁড়ির vertical section view, riser/going bar
- *       diagram) SectionCutSketch.tsx এর মতো একটা dedicated stair
- *       section sketch দাবি করে যা এই Phase এ বানানো হয়নি (plan +
- *       schedule table দিয়েই মূল gap পূরণ হয় — riser/going/slope/As
- *       সব সংখ্যা schedule এ আছে) — ভবিষ্যতে একটা StairSectionSketch.tsx
- *       যোগ করা যেতে পারে, আপাতত সেই অংশ sheet এর নোটে honestly gap
- *       হিসেবে রাখা হলো।
+ * Gap-closing pass (২০২৬-০৮, একই দিন) দুটো জিনিস যোগ করেছে:
+ *   (1) Landing স্ল্যাব (mid-run 'turn' platform, LandingElement) —
+ *       plan-এ flight-দের পাশে landing outline, নিজস্ব Landing
+ *       Schedule টেবিলে thickness/elevation।
+ *   (2) Section view (StairSectionSketch.tsx) — প্রতিটা flight-এর
+ *       নিচে একটা vertical elevation sketch (waist slab + sawtooth
+ *       ধাপ প্রোফাইল, riser/run dimension) — numberOfSteps জানা থাকা
+ *       flight-এ সঠিক sawtooth, না থাকলে dashed schematic slope line
+ *       (caption এ স্পষ্ট জানানো)।
+ *
+ * dataStatus তবু "full" না, "partial" — শুধু একটা কারণে এখন:
+ *   Landing Beam (মূল sheet title-এর "Landing Beam (LB) Details" অংশ)
+ *   কোনো element হিসেবেই আসে না — এবং এটা আসলে derivable কোনো geometry
+ *   না। EngineXDraw একটা architectural drawing tool, এতে "landing
+ *   beam" বলে কোনো concept-ই নেই (Landing স্ল্যাবের ঠিক কোন কিনারায়
+ *   সাপোর্ট বীম বসবে, সেটা একটা structural engineering সিদ্ধান্ত,
+ *   architectural geometry থেকে auto-derive করার মতো কিছু না)। বাস্তব
+ *   সমাধান: ইঞ্জিনিয়ার landing-এর সাপোর্টিং edge-এ একটা সাধারণ RC Beam
+ *   element হিসেবে বসিয়ে RC Beam Design panel দিয়ে ডিজাইন করবেন — এই
+ *   App-এ landing beam-এর জন্য আলাদা কোনো feature কখনো বানানো সম্ভব না
+ *   (Draw-এর কাছে সেই ডেটাই নেই), এটা একটা permanent, honest
+ *   limitation, "ভবিষ্যতে Phase" না।
  */
 
-import { Document, Text } from "@react-pdf/renderer";
+import { Document, Text, View } from "@react-pdf/renderer";
 import { ReportSheetPage } from "@/lib/documentation/pdf/components/ReportSheetPage";
 import { ReportTable, type ReportTableColumn } from "@/lib/documentation/pdf/components/ReportTable";
 import { SlabOutlineSketch, type SlabPolygon } from "@/lib/documentation/pdf/drawing-sheets/SlabOutlineSketch";
+import { StairSectionSketch } from "@/lib/documentation/pdf/drawing-sheets/StairSectionSketch";
 import { resolveElementLabel } from "@/lib/documentation/pdf/drawing-sheets/elementLabel";
 import { asStairDetail } from "@/lib/documentation/pdf/calc-sheets/detailTypes";
+import { deriveStairFlightGeometry } from "@/lib/design/stairGeometry";
 import { pdfFontSize, pdfSpacing, pdfColors } from "@/lib/documentation/pdf/theme";
 import type { ReportContext } from "@/lib/documentation/reportContext";
 import { SHEET_INDEX } from "@/lib/documentation/pdf/drawing-sheets/sheetIndex";
-import type { StairElement } from "@/lib/types/element";
+import type { StairElement, LandingElement } from "@/lib/types/element";
 
 export interface StairPlanSectionSheetProps {
   context: ReportContext;
@@ -51,7 +62,13 @@ interface StairScheduleRow {
   statusText: string;
 }
 
-const columns: ReportTableColumn<StairScheduleRow>[] = [
+interface LandingScheduleRow {
+  label: string;
+  thicknessText: string;
+  elevationText: string;
+}
+
+const stairColumns: ReportTableColumn<StairScheduleRow>[] = [
   { key: "label", header: "Flight Mark", flex: 1 },
   { key: "thicknessText", header: "Waist Thk.", flex: 1, align: "right" },
   { key: "slopeText", header: "Slope Span / Angle", flex: 1.4, align: "right" },
@@ -59,6 +76,12 @@ const columns: ReportTableColumn<StairScheduleRow>[] = [
   { key: "loadText", header: "wu (kN/m²)", flex: 1, align: "right" },
   { key: "reinforcementText", header: "As+ / As-", flex: 1.4, align: "right" },
   { key: "statusText", header: "Status", flex: 0.8, align: "center" },
+];
+
+const landingColumns: ReportTableColumn<LandingScheduleRow>[] = [
+  { key: "label", header: "Landing Mark", flex: 1.5 },
+  { key: "thicknessText", header: "Thickness", flex: 1, align: "right" },
+  { key: "elevationText", header: "Elevation (from floor)", flex: 1.5, align: "right" },
 ];
 
 export function StairPlanSectionSheetContent({ context, revisionNumber }: StairPlanSectionSheetProps) {
@@ -71,6 +94,7 @@ export function StairPlanSectionSheetContent({ context, revisionNumber }: StairP
   const entry = SHEET_INDEX.find((s) => s.sheetNumber === "S-18");
 
   const stairElements = context.elements.filter((e): e is StairElement => e.category === "stair");
+  const landingElements = context.elements.filter((e): e is LandingElement => e.category === "stair-landing");
 
   const rows: StairScheduleRow[] = stairElements.map((e) => {
     const result = context.designResults.find((r) => r.elementId === e.elementId);
@@ -106,6 +130,12 @@ export function StairPlanSectionSheetContent({ context, revisionNumber }: StairP
     };
   });
 
+  const landingRows: LandingScheduleRow[] = landingElements.map((e) => ({
+    label: resolveElementLabel(context, e.elementId),
+    thicknessText: `${e.thickness}mm`,
+    elevationText: `${e.elevation.toFixed(2)}m`,
+  }));
+
   const stairPolygons: SlabPolygon[] = stairElements
     .map<SlabPolygon | null>((e) => {
       const vertices = e.vertices.map((v) => ({ x: v.x, z: v.z }));
@@ -113,6 +143,16 @@ export function StairPlanSectionSheetContent({ context, revisionNumber }: StairP
       return { label: resolveElementLabel(context, e.elementId), vertices, elementId: e.elementId };
     })
     .filter((s): s is SlabPolygon => s !== null);
+
+  const landingPolygons: SlabPolygon[] = landingElements
+    .map<SlabPolygon | null>((e) => {
+      const vertices = e.vertices.map((v) => ({ x: v.x, z: v.z }));
+      if (vertices.length === 0) return null;
+      return { label: resolveElementLabel(context, e.elementId), vertices, elementId: e.elementId };
+    })
+    .filter((s): s is SlabPolygon => s !== null);
+
+  const allPolygons = [...stairPolygons, ...landingPolygons];
 
   return (
     <ReportSheetPage
@@ -124,19 +164,19 @@ export function StairPlanSectionSheetContent({ context, revisionNumber }: StairP
       revisionNumber={revisionNumber}
     >
       <Text style={{ fontSize: pdfFontSize.h1, fontFamily: "Helvetica-Bold", marginBottom: 4 }}>
-        Stair Flight Plan (Waist Slab)
+        Stair Flight & Landing Plan
       </Text>
       <Text style={{ fontSize: pdfFontSize.caption, color: pdfColors.inkMuted, marginBottom: pdfSpacing.sectionGap }}>
-        Plan projection of each modeled flight (waist slab). Design values below are from the Stair Design panel —
-        flights without a completed design show geometry/status only.
+        Plan projection of each modeled flight (waist slab) and mid-run landing. Design values below are from the
+        Stair Design panel — flights without a completed design show geometry/status only.
       </Text>
 
-      {stairPolygons.length === 0 ? (
+      {allPolygons.length === 0 ? (
         <Text style={{ fontSize: pdfFontSize.body, color: pdfColors.inkMuted, marginBottom: pdfSpacing.sectionGap }}>
           No stair elements found in the current model.
         </Text>
       ) : (
-        <SlabOutlineSketch grids={context.geometry.grids} slabs={stairPolygons} />
+        <SlabOutlineSketch grids={context.geometry.grids} slabs={allPolygons} />
       )}
 
       <Text
@@ -154,12 +194,64 @@ export function StairPlanSectionSheetContent({ context, revisionNumber }: StairP
           No stair elements found in the current model.
         </Text>
       ) : (
-        <ReportTable<StairScheduleRow> columns={columns} rows={rows} />
+        <ReportTable<StairScheduleRow> columns={stairColumns} rows={rows} />
+      )}
+
+      <Text
+        style={{
+          fontSize: pdfFontSize.h1,
+          fontFamily: "Helvetica-Bold",
+          marginTop: pdfSpacing.sectionGap,
+          marginBottom: pdfSpacing.sectionGap,
+        }}
+      >
+        Flight Sections
+      </Text>
+      {stairElements.length === 0 ? (
+        <Text style={{ fontSize: pdfFontSize.body, color: pdfColors.inkMuted }}>
+          No stair elements found in the current model.
+        </Text>
+      ) : (
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+          {stairElements.map((e) => {
+            const geometry = deriveStairFlightGeometry(e);
+            if (!geometry) return null;
+            return (
+              <StairSectionSketch
+                key={e.elementId}
+                geometry={geometry}
+                thicknessMm={e.thickness}
+                numberOfSteps={e.numberOfSteps}
+                riserHeightM={e.riserHeightM}
+                label={resolveElementLabel(context, e.elementId)}
+              />
+            );
+          })}
+        </View>
+      )}
+
+      <Text
+        style={{
+          fontSize: pdfFontSize.h1,
+          fontFamily: "Helvetica-Bold",
+          marginTop: pdfSpacing.sectionGap,
+          marginBottom: pdfSpacing.sectionGap,
+        }}
+      >
+        Landing Schedule
+      </Text>
+      {landingRows.length === 0 ? (
+        <Text style={{ fontSize: pdfFontSize.body, color: pdfColors.inkMuted }}>
+          No mid-run landing elements found in the current model (or this stair has no turn — a single straight
+          flight has no separate landing).
+        </Text>
+      ) : (
+        <ReportTable<LandingScheduleRow> columns={landingColumns} rows={landingRows} />
       )}
 
       <Text style={{ fontSize: pdfFontSize.caption, color: pdfColors.inkMuted, marginTop: pdfSpacing.sectionGap }}>
         {entry?.limitationNote ??
-          "Landing beam (LB) schedule/details and a dedicated vertical section-cut view are not yet produced by this application — landings are not imported as a separate modeled element (Draw exports flight geometry only), and no section sketch exists for stairs yet. Add landing beam and section details manually before issue."}
+          "Landing Beam (LB) schedule/details are not produced by this application — a landing beam's location is a structural design decision, not something derivable from architectural drawing geometry. Model it as a regular RC Beam under the landing's supporting edge and design it via the RC Beam Design panel."}
       </Text>
     </ReportSheetPage>
   );

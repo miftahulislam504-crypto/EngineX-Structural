@@ -5,6 +5,9 @@ import { useElementsStore } from "@/lib/elements/useElementsStore";
 import { useLibraryStore } from "@/lib/library/useLibraryStore";
 import { runStairDesign, type StairDesignInput, type StairDesignReport, type StairSupportCondition } from "@/lib/design/stairDesign";
 import { deriveStairFlightGeometry } from "@/lib/design/stairGeometry";
+import { generateStairDetailing } from "@/lib/detailing/generateStairDetailing";
+import { useDetailingStore } from "@/lib/detailing/useDetailingStore";
+import { persistDetailingResult } from "@/lib/detailing/firestore";
 import type { StairElement } from "@/lib/types/element";
 import { persistDesignResult } from "@/lib/design/firestore";
 import { useProjectIdStore } from "@/lib/projects/useProjectIdStore";
@@ -38,6 +41,16 @@ function fmt(v: number, decimals = 1): string {
  * পূর্ণ (waist + step) self-weight ধরবে, শুধু flat waist-slab weight
  * না — তাই এই panel এর riser input শুধু design calculation-এর জন্য
  * না, self-weight accuracy-র জন্যও গুরুত্বপূর্ণ।
+ *
+ * "Send to Detailing Model" (২০২৬-০৮ গ্যাপ-ক্লোজিং পাস) —
+ * RcSlabDesignPanel.tsx-এর ঠিক একই বাটন প্যাটার্ন, কিন্তু
+ * generateSlabDetailing() না, generateStairDetailing() ব্যবহার করে
+ * (one-way, slope-local coordinate — সেই ফাইলের docblock দ্রষ্টব্য
+ * কেন Slab-এর two-way/flat generator এখানে সরাসরি কাজ করত না)। দুইটা
+ * আলাদা bar diameter ইনপুট — main (flexural, slope বরাবর) ও
+ * distribution (shrinkage/temperature, width বরাবর) — কারণ one-way
+ * slab-এ এই দুই দিকের বার সাধারণত ভিন্ন diameter হয় (Slab panel-এ
+ * two-way mesh এক diameter-ই যথেষ্ট ছিল)।
  */
 export function StairDesignPanel() {
   const elements = useElementsStore((s) => s.elements);
@@ -62,6 +75,11 @@ export function StairDesignPanel() {
 
   const [report, setReport] = useState<StairDesignReport | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
+
+  const setDetailingResult = useDetailingStore((s) => s.setResult);
+  const [detailingSent, setDetailingSent] = useState(false);
+  const [mainBarDiameterMm, setMainBarDiameterMm] = useState("16");
+  const [distributionBarDiameterMm, setDistributionBarDiameterMm] = useState("10");
 
   function handleRunDesign() {
     if (!selectedStair || !stairMaterial || stairMaterial.type !== "concrete") return;
@@ -98,6 +116,29 @@ export function StairDesignPanel() {
         status: result.overallStatus === "error" ? "fail" : result.overallStatus,
         detail: { input, report: result },
       }).catch((e) => console.error("Failed to persist stair design result:", e));
+    }
+    setDetailingSent(false);
+  }
+
+  function handleSendToDetailing() {
+    if (!selectedStair || !report) return;
+    const detailing = generateStairDetailing({
+      elementId: selectedStair.elementId,
+      elementLabel: selectedStair.label,
+      slopeLengthM: report.geometry.slopeLengthM,
+      widthM: report.geometry.widthM,
+      thicknessMm: selectedStair.thickness,
+      effectiveCoverMm: Number(effectiveCoverMm) || 20,
+      mainBarDiameterMm: Number(mainBarDiameterMm) || 16,
+      distributionBarDiameterMm: Number(distributionBarDiameterMm) || 10,
+      report,
+    });
+    setDetailingResult(detailing);
+    setDetailingSent(true);
+    if (projectId) {
+      persistDetailingResult(projectId, detailing).catch((e) =>
+        console.error("Failed to persist stair detailing result:", e)
+      );
     }
   }
 
@@ -246,6 +287,40 @@ export function StairDesignPanel() {
 
           {runError && (
             <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-md px-2.5 py-2">{runError}</p>
+          )}
+
+          {report && (
+            <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs text-text-muted mb-1">Main Bar Ø (mm, along slope)</label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={mainBarDiameterMm}
+                    onChange={(e) => setMainBarDiameterMm(e.target.value)}
+                    className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-text-muted mb-1">Distribution Bar Ø (mm, across width)</label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={distributionBarDiameterMm}
+                    onChange={(e) => setDistributionBarDiameterMm(e.target.value)}
+                    className="w-full rounded-md bg-surface-card border border-surface-border text-text-primary text-xs px-2 py-1.5"
+                  />
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleSendToDetailing}
+                className="w-full rounded-md bg-status-activeText hover:opacity-90 text-white text-sm font-medium py-2 transition-colors"
+              >
+                {detailingSent ? "✓ Sent to Detailing Model" : "🔩 Send to Detailing Model"}
+              </button>
+            </div>
           )}
         </>
       )}

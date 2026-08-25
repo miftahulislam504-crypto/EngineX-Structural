@@ -31,6 +31,7 @@ export type DetailingElementCategory =
   | "column"
   | "slab"
   | "wall"
+  | "stair"
   | "footing"
   | "combined-footing"
   | "strip-footing"

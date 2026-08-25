@@ -1,7 +1,7 @@
 /**
- * deriveAreaSelfWeightLoads.ts — Slab/Wall/Shear-Wall/Core-Wall এর
- * geometry ও material থেকে স্বয়ংক্রিয়ভাবে self-weight (uniform-area
- * dead load) বের করে।
+ * deriveAreaSelfWeightLoads.ts — Slab/Wall/Shear-Wall/Core-Wall/Parapet/
+ * Stair-Landing এর geometry ও material থেকে স্বয়ংক্রিয়ভাবে self-weight
+ * (uniform-area dead load) বের করে।
  * ------------------------------------------------------------------
  * deriveSelfWeightLoads.ts (Beam/Column) এর ঠিক পাশের gap পূরণ করে —
  * সেই ফাইলের নিজস্ব কমেন্টেই স্বীকার করা ছিল "Slab/Wall self-weight
@@ -17,15 +17,16 @@
  * এর একই Y-অক্ষ কনভেনশন)।
  *
  * সততার সাথে সীমাবদ্ধতা:
- *   - Slab/Wall/Shear-Wall/Core-Wall/Parapet — এই পাঁচটাই AreaElement
- *     (vertices+thickness), তাই একই derivation logic প্রযোজ্য। Stair
- *     ইচ্ছাকৃতভাবে বাদ — StairElement ও AreaElement হলেও এটা inclined
- *     waist-slab geometry (flat plan area না)। এই gap এখন
- *     deriveStairSelfWeightLoads.ts দিয়ে পূরণ হয়েছে (waist-slab true
- *     inclined area, Newell's method + ধাপের triangular extra weight,
- *     riser height ইঞ্জিনিয়ার-ইনপুট থেকে) — landing স্ল্যাব এখনো বাদ,
- *     কারণ Draw থেকে landing এখনো কোনো element হিসেবে import হয় না
- *     (সেই ফাইলের হেডার কমেন্ট দেখুন)।
+ *   - Slab/Wall/Shear-Wall/Core-Wall/Parapet/Stair-Landing — এই ছয়টাই
+ *     AreaElement (vertices+thickness), তাই একই derivation logic
+ *     প্রযোজ্য। Stair (waist-slab flight, landing না) ইচ্ছাকৃতভাবে বাদ —
+ *     StairElement ও AreaElement হলেও এটা inclined geometry (flat plan
+ *     area না) — সেই gap deriveStairSelfWeightLoads.ts দিয়ে পূরণ হয়েছে
+ *     (waist-slab true inclined area, Newell's method + ধাপের
+ *     triangular extra weight)। Stair-Landing (LandingElement, ২০২৬-০৮
+ *     গ্যাপ-ক্লোজিং পাস এ যোগ) আলাদা — এটা flat/horizontal (mid-run
+ *     platform, ঢালু না), তাই এখানে Slab-এর মতোই সরাসরি ধরা হয়েছে,
+ *     আলাদা ফাংশনের দরকার হয়নি।
  *   - Wall/Shear-Wall/Core-Wall/Parapet এর জন্যও এই ফাংশন plan-polygon
  *     area (computePolygonPlanArea) ব্যবহার করে, ঠিক Slab-এর মতোই। এটা
  *     ইচ্ছাকৃত সরলীকরণ: এই codebase-এ AreaElement সব সময় একটা
@@ -43,13 +44,13 @@
  *     ব্যবহার (deriveSelfWeightLoads.ts এর সাথে সঙ্গতিপূর্ণ)।
  */
 
-import type { StructuralElement, SlabElement, WallElement, ShearWallElement, CoreWallElement, ParapetElement } from "@/lib/types/element";
+import type { StructuralElement, SlabElement, WallElement, ShearWallElement, CoreWallElement, ParapetElement, LandingElement } from "@/lib/types/element";
 import { computePolygonPlanArea } from "@/lib/types/element";
 import type { StructuralMaterial } from "@/lib/types/material";
 import type { UniformAreaLoadCase } from "@/lib/types/load";
 import { createUniformAreaLoad } from "@/lib/types/load";
 
-const AREA_SELF_WEIGHT_SUPPORTED_CATEGORIES = new Set(["slab", "wall", "shear-wall", "core-wall", "parapet"]);
+const AREA_SELF_WEIGHT_SUPPORTED_CATEGORIES = new Set(["slab", "wall", "shear-wall", "core-wall", "parapet", "stair-landing"]);
 
 export interface DeriveAreaSelfWeightLoadsResult {
   loadCases: UniformAreaLoadCase[];
@@ -75,7 +76,7 @@ export function deriveAreaSelfWeightLoads(
   const warnings: string[] = [];
 
   const areaElements = elements.filter(
-    (e): e is SlabElement | WallElement | ShearWallElement | CoreWallElement =>
+    (e): e is SlabElement | WallElement | ShearWallElement | CoreWallElement | ParapetElement | LandingElement =>
       AREA_SELF_WEIGHT_SUPPORTED_CATEGORIES.has(e.category)
   );
 
@@ -116,7 +117,7 @@ export function deriveAreaSelfWeightLoads(
   }
 
   if (skipped.length > 0) {
-    warnings.push(`${skipped.length}টা Slab/Wall element self-weight auto-generation এ বাদ পড়েছে — নিচে elementId/কারণ দেখুন, প্রয়োজনে ম্যানুয়ালি যোগ করুন।`);
+    warnings.push(`${skipped.length}টা Slab/Wall/Parapet/Stair-Landing element self-weight auto-generation এ বাদ পড়েছে — নিচে elementId/কারণ দেখুন, প্রয়োজনে ম্যানুয়ালি যোগ করুন।`);
   }
 
   return { loadCases, skipped, warnings };

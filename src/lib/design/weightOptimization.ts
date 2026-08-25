@@ -227,6 +227,18 @@ export function computeWeightTakeoff(
       continue;
     }
 
+    if (element.category === "stair-landing") {
+      // Slab-এর ঠিক একই AreaElement geometry (mapStairLanding() দেখুন,
+      // hub-geometry-parser.ts — flat horizontal plane) — ২০২৬-০৮
+      // গ্যাপ-ক্লোজিং পাস, deriveAreaSelfWeightLoads.ts এর dead-load
+      // derivation-এর সাথে সঙ্গতিপূর্ণ একই formula।
+      const areaM2 = computePlanarPolygon3DAreaM2(element.vertices);
+      const volumeM3 = areaM2 * (element.thickness / 1000);
+      const weightKN = volumeM3 * getUnitWeightKNPerM3(material);
+      addToCategory(element.category, material.type, volumeM3, weightKN);
+      continue;
+    }
+
     if (element.category === "footing" || element.category === "pile-cap") {
       const volumeM3 = (element.width / 1000) * (element.length / 1000) * (element.thickness / 1000);
       const weightKN = volumeM3 * getUnitWeightKNPerM3(material);

@@ -31,6 +31,13 @@ interface DetailingLayerProps {
  * একটা reference point (vertices[0] বা location), কোনো rotation ছাড়া
  * (generator local x/z ইতিমধ্যে world XZ প্লেনের সাথে align, দেখুন
  * generateSlabDetailing.ts docstring)।
+ *
+ * Stair (২০২৬-০৮ গ্যাপ-ক্লোজিং পাস): উপরের কোনো প্যাটার্নেই পড়ে না —
+ * waist slab tilted, তাই local x/z world XZ প্লেনে align না (slab এর
+ * মতো "no rotation" ভুল), এবং এটা একটা single-direction line না, একটা
+ * প্লেন (beam/column এর মতো single-axis quaternion অপর্যাপ্ত) — তাই
+ * পূর্ণ ৩-axis basis quaternion (generateStairDetailing.ts এর local
+ * x=slope/z=width/y=thickness কনভেনশন অনুযায়ী, নিচে দেখুন)।
  */
 export function DetailingLayer({
   elements,
@@ -83,6 +90,28 @@ export function DetailingLayer({
         case "footing":
         case "pile-cap": {
           out.push({ elementId: element.elementId, result, origin: element.location });
+          break;
+        }
+
+        case "stair": {
+          // generateStairDetailing.ts এর local space: x = slope
+          // (vertices[0]→vertices[3] দিক), z = width (vertices[0]→
+          // vertices[1] দিক), y = thickness। এটা slab/wall এর মতো
+          // "no rotation" case না (waist slab tilted — local x world
+          // XZ প্লেনে নেই) এবং beam/column এর মতো single-axis line
+          // case ও না (২টা independent axis লাগে, শুধু ১টা direction
+          // না) — তাই আলাদা branch, একটা পূর্ণ 3-axis basis quaternion
+          // দিয়ে (mapStair() এর ৪-vertex counter-clockwise order,
+          // hub-geometry-parser.ts এ verified)।
+          const v = element.vertices;
+          if (v.length !== 4) break;
+          const origin = v[0];
+          const xAxis = new THREE.Vector3(v[3].x - v[0].x, v[3].y - v[0].y, v[3].z - v[0].z).normalize();
+          const zAxis = new THREE.Vector3(v[1].x - v[0].x, v[1].y - v[0].y, v[1].z - v[0].z).normalize();
+          const yAxis = new THREE.Vector3().crossVectors(zAxis, xAxis).normalize();
+          const basis = new THREE.Matrix4().makeBasis(xAxis, yAxis, zAxis);
+          const quat = new THREE.Quaternion().setFromRotationMatrix(basis);
+          out.push({ elementId: element.elementId, result, origin, quaternion: quat });
           break;
         }
 

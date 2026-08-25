@@ -55,6 +55,7 @@ export type ElementCategory =
   | "shear-wall"
   | "core-wall"
   | "stair"
+  | "stair-landing"
   | "parapet"
   | "footing"
   | "combined-footing"
@@ -185,22 +186,26 @@ export interface CoreWallElement extends AreaElement {
  * আলাদা একটা StairElement হয়ে আসে — hub-geometry-parser.ts দেখুন)।
  * জ্যামিতিকভাবে AreaElement-ই ব্যবহার করা হয়েছে (vertices + thickness)
  * যেমন Slab/Wall — vertices-এর নিচের/উপরের প্রান্তের z আলাদা থাকায়
- * inclination ধরা পড়ে, তাই আলাদা geometry shape লাগেনি। landing
- * (যদি থাকে, flight-দের মাঝে) এই মুহূর্তে আলাদা element হিসেবে আসে
- * না — parser landing-কে flight geometry-র বাইরে derive করে না, শুধু
- * Draw-এর raw flights[] সরাসরি map হয়।
+ * inclination ধরা পড়ে, তাই আলাদা geometry shape লাগেনি। mid-run landing
+ * (দুই flight-এর মাঝের turn platform) আলাদা LandingElement হিসেবে আসে
+ * (২০২৬-০৮ গ্যাপ-ক্লোজিং পাস — আগে আসত না, mapStairLanding() দেখুন);
+ * bottom/top landing (স্টোরির নিজস্ব floor level-এ) ইচ্ছাকৃতভাবে বাদ,
+ * সেই floor-এর নিজস্ব Slab element দিয়ে ইতিমধ্যে কভার্ড।
  *
- * riserHeightM (ঐচ্ছিক, মিটার) — SlabElement.liveLoadOverride এর ঠিক
- * একই প্যাটার্নে: Draw থেকে import-এর সময় আসে না (mapStair() শুধু
- * vertices/thickness পাঠায়), তাই ইঞ্জিনিয়ার Stair Design panel থেকে
- * এখানে বসান। undefined থাকলে deriveStairSelfWeightLoads() শুধু
- * waist-slab flat weight ধরে, ধাপের triangular extra weight বাদ
- * (warning সহ) — সেট করলে useAutoLoadSync পরের sync-এ পূর্ণ হিসাব
- * করে। ২০২৬-০৮ যোগ হলো।
+ * riserHeightM/numberOfSteps (ঐচ্ছিক) — Draw-এর DrawStairFlight এ
+ * এগুলো ইতিমধ্যে ছিল (elevation হিসাবের জন্য mapStair() ব্যবহারও করত),
+ * কিন্তু আগে StairElement এ কখনো বসানো হতো না — ২০২৬-০৮ গ্যাপ-ক্লোজিং
+ * পাসে এখন সরাসরি mapStair() থেকে বসে। undefined শুধু তখনই হয় যখন
+ * element manual-create হয়েছে (import থেকে না) বা কোনো পুরনো
+ * import-এর re-sync হয়নি — এই fallback path-এ deriveStairSelfWeightLoads()
+ * শুধু waist-slab flat weight ধরে (warning সহ), StairDesignPanel.tsx
+ * এ ইঞ্জিনিয়ার override/set করতে পারেন (SlabElement.liveLoadOverride
+ * এর ঠিক একই ঐচ্ছিক-override প্যাটার্ন)।
  */
 export interface StairElement extends AreaElement {
   category: "stair";
   riserHeightM?: number;
+  numberOfSteps?: number;
 }
 
 /**
@@ -224,6 +229,29 @@ export interface StairElement extends AreaElement {
 export interface ParapetElement extends AreaElement {
   category: "parapet";
   elevation: number; // মিটার — floor level থেকে parapet-এর নিজস্ব base (roof-এর উপরে বসে)
+}
+
+/**
+ * Stair Landing — দুই flight-এর মাঝের mid-run প্ল্যাটফর্ম (Draw-এর
+ * deriveStairLandings() এর `kind: 'turn'` — 'bottom'/'top' landing এই
+ * App এ import হয় না, DrawStairLandingGeometry কমেন্টে কারণ ব্যাখ্যা
+ * করা আছে, hub-module-shapes.ts)। জ্যামিতিকভাবে Slab-এর মতোই
+ * horizontal AreaElement (boundary polygon + thickness), Parapet-এর
+ * মতো নিজস্ব `elevation` দরকার (storyId base elevation থেকে, Draw-এর
+ * StairLanding.elevation অনুযায়ী — যা stair-এর নিজস্ব floor level
+ * থেকে মাপা, সেই stair যে flight-এর সাথে যুক্ত সেই flight-এরই
+ * base elevation-এর সমান রেফারেন্স ব্যবহার করে, mapStairLanding()
+ * দেখুন)।
+ *
+ * Stair-এর মতোই self-weight/dead-load contribution-এর জন্য মডেল করা
+ * হয়েছে (deriveAreaSelfWeightLoads.ts এ, Stair-এর inclined-slope
+ * বিশেষ formula দরকার নেই বলে flat-area formula-ই সরাসরি প্রযোজ্য) —
+ * নিজস্ব flexural design module এই v1-এ নেই (RC Slab design panel-এই
+ * ম্যানুয়ালি ডিজাইন করা যাবে, একটা সাধারণ flat slab হিসেবে)।
+ */
+export interface LandingElement extends AreaElement {
+  category: "stair-landing";
+  elevation: number; // মিটার — floor level থেকে landing-এর নিজস্ব base
 }
 
 /** Isolated Footing — একটা পয়েন্টে বসে, নিজস্ব plan dimension ও thickness থাকে। */
@@ -340,6 +368,7 @@ export type StructuralElement =
   | ShearWallElement
   | CoreWallElement
   | StairElement
+  | LandingElement
   | ParapetElement
   | FootingElement
   | CombinedFootingElement

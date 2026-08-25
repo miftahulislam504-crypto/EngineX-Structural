@@ -116,7 +116,7 @@
  * overall dead load-এ contribute করে।
  */
 
-import type { StructuralElement, Point3D, WallElement, SlabElement, StairElement, ParapetElement } from "@/lib/types/element";
+import type { StructuralElement, Point3D, WallElement, SlabElement, StairElement, LandingElement, ParapetElement } from "@/lib/types/element";
 import type { StructuralGrid, StructuralStory } from "@/lib/types/geometry";
 import type { BuildingElementRef } from "./contract.types";
 import type {
@@ -127,6 +127,7 @@ import type {
   DrawColumnGeometry,
   DrawBeamGeometry,
   DrawStairGeometry,
+  DrawStairLandingGeometry,
   DrawParapetGeometry,
 } from "./hub-module-shapes";
 import { getModuleData, subscribeToModuleData } from "./hub-sdk-client";
@@ -431,6 +432,65 @@ function mapSlab(ref: BuildingElementRef, baseElevationM: number, issues: Parsed
 }
 
 /**
+ * Stair Landing → LandingElement। mapSlab()-এর ঠিক একই boundary→vertices
+ * প্যাটার্ন, শুধু thickness Draw থেকে আসে না (mapStair()-এর waist-slab
+ * এর মতোই — landing geometry architectural drawing-এর প্রয়োজনে বানানো,
+ * structural thickness ধারণা Draw-এর নেই) — তাই DEFAULT_STAIR_WAIST_
+ * THICKNESS_M ডিফল্ট, review-recommended issue সহ (Stair-এর নিজস্ব
+ * waist thickness default-এর ঠিক একই কনভেনশন — landing সাধারণত waist
+ * slab-এর সমান পুরুত্বে ঢালা হয়, তাই একই default যুক্তিসঙ্গত)।
+ *
+ * elevation mapParapet()-এর প্যাটার্নে (own elevation + baseElevationM,
+ * skip না করে review issue-সহ 0 fallback) — DrawStairLandingGeometry
+ * এর elevation stair-এর নিজস্ব floor level থেকে মাপা (hub-write.ts এর
+ * landing export কমেন্ট দেখুন), ঠিক StairFlight-এর elevation-এর মতোই।
+ */
+function mapStairLanding(
+  ref: BuildingElementRef,
+  baseElevationM: number,
+  issues: ParsedElementIssue[],
+  nowIso: string,
+): LandingElement | null {
+  const g = ref.geometry as DrawStairLandingGeometry | undefined;
+  if (!g || !Array.isArray(g.boundary) || g.boundary.length < 3) {
+    warnSkipped(issues, ref, "boundary অনুপস্থিত বা polygon বানাতে ন্যূনতম ৩টা vertex নেই");
+    return null;
+  }
+  if (!g.boundary.every(isDrawPoint2D)) {
+    warnSkipped(issues, ref, "boundary-এর কোনো vertex ভুল shape (x/y সংখ্যা হতে হবে)");
+    return null;
+  }
+
+  let elevationM = g.elevation;
+  if (!isFiniteNumber(elevationM)) {
+    warnReview(issues, ref, "elevation অনুপস্থিত বা অবৈধ — 0 (floor level) ধরে নেওয়া হলো, ইঞ্জিনিয়ার নিশ্চিত করুন");
+    elevationM = 0;
+  }
+
+  warnReview(
+    issues,
+    ref,
+    `thickness Draw থেকে আসে না — ${(DEFAULT_STAIR_WAIST_THICKNESS_M * 1000).toFixed(0)}mm ডিফল্ট (waist slab-এর সমান) ধরা হয়েছে, import review-তে প্রয়োজন অনুযায়ী পরিবর্তন করুন।`,
+  );
+
+  const landingBaseM = baseElevationM + elevationM;
+  const vertices = g.boundary.map((p) => toPoint3D(p, landingBaseM));
+
+  return {
+    elementId: ref.id,
+    category: "stair-landing",
+    label: ref.id,
+    materialId: UNRESOLVED_MATERIAL_ID,
+    storyId: ref.levelId || undefined,
+    vertices,
+    thickness: DEFAULT_STAIR_WAIST_THICKNESS_M * 1000, // mm
+    elevation: elevationM,
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  };
+}
+
+/**
  * Stair → StairElement[]। বাকি সব mapXxx() একটা BuildingElementRef থেকে
  * একটা element রিটার্ন করে, কিন্তু Draw-এর একটা Stair-এ ১+ flight থাকতে
  * পারে (L/U-shaped multi-flight) — তাই এই ফাংশনটাই একমাত্র ব্যতিক্রম,
@@ -459,6 +519,13 @@ function mapSlab(ref: BuildingElementRef, baseElevationM: number, issues: Parsed
  * geometry-তে সমস্যা আছে — ইঞ্জিনিয়ারকে review-তে দেখেই EngineXDraw-এ
  * ফিরে সংশোধন করতে হবে, শুধু elevation ঠিক করে আমদানি চালিয়ে যাওয়া
  * কোনো valid ব্যবহারযোগ্য কেস না।
+ *
+ * riserHeightM (২০২৬-০৮, gap-closing pass) — flight.riserHeight
+ * (DrawStairFlight, উপরেই elevation হিসাবের জন্য validate করা হয়) এখন
+ * সরাসরি StairElement.riserHeightM-এ বসে, আগে যা discard হয়ে যেত।
+ * StairDesignPanel.tsx-এ ইঞ্জিনিয়ার প্রয়োজনে override করতে পারেন
+ * (saveElement() দিয়ে) — এটা শুধু import-time default, permanent lock
+ * না।
  */
 function mapStair(
   ref: BuildingElementRef,
@@ -543,6 +610,20 @@ function mapStair(
         toPoint3D(endLeft, flightTopM),
       ],
       thickness: DEFAULT_STAIR_WAIST_THICKNESS_M * 1000, // mm
+      // riserHeightM/numberOfSteps — Stair implementation gap-closing
+      // pass (২০২৬-০৮): flight.riserHeight/numberOfSteps এখানেই উপরে
+      // validate করা হয়েছে (isFiniteNumber check, ~লাইন ৪৮৪), কিন্তু
+      // আগে elevation হিসাবের পর discard হয়ে যেত — StairElement এ কখনো
+      // বসানো হতো না। এখন সরাসরি বসানো হলো, ফলে
+      // deriveStairSelfWeightLoads.ts আর ইঞ্জিনিয়ারকে ম্যানুয়ালি riser
+      // height দিতে বলবে না (StairDesignPanel.tsx তবু override করার
+      // সুযোগ রাখে, saveElement() এই একই ফিল্ড লেখে), এবং
+      // StairSectionSketch.tsx numberOfSteps দিয়ে সঠিক sawtooth ধাপ
+      // সংখ্যা আঁকতে পারে — Draw থেকে import/re-sync হওয়া প্রতিটা
+      // flight-এই এখন থেকে পূর্ণ (waist + step) self-weight ও একটা
+      // accurate section sketch প্রথম sync থেকেই পাবে।
+      riserHeightM: flight.riserHeight,
+      numberOfSteps: flight.numberOfSteps,
       createdAt: nowIso,
       updatedAt: nowIso,
     });
@@ -621,15 +702,18 @@ function mapBeam(ref: BuildingElementRef, baseElevationM: number, issues: Parsed
  * fetchLatestArchitecturalExport()-এর কাজ) — শুধু pure transformation,
  * unit-testable।
  *
- * শুধু ৬টা category হ্যান্ডল করা হয় (wall, slab, column, beam, stair,
- * parapet) — প্ল্যানের Phase 2 স্কোপ অনুযায়ী প্রথম দুটো (wall→wall/
- * shear-wall, slab→area) মূল আইটেম, column/beam বোনাস হিসেবে যোগ করা
- * হয়েছে কারণ mapping একই রকম straightforward এবং Draw ইতিমধ্যে পাঠায়।
- * stair পরে যোগ হয়েছে (mapStair() দেখুন — প্রতিটা flight একটা inclined
- * StairElement, ETABS-এর মতো beam/column/slab/stairs/shear-wall
- * প্রয়োজন অনুযায়ী)। parapet সবচেয়ে সাম্প্রতিক সংযোজন (mapParapet()
- * দেখুন — dead-load contribution-এর জন্য, Audit Gap Closure Phase 5
- * item 16-এর Structural-দিকের বাস্তবায়ন)। door/window/room/roof/
+ * শুধু ৭টা category হ্যান্ডল করা হয় (wall, slab, column, beam, stair,
+ * stair-landing, parapet) — প্ল্যানের Phase 2 স্কোপ অনুযায়ী প্রথম দুটো
+ * (wall→wall/shear-wall, slab→area) মূল আইটেম, column/beam বোনাস
+ * হিসেবে যোগ করা হয়েছে কারণ mapping একই রকম straightforward এবং Draw
+ * ইতিমধ্যে পাঠায়। stair পরে যোগ হয়েছে (mapStair() দেখুন — প্রতিটা
+ * flight একটা inclined StairElement, ETABS-এর মতো beam/column/slab/
+ * stairs/shear-wall প্রয়োজন অনুযায়ী)। parapet dead-load contribution-এর
+ * জন্য (mapParapet() দেখুন, Audit Gap Closure Phase 5 item 16-এর
+ * Structural-দিকের বাস্তবায়ন)। stair-landing সবচেয়ে সাম্প্রতিক সংযোজন
+ * (mapStairLanding() দেখুন — Stair implementation gap-closing pass,
+ * ২০২৬-০৮, শুধু mid-run 'turn' landing, DrawStairLandingGeometry এর
+ * কমেন্ট দ্রষ্টব্য কেন bottom/top landing বাদ)। door/window/room/roof/
  * ceiling/foundation/footing/ইত্যাদি ইচ্ছাকৃতভাবে বাদ —
  * এগুলো হয় structural element না (door/window/room), অথবা এই App-এর
  * নিজস্ব foundation design workflow-এর (FootingElement ইত্যাদি) সাথে
@@ -692,6 +776,9 @@ export function parseArchitecturalExport(data: DrawArchitecturalExport): ParseGe
         break;
       case "parapet":
         mapped = mapParapet(ref, baseElevationM, issues, nowIso);
+        break;
+      case "stair-landing":
+        mapped = mapStairLanding(ref, baseElevationM, issues, nowIso);
         break;
       default:
         // door/window/room/roof/ceiling/foundation/footing/ইত্যাদি —

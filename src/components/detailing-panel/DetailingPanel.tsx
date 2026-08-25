@@ -20,6 +20,7 @@ const CATEGORY_LABEL: Record<DetailingResult["category"], string> = {
   column: "Column",
   slab: "Slab",
   wall: "Wall",
+  stair: "Stair",
   footing: "Footing",
   "combined-footing": "Combined Footing",
   "strip-footing": "Strip Footing",

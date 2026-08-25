@@ -70,6 +70,7 @@ const COLOR_WALL = "#78716c";
 const COLOR_SHEAR_WALL = "#dc2626";
 const COLOR_CORE_WALL = "#b91c1c";
 const COLOR_STAIR = "#a855f7"; // purple — ElementsLayer.tsx এর COLOR_STAIR এর সাথে সামঞ্জস্যপূর্ণ
+const COLOR_STAIR_LANDING = "#c084fc"; // ElementsLayer.tsx এর COLOR_STAIR_LANDING এর সাথে সামঞ্জস্যপূর্ণ
 const COLOR_PARAPET = "#57534e"; // ElementsLayer.tsx এর COLOR_PARAPET এর সাথে সামঞ্জস্যপূর্ণ
 const COLOR_FOOTING = "#a16207";
 const COLOR_COMBINED_FOOTING = "#b45309";
@@ -121,7 +122,9 @@ const COLOR_SELECTED = "#38bdf8";
  * Stair (Phase 6.5 import) একই কারণে (backend এখনো stair-কে shell
  * হিসেবে solve করে না) SHELL_ELEMENT_CATEGORIES-এর বাইরে — Mat-
  * Foundation-এর প্যাটার্ন অনুসরণ করে raw vertices দিয়ে render হয়,
- * deformPoint() wrap ছাড়া।
+ * deformPoint() wrap ছাড়া। Stair-Landing (২০২৬-০৮ গ্যাপ-ক্লোজিং পাস)
+ * একই কারণে একই দলে — এটাও FE shell হিসেবে solve হয় না, শুধু
+ * dead-load contribution।
  */
 export function VisualizationElementsLayer({
   elements,
@@ -305,6 +308,20 @@ export function VisualizationElementsLayer({
               />
             );
 
+          case "stair-landing":
+            // Stair/Parapet-এর ঠিক একই কারণে (২০২৬-০৮ গ্যাপ-ক্লোজিং
+            // পাস) — dead-load-only, FE shell না, deformPoint() wrap
+            // ছাড়া raw vertices।
+            return (
+              <AreaElementMesh
+                key={element.elementId}
+                vertices={element.vertices}
+                thickness={element.thickness}
+                materialProps={materialProps}
+                onSelect={() => onSelectElement(element.elementId)}
+              />
+            );
+
           case "pile-group":
             return (
               <PileGroupMesh
@@ -352,6 +369,8 @@ function getElementColor(category: StructuralElement["category"]): string {
       return COLOR_CORE_WALL;
     case "stair":
       return COLOR_STAIR;
+    case "stair-landing":
+      return COLOR_STAIR_LANDING;
     case "parapet":
       return COLOR_PARAPET;
     case "footing":

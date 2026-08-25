@@ -85,6 +85,7 @@ function extractPlanPoints(element: StructuralElement): Point3D[] {
     case "core-wall":
     case "mat-foundation":
     case "stair":
+    case "stair-landing":
     case "parapet":
       return element.vertices;
 

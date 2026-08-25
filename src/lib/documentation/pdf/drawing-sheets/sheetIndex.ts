@@ -139,7 +139,7 @@ export const SHEET_INDEX: SheetIndexEntry[] = [
     title: "Stair Plan & Section, Landing Beam (LB) Details",
     dataStatus: "partial",
     limitationNote:
-      "Landing beam (LB) schedule/details and a dedicated vertical section-cut view are not yet produced by this application — landings are not imported as a separate modeled element (Draw exports flight geometry only), and no section sketch exists for stairs yet. Flight plan + schedule (waist thickness, slope span/angle, riser, factored load, flexural reinforcement) reflect real model/design data (Stair implementation Phase 1-4, 2026-08).",
+      "Landing Beam (LB) schedule/details are not produced by this application — a landing beam's location is a structural design decision, not something derivable from architectural drawing geometry; model it as a regular RC Beam and design it via the RC Beam Design panel. Flight plan/schedule/section (waist thickness, slope span/angle, riser, factored load, flexural reinforcement) and mid-run Landing plan/schedule (thickness, elevation) reflect real model/design data (Stair implementation Phase 1-4 + gap-closing pass, 2026-08).",
     originalSheetNumbers: "S.T-22",
   },
   {

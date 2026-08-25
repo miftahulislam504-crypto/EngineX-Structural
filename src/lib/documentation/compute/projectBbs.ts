@@ -151,6 +151,7 @@ export const CATEGORY_LABEL: Record<DetailingElementCategory, string> = {
   column: "Column",
   slab: "Slab",
   wall: "Wall",
+  stair: "Stair",
   footing: "Footing",
   "combined-footing": "Combined Footing",
   "strip-footing": "Strip Footing",
