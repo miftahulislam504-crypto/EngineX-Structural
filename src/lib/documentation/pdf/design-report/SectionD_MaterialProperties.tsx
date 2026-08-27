@@ -23,6 +23,13 @@ import type { ElementCategory } from "@/lib/types/element";
 
 export interface MaterialPropertiesProps {
   context: ReportContext;
+  revisionNumber: string;
+}
+
+/** SectionA_Cover.tsx/QcReportDocument.tsx এর মতো একই local helper। */
+function formatDateLabel(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
 }
 
 const styles = StyleSheet.create({
@@ -53,13 +60,14 @@ function categoriesUsingMaterial(materialId: string, context: ReportContext): El
   return Array.from(categories);
 }
 
-export function MaterialProperties({ context }: MaterialPropertiesProps) {
+export function MaterialProperties({ context, revisionNumber }: MaterialPropertiesProps) {
   const concreteMaterials = context.materials.materials.filter(
     (m): m is ConcreteMaterial => m.type === "concrete"
   );
   const steelMaterials = context.materials.materials.filter(
     (m): m is SteelMaterial => m.type === "steel"
   );
+  const project = context.hub?.projectInfo ?? null;
 
   const usageRows: UsageRow[] = context.materials.materials.map((m) => {
     const categories = categoriesUsingMaterial(m.materialId, context);
@@ -77,7 +85,17 @@ export function MaterialProperties({ context }: MaterialPropertiesProps) {
   });
 
   return (
-    <ReportPage footerLabel="Structural Design Report — Section D: Material Properties">
+    <ReportPage
+      footerLabel="Structural Design Report — Section D: Material Properties"
+      titleblock={{
+        project,
+        documentKind: "design-report",
+        sheetNumber: "DR-D",
+        sheetTitle: "Design Report — Section D: Material Properties",
+        date: formatDateLabel(context.generatedAt),
+        revisionNumber,
+      }}
+    >
       <Text style={styles.heading}>D. Material Properties</Text>
 
       <Text style={styles.subheading}>Concrete</Text>

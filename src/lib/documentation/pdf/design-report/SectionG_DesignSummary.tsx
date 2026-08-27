@@ -90,6 +90,13 @@ interface DesignSummarySectionProps {
   title: string;
   categories: DesignElementCategory[];
   extraColumns?: ReportTableColumn<SummaryRow>[];
+  revisionNumber: string;
+}
+
+/** SectionA_Cover.tsx/QcReportDocument.tsx এর মতো একই local helper। */
+function formatDateLabel(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
 }
 
 function DesignSummarySection({
@@ -98,8 +105,10 @@ function DesignSummarySection({
   title,
   categories,
   extraColumns = [],
+  revisionNumber,
 }: DesignSummarySectionProps) {
   const rows = buildRows(context, categories);
+  const project = context.hub?.projectInfo ?? null;
 
   const baseColumns: ReportTableColumn<SummaryRow>[] = [
     {
@@ -142,7 +151,17 @@ function DesignSummarySection({
   ];
 
   return (
-    <ReportPage footerLabel={`Structural Design Report — Section ${code}: ${title}`}>
+    <ReportPage
+      footerLabel={`Structural Design Report — Section ${code}: ${title}`}
+      titleblock={{
+        project,
+        documentKind: "design-report",
+        sheetNumber: `DR-${code}`,
+        sheetTitle: `Design Report — Section ${code}: ${title}`,
+        date: formatDateLabel(context.generatedAt),
+        revisionNumber,
+      }}
+    >
       <Text style={styles.heading}>
         {code}. {title}
       </Text>
@@ -158,7 +177,7 @@ function DesignSummarySection({
   );
 }
 
-export function BeamDesignSummary({ context }: { context: ReportContext }) {
+export function BeamDesignSummary({ context, revisionNumber }: { context: ReportContext; revisionNumber: string }) {
   // "steel-beam" এখানে ছিল, কিন্তু StructuralElement এর category union এ
   // "steel-beam" নামে কোনো ভ্যারিয়েন্ট নেই — RC আর steel beam দুটোই
   // category: "beam" (element.ts, SteelBeamDesignPanel.tsx এর
@@ -172,11 +191,12 @@ export function BeamDesignSummary({ context }: { context: ReportContext }) {
       code="G1"
       title="Beam Design Summary"
       categories={["beam"]}
+      revisionNumber={revisionNumber}
     />
   );
 }
 
-export function ColumnDesignSummary({ context }: { context: ReportContext }) {
+export function ColumnDesignSummary({ context, revisionNumber }: { context: ReportContext; revisionNumber: string }) {
   // উপরের BeamDesignSummary এর কমেন্ট দেখুন — একই কারণে "steel-column"
   // এখানে বাদ দেওয়া হলো।
   return (
@@ -185,35 +205,44 @@ export function ColumnDesignSummary({ context }: { context: ReportContext }) {
       code="G2"
       title="Column Design Summary"
       categories={["column"]}
+      revisionNumber={revisionNumber}
     />
   );
 }
 
-export function SlabDesignSummary({ context }: { context: ReportContext }) {
+export function SlabDesignSummary({ context, revisionNumber }: { context: ReportContext; revisionNumber: string }) {
   return (
-    <DesignSummarySection context={context} code="G3" title="Slab Design Summary" categories={["slab"]} />
+    <DesignSummarySection
+      context={context}
+      code="G3"
+      title="Slab Design Summary"
+      categories={["slab"]}
+      revisionNumber={revisionNumber}
+    />
   );
 }
 
 /** প্লান অনুযায়ী "যদি থাকে" — কোনো wall/shear-wall element না থাকলে এই সেকশন সম্পূর্ণ বাদ দেওয়া উচিত (composeSections এ চেক হয়), কিন্তু এখানেও element না থাকলে graceful খালি-বার্তা দেখায় যদি সরাসরি কল হয়। */
-export function WallDesignSummary({ context }: { context: ReportContext }) {
+export function WallDesignSummary({ context, revisionNumber }: { context: ReportContext; revisionNumber: string }) {
   return (
     <DesignSummarySection
       context={context}
       code="G4"
       title="Wall / Shear Wall Design Summary"
       categories={["wall", "shear-wall"]}
+      revisionNumber={revisionNumber}
     />
   );
 }
 
-export function FoundationDesignSummary({ context }: { context: ReportContext }) {
+export function FoundationDesignSummary({ context, revisionNumber }: { context: ReportContext; revisionNumber: string }) {
   return (
     <DesignSummarySection
       context={context}
       code="G5"
       title="Foundation Design Summary"
       categories={["footing", "combined-footing", "strip-footing", "mat-foundation", "pile-cap"]}
+      revisionNumber={revisionNumber}
     />
   );
 }

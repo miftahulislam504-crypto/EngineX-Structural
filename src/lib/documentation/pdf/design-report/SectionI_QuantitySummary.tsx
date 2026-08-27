@@ -24,6 +24,13 @@ import {
 
 export interface QuantitySummarySectionProps {
   context: ReportContext;
+  revisionNumber: string;
+}
+
+/** SectionA_Cover.tsx/QcReportDocument.tsx এর মতো একই local helper। */
+function formatDateLabel(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
 }
 
 const styles = StyleSheet.create({
@@ -66,11 +73,22 @@ const styles = StyleSheet.create({
   },
 });
 
-export function QuantitySummarySection({ context }: QuantitySummarySectionProps) {
+export function QuantitySummarySection({ context, revisionNumber }: QuantitySummarySectionProps) {
   const summary = computeQuantitySummary(context);
+  const project = context.hub?.projectInfo ?? null;
 
   return (
-    <ReportPage footerLabel="Structural Design Report — Section I: Quantity Summary">
+    <ReportPage
+      footerLabel="Structural Design Report — Section I: Quantity Summary"
+      titleblock={{
+        project,
+        documentKind: "design-report",
+        sheetNumber: "DR-I",
+        sheetTitle: "Design Report — Section I: Quantity Summary",
+        date: formatDateLabel(context.generatedAt),
+        revisionNumber,
+      }}
+    >
       <Text style={styles.heading}>I. Quantity Summary</Text>
 
       <Text style={styles.subheading}>Concrete Quantity (by Grade and Element Type)</Text>

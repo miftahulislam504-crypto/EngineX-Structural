@@ -37,15 +37,31 @@ import { asFootingDetail } from "@/lib/documentation/pdf/calc-sheets/detailTypes
 export interface FootingCalcSheetProps {
   context: ReportContext;
   result: DesignResult;
+  revisionNumber: string;
 }
 
-export function FootingCalcSheet({ context, result }: FootingCalcSheetProps) {
+/** SectionA_Cover.tsx/QcReportDocument.tsx এর মতো একই local helper। */
+function formatDateLabel(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
+}
+
+export function FootingCalcSheet({ context, result, revisionNumber }: FootingCalcSheetProps) {
   const footerLabel = `Calculation Sheet — Footing ${result.elementLabel}`;
   const calc = asFootingDetail(result.detail);
+  const project = context.hub?.projectInfo ?? null;
+  const titleblockBase = {
+    project,
+    documentKind: "calc-sheets" as const,
+    sheetNumber: `CS-${result.elementLabel}`,
+    sheetTitle: footerLabel,
+    date: formatDateLabel(context.generatedAt),
+    revisionNumber,
+  };
 
   if (!calc) {
     return (
-      <ReportPage footerLabel={footerLabel}>
+      <ReportPage footerLabel={footerLabel} titleblock={titleblockBase}>
         <CalcSheetHeader context={context} result={result} elementTypeLabel="Footing" />
         <Text style={{ fontSize: pdfFontSize.body, color: pdfColors.inkMuted }}>
           No detailed calculation data recorded for this member yet.
@@ -93,7 +109,7 @@ export function FootingCalcSheet({ context, result }: FootingCalcSheetProps) {
   ];
 
   return (
-    <ReportPage footerLabel={footerLabel}>
+    <ReportPage footerLabel={footerLabel} titleblock={titleblockBase}>
       <CalcSheetHeader context={context} result={result} elementTypeLabel="Footing" />
 
       <CalcSectionHeading>A. Input Data</CalcSectionHeading>

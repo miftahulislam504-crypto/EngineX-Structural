@@ -76,19 +76,23 @@ export function DesignReportDocument({
         revisionNumber={revisionNumber}
         structuralEngineerName={structuralEngineerName}
       />
-      <TableOfContents entries={tocEntries} />
-      <GeneralInformation context={context} />
-      <MaterialProperties context={context} />
-      <DesignLoads context={context} />
-      <AnalysisSummary context={context} deformedShapeSnapshotDataUrl={deformedShapeSnapshotDataUrl ?? null} />
-      <BeamDesignSummary context={context} />
-      <ColumnDesignSummary context={context} />
-      <SlabDesignSummary context={context} />
-      {showWallSection && <WallDesignSummary context={context} />}
-      <FoundationDesignSummary context={context} />
-      <ValidationSummary context={context} />
-      <QuantitySummarySection context={context} />
-      <Appendix context={context} />
+      <TableOfContents entries={tocEntries} context={context} revisionNumber={revisionNumber} />
+      <GeneralInformation context={context} revisionNumber={revisionNumber} />
+      <MaterialProperties context={context} revisionNumber={revisionNumber} />
+      <DesignLoads context={context} revisionNumber={revisionNumber} />
+      <AnalysisSummary
+        context={context}
+        deformedShapeSnapshotDataUrl={deformedShapeSnapshotDataUrl ?? null}
+        revisionNumber={revisionNumber}
+      />
+      <BeamDesignSummary context={context} revisionNumber={revisionNumber} />
+      <ColumnDesignSummary context={context} revisionNumber={revisionNumber} />
+      <SlabDesignSummary context={context} revisionNumber={revisionNumber} />
+      {showWallSection && <WallDesignSummary context={context} revisionNumber={revisionNumber} />}
+      <FoundationDesignSummary context={context} revisionNumber={revisionNumber} />
+      <ValidationSummary context={context} revisionNumber={revisionNumber} />
+      <QuantitySummarySection context={context} revisionNumber={revisionNumber} />
+      <Appendix context={context} revisionNumber={revisionNumber} />
     </Document>
   );
 }

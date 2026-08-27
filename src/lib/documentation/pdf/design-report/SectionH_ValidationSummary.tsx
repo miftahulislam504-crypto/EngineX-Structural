@@ -23,6 +23,13 @@ import type { ValidationCategory } from "@/lib/validation/types";
 
 export interface ValidationSummaryProps {
   context: ReportContext;
+  revisionNumber: string;
+}
+
+/** SectionA_Cover.tsx/QcReportDocument.tsx এর মতো একই local helper। */
+function formatDateLabel(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
 }
 
 const styles = StyleSheet.create({
@@ -110,8 +117,9 @@ function scoreColor(score: number): string {
   return pdfColors.statusFail;
 }
 
-export function ValidationSummary({ context }: ValidationSummaryProps) {
+export function ValidationSummary({ context, revisionNumber }: ValidationSummaryProps) {
   const v = context.validation;
+  const project = context.hub?.projectInfo ?? null;
   const groups: Record<string, { pass: number; issueCount: number }> = {
     connectivityGeometry: { pass: 0, issueCount: 0 },
     loadVerification: { pass: 0, issueCount: 0 },
@@ -123,7 +131,17 @@ export function ValidationSummary({ context }: ValidationSummaryProps) {
   }
 
   return (
-    <ReportPage footerLabel="Structural Design Report — Section H: Model Validation / QC Summary">
+    <ReportPage
+      footerLabel="Structural Design Report — Section H: Model Validation / QC Summary"
+      titleblock={{
+        project,
+        documentKind: "design-report",
+        sheetNumber: "DR-H",
+        sheetTitle: "Design Report — Section H: Model Validation / QC Summary",
+        date: formatDateLabel(context.generatedAt),
+        revisionNumber,
+      }}
+    >
       <Text style={styles.heading}>H. Model Validation / QC Summary</Text>
 
       <View style={styles.scoreBlock}>

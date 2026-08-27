@@ -50,6 +50,7 @@ import { StatusBadge, mapValidationSeverity } from "@/lib/documentation/pdf/comp
 import { pdfColors, pdfFontSize, pdfSpacing } from "@/lib/documentation/pdf/theme";
 import type { ReportContext } from "@/lib/documentation/reportContext";
 import type { ValidationCategory, ValidationSeverity } from "@/lib/validation/types";
+import type { HubProjectInfo } from "@/lib/types/hub";
 
 /**
  * validation/types.ts না পাওয়া পর্যন্ত local shape — উপরের docblock
@@ -267,18 +268,33 @@ const issueColumns: ReportTableColumn<ValidationIssueLike>[] = [
 function IssueGroupSection({
   groupKey,
   context,
+  project,
+  revisionNumber,
+  dateLabel,
 }: {
   groupKey: keyof typeof GROUP_LABEL;
   context: ReportContext;
+  project: HubProjectInfo | null;
+  revisionNumber: string;
+  dateLabel: string;
 }) {
   const v = context.validation;
   const issues = (v.issues as ValidationIssueLike[]).filter(
     (issue) => CATEGORY_TO_GROUP[issue.category] === groupKey
   );
+  const sectionLetter = GROUP_SECTION_LETTER[groupKey];
 
   return (
     <ReportPage
-      footerLabel={`Model Validation / QC Report — Section ${GROUP_SECTION_LETTER[groupKey]}: ${GROUP_LABEL[groupKey]}`}
+      footerLabel={`Model Validation / QC Report — Section ${sectionLetter}: ${GROUP_LABEL[groupKey]}`}
+      titleblock={{
+        project,
+        documentKind: "qc-report",
+        sheetNumber: `QC-${sectionLetter}`,
+        sheetTitle: `Model Validation / QC Report — Section ${sectionLetter}: ${GROUP_LABEL[groupKey]}`,
+        date: dateLabel,
+        revisionNumber,
+      }}
     >
       <Text style={styles.heading}>
         {GROUP_SECTION_LETTER[groupKey]}. {GROUP_LABEL[groupKey]}
@@ -313,7 +329,17 @@ export function QcReportDocument({ context, revisionNumber }: QcReportDocumentPr
           page না, কারণ QC Report ছোট ও reference-style document (BBS/Calc
           Sheet এর মতো standalone annexure) — একই পেজে header ব্লক ও B/C
           সেকশন বসানো হয়েছে, আলাদা title page দিয়ে পাতা নষ্ট করা হয়নি। */}
-      <ReportPage footerLabel="Model Validation / QC Report — Cover">
+      <ReportPage
+        footerLabel="Model Validation / QC Report — Cover"
+        titleblock={{
+          project,
+          documentKind: "qc-report",
+          sheetNumber: "QC-00",
+          sheetTitle: "Model Validation / QC Report — Cover",
+          date: dateLabel,
+          revisionNumber,
+        }}
+      >
         <Text style={styles.heading}>Model Validation / QC Report</Text>
         <Text style={[styles.muted, { marginBottom: pdfSpacing.sectionGap }]}>
           {project?.projectName ?? "Untitled Project"}
@@ -388,7 +414,14 @@ export function QcReportDocument({ context, revisionNumber }: QcReportDocumentPr
           loadVerification → codeCompliance) যাতে D/E/F এর numbering
           Section H এর presentation এর সাথে conceptually সামঞ্জস্যপূর্ণ থাকে। */}
       {groupKeys.map((key) => (
-        <IssueGroupSection key={key} groupKey={key} context={context} />
+        <IssueGroupSection
+          key={key}
+          groupKey={key}
+          context={context}
+          project={project}
+          revisionNumber={revisionNumber}
+          dateLabel={dateLabel}
+        />
       ))}
     </Document>
   );

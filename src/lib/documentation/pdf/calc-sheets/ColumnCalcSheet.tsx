@@ -37,15 +37,31 @@ import { asColumnDetail } from "@/lib/documentation/pdf/calc-sheets/detailTypes"
 export interface ColumnCalcSheetProps {
   context: ReportContext;
   result: DesignResult;
+  revisionNumber: string;
 }
 
-export function ColumnCalcSheet({ context, result }: ColumnCalcSheetProps) {
+/** SectionA_Cover.tsx/QcReportDocument.tsx এর মতো একই local helper। */
+function formatDateLabel(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
+}
+
+export function ColumnCalcSheet({ context, result, revisionNumber }: ColumnCalcSheetProps) {
   const footerLabel = `Calculation Sheet — Column ${result.elementLabel}`;
   const calc = asColumnDetail(result.detail);
+  const project = context.hub?.projectInfo ?? null;
+  const titleblockBase = {
+    project,
+    documentKind: "calc-sheets" as const,
+    sheetNumber: `CS-${result.elementLabel}`,
+    sheetTitle: footerLabel,
+    date: formatDateLabel(context.generatedAt),
+    revisionNumber,
+  };
 
   if (!calc) {
     return (
-      <ReportPage footerLabel={footerLabel}>
+      <ReportPage footerLabel={footerLabel} titleblock={titleblockBase}>
         <CalcSheetHeader context={context} result={result} elementTypeLabel="Column" />
         <Text style={{ fontSize: pdfFontSize.body, color: pdfColors.inkMuted }}>
           No detailed calculation data recorded for this member yet.
@@ -85,7 +101,7 @@ export function ColumnCalcSheet({ context, result }: ColumnCalcSheetProps) {
   ];
 
   return (
-    <ReportPage footerLabel={footerLabel}>
+    <ReportPage footerLabel={footerLabel} titleblock={titleblockBase}>
       <CalcSheetHeader context={context} result={result} elementTypeLabel="Column" />
 
       <CalcSectionHeading>A. Input Data</CalcSectionHeading>

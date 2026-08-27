@@ -40,6 +40,7 @@ import { computeSelfWeightBreakdown, type SelfWeightGroup, type SelfWeightGroupC
 
 export interface DesignLoadsProps {
   context: ReportContext;
+  revisionNumber: string;
 }
 
 const styles = StyleSheet.create({
@@ -90,8 +91,15 @@ const SELF_WEIGHT_GROUP_LABEL: Record<SelfWeightGroupCategory, string> = {
   "other-unresolved": "Other",
 };
 
-export function DesignLoads({ context }: DesignLoadsProps) {
+/** SectionA_Cover.tsx/QcReportDocument.tsx এর মতো একই local helper। */
+function formatDateLabel(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
+}
+
+export function DesignLoads({ context, revisionNumber }: DesignLoadsProps) {
   const site = context.hub?.siteInformation ?? null;
+  const project = context.hub?.projectInfo ?? null;
   const patternsByCategory = new Map<string, LoadPattern[]>();
   for (const p of context.loadPatterns) {
     const list = patternsByCategory.get(p.category) ?? [];
@@ -102,7 +110,17 @@ export function DesignLoads({ context }: DesignLoadsProps) {
   const selfWeight = computeSelfWeightBreakdown(context.elements, context.materials.materials, context.sections.sections);
 
   return (
-    <ReportPage footerLabel="Structural Design Report — Section E: Design Loads Summary">
+    <ReportPage
+      footerLabel="Structural Design Report — Section E: Design Loads Summary"
+      titleblock={{
+        project,
+        documentKind: "design-report",
+        sheetNumber: "DR-E",
+        sheetTitle: "Design Report — Section E: Design Loads Summary",
+        date: formatDateLabel(context.generatedAt),
+        revisionNumber,
+      }}
+    >
       <Text style={styles.heading}>E. Design Loads Summary</Text>
 
       {Array.from(patternsByCategory.entries()).map(([category, patterns]) => (

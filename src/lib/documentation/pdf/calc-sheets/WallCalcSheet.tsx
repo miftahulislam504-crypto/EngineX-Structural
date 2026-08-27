@@ -30,15 +30,31 @@ import { asWallDetail } from "@/lib/documentation/pdf/calc-sheets/detailTypes";
 export interface WallCalcSheetProps {
   context: ReportContext;
   result: DesignResult;
+  revisionNumber: string;
 }
 
-export function WallCalcSheet({ context, result }: WallCalcSheetProps) {
+/** SectionA_Cover.tsx/QcReportDocument.tsx এর মতো একই local helper। */
+function formatDateLabel(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
+}
+
+export function WallCalcSheet({ context, result, revisionNumber }: WallCalcSheetProps) {
   const footerLabel = `Calculation Sheet — Wall ${result.elementLabel}`;
   const calc = asWallDetail(result.detail);
+  const project = context.hub?.projectInfo ?? null;
+  const titleblockBase = {
+    project,
+    documentKind: "calc-sheets" as const,
+    sheetNumber: `CS-${result.elementLabel}`,
+    sheetTitle: footerLabel,
+    date: formatDateLabel(context.generatedAt),
+    revisionNumber,
+  };
 
   if (!calc) {
     return (
-      <ReportPage footerLabel={footerLabel}>
+      <ReportPage footerLabel={footerLabel} titleblock={titleblockBase}>
         <CalcSheetHeader context={context} result={result} elementTypeLabel="Wall" />
         <Text style={{ fontSize: pdfFontSize.body, color: pdfColors.inkMuted }}>
           No detailed calculation data recorded for this member yet.
@@ -67,7 +83,7 @@ export function WallCalcSheet({ context, result }: WallCalcSheetProps) {
   ];
 
   return (
-    <ReportPage footerLabel={footerLabel}>
+    <ReportPage footerLabel={footerLabel} titleblock={titleblockBase}>
       <CalcSheetHeader context={context} result={result} elementTypeLabel="Wall" />
 
       <CalcSectionHeading>A. Input Data</CalcSectionHeading>

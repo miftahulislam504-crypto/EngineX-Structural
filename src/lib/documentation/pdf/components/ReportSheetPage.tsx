@@ -1,5 +1,12 @@
 /**
- * ReportSheetPage — Phase 11b
+ * ReportSheetPage — Phase 11b, simplified 2026-08-25 after ReportPage
+ * itself gained a `titleblock` prop (see that file's header comment —
+ * this was added so the other 5 non-drawing-sheet document kinds could
+ * get the same sidebar without duplicating the row-wrap layout in
+ * every caller). ReportSheetPage now just forwards its titleblock
+ * props straight to ReportPage with documentKind hardcoded to
+ * "drawing-sheets" — the row/sidebar layout itself lives in one place
+ * (ReportPage) instead of being duplicated here.
  *
  * ReportPage (body-section wrapper, Design Report এর জন্য) আর
  * Titleblock (এই ফোল্ডারেই) — এই দুটো একসাথে জুড়ে Drawing Sheet
@@ -14,14 +21,13 @@
  * পারে, তাই orientation override করার সুযোগ রাখা হলো।
  */
 
-import { View } from "@react-pdf/renderer";
 import type { ReactNode } from "react";
 import { ReportPage, type ReportPageOrientation } from "@/lib/documentation/pdf/components/ReportPage";
-import { Titleblock, type TitleblockProps } from "@/lib/documentation/pdf/components/Titleblock";
+import type { TitleblockProps } from "@/lib/documentation/pdf/components/Titleblock";
 
-export interface ReportSheetPageProps extends TitleblockProps {
+export interface ReportSheetPageProps extends Omit<TitleblockProps, "documentKind"> {
   orientation?: ReportPageOrientation;
-  /** sheet এর মূল ড্রয়িং area — titleblock এর উপরে বসবে, ফাঁকা জায়গা flex দিয়ে drawing content নেবে। */
+  /** sheet এর মূল ড্রয়িং area — sidebar এর বাম পাশে বসবে, ফাঁকা জায়গা flex দিয়ে drawing content নেবে। */
   children: ReactNode;
 }
 
@@ -35,9 +41,9 @@ export function ReportSheetPage({
       size="A3"
       orientation={orientation}
       footerLabel={`${titleblockProps.sheetNumber} — ${titleblockProps.sheetTitle}`}
+      titleblock={{ documentKind: "drawing-sheets", ...titleblockProps }}
     >
-      <View style={{ flex: 1 }}>{children}</View>
-      <Titleblock {...titleblockProps} />
+      {children}
     </ReportPage>
   );
 }

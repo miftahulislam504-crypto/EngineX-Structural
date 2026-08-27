@@ -116,7 +116,13 @@ async function buildDocumentPdf(
       element = <BbsSheetDocument context={context} revisionNumber={options.revisionNumber} />;
       break;
     case "calc-sheets":
-      element = <CalcSheetsDocument context={context} filterCategories={options.filterCategories} />;
+      element = (
+        <CalcSheetsDocument
+          context={context}
+          filterCategories={options.filterCategories}
+          revisionNumber={options.revisionNumber}
+        />
+      );
       break;
     case "qc-report":
       element = <QcReportDocument context={context} revisionNumber={options.revisionNumber} />;

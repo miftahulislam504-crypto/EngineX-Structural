@@ -22,6 +22,7 @@
 import { View, Text, StyleSheet } from "@react-pdf/renderer";
 import { ReportPage } from "@/lib/documentation/pdf/components/ReportPage";
 import { pdfColors, pdfFontSize, pdfSpacing } from "@/lib/documentation/pdf/theme";
+import type { ReportContext } from "@/lib/documentation/reportContext";
 
 export interface TableOfContentsEntry {
   code: string; // যেমন "A", "G1", "J"
@@ -30,6 +31,8 @@ export interface TableOfContentsEntry {
 
 export interface TableOfContentsProps {
   entries: TableOfContentsEntry[];
+  context: ReportContext;
+  revisionNumber: string;
 }
 
 const styles = StyleSheet.create({
@@ -55,9 +58,26 @@ const styles = StyleSheet.create({
   },
 });
 
-export function TableOfContents({ entries }: TableOfContentsProps) {
+/** SectionA_Cover.tsx/QcReportDocument.tsx এর মতো একই local helper — এই কোডবেসে shared utility না বানিয়ে per-file duplicate রাখার existing pattern অনুসরণ করা হলো। */
+function formatDateLabel(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
+}
+
+export function TableOfContents({ entries, context, revisionNumber }: TableOfContentsProps) {
+  const project = context.hub?.projectInfo ?? null;
   return (
-    <ReportPage footerLabel="Structural Design Report — Table of Contents">
+    <ReportPage
+      footerLabel="Structural Design Report — Table of Contents"
+      titleblock={{
+        project,
+        documentKind: "design-report",
+        sheetNumber: "DR-B",
+        sheetTitle: "Design Report — Table of Contents",
+        date: formatDateLabel(context.generatedAt),
+        revisionNumber,
+      }}
+    >
       <Text style={styles.heading}>Table of Contents</Text>
       {entries.map((entry) => (
         <View key={entry.code} style={styles.row}>

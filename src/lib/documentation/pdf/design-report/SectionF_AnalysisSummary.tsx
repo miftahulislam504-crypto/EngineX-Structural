@@ -83,6 +83,13 @@ export interface AnalysisSummaryProps {
   context: ReportContext;
   /** Report-Audit Phase A4 — client-side WebGL viewport থেকে POST body তে আসা base64 PNG snapshot, DesignReportDocument হয়ে pass-through। null মানে snapshot নেই (GET download, বা client-side capture ব্যর্থ)। */
   deformedShapeSnapshotDataUrl?: string | null;
+  revisionNumber: string;
+}
+
+/** SectionA_Cover.tsx/QcReportDocument.tsx এর মতো একই local helper। */
+function formatDateLabel(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
 }
 
 const styles = StyleSheet.create({
@@ -150,12 +157,24 @@ const RUN_TYPE_LABEL: Record<string, string> = {
   buckling: "Linear Buckling",
 };
 
-export function AnalysisSummary({ context, deformedShapeSnapshotDataUrl }: AnalysisSummaryProps) {
+export function AnalysisSummary({ context, deformedShapeSnapshotDataUrl, revisionNumber }: AnalysisSummaryProps) {
   const latest = context.latestAnalysis;
+  const project = context.hub?.projectInfo ?? null;
+  const titleblockBase = {
+    project,
+    documentKind: "design-report" as const,
+    sheetNumber: "DR-F",
+    sheetTitle: "Design Report — Section F: Analysis Summary",
+    date: formatDateLabel(context.generatedAt),
+    revisionNumber,
+  };
 
   if (!latest) {
     return (
-      <ReportPage footerLabel="Structural Design Report — Section F: Analysis Summary">
+      <ReportPage
+        footerLabel="Structural Design Report — Section F: Analysis Summary"
+        titleblock={titleblockBase}
+      >
         <Text style={styles.heading}>F. Analysis Summary</Text>
         <Text style={styles.descValue}>No successful analysis run found for this project.</Text>
       </ReportPage>
@@ -272,7 +291,10 @@ export function AnalysisSummary({ context, deformedShapeSnapshotDataUrl }: Analy
   }
 
   return (
-    <ReportPage footerLabel="Structural Design Report — Section F: Analysis Summary">
+    <ReportPage
+      footerLabel="Structural Design Report — Section F: Analysis Summary"
+      titleblock={titleblockBase}
+    >
       <Text style={styles.heading}>F. Analysis Summary</Text>
 
       <View style={styles.descRow}>

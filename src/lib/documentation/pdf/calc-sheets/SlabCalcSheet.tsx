@@ -36,15 +36,31 @@ import { asSlabDetail } from "@/lib/documentation/pdf/calc-sheets/detailTypes";
 export interface SlabCalcSheetProps {
   context: ReportContext;
   result: DesignResult;
+  revisionNumber: string;
 }
 
-export function SlabCalcSheet({ context, result }: SlabCalcSheetProps) {
+/** SectionA_Cover.tsx/QcReportDocument.tsx এর মতো একই local helper। */
+function formatDateLabel(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
+}
+
+export function SlabCalcSheet({ context, result, revisionNumber }: SlabCalcSheetProps) {
   const footerLabel = `Calculation Sheet — Slab ${result.elementLabel}`;
   const calc = asSlabDetail(result.detail);
+  const project = context.hub?.projectInfo ?? null;
+  const titleblockBase = {
+    project,
+    documentKind: "calc-sheets" as const,
+    sheetNumber: `CS-${result.elementLabel}`,
+    sheetTitle: footerLabel,
+    date: formatDateLabel(context.generatedAt),
+    revisionNumber,
+  };
 
   if (!calc) {
     return (
-      <ReportPage footerLabel={footerLabel}>
+      <ReportPage footerLabel={footerLabel} titleblock={titleblockBase}>
         <CalcSheetHeader context={context} result={result} elementTypeLabel="Slab" />
         <Text style={{ fontSize: pdfFontSize.body, color: pdfColors.inkMuted }}>
           No detailed calculation data recorded for this member yet.
@@ -89,7 +105,7 @@ export function SlabCalcSheet({ context, result }: SlabCalcSheetProps) {
   ];
 
   return (
-    <ReportPage footerLabel={footerLabel}>
+    <ReportPage footerLabel={footerLabel} titleblock={titleblockBase}>
       <CalcSheetHeader context={context} result={result} elementTypeLabel="Slab" />
 
       <CalcSectionHeading>A. Input Data</CalcSectionHeading>

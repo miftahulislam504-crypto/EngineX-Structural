@@ -26,6 +26,13 @@ import type { ReportContext } from "@/lib/documentation/reportContext";
 
 export interface AppendixProps {
   context: ReportContext;
+  revisionNumber: string;
+}
+
+/** SectionA_Cover.tsx/QcReportDocument.tsx এর মতো একই local helper। */
+function formatDateLabel(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
 }
 
 const styles = StyleSheet.create({
@@ -49,11 +56,22 @@ const styles = StyleSheet.create({
   },
 });
 
-export function Appendix({ context }: AppendixProps) {
+export function Appendix({ context, revisionNumber }: AppendixProps) {
   const calcSheetCount = context.designResults.length;
+  const project = context.hub?.projectInfo ?? null;
 
   return (
-    <ReportPage footerLabel="Structural Design Report — Section J: Appendix">
+    <ReportPage
+      footerLabel="Structural Design Report — Section J: Appendix"
+      titleblock={{
+        project,
+        documentKind: "design-report",
+        sheetNumber: "DR-J",
+        sheetTitle: "Design Report — Section J: Appendix",
+        date: formatDateLabel(context.generatedAt),
+        revisionNumber,
+      }}
+    >
       <Text style={styles.heading}>J. Appendix</Text>
 
       <Text style={styles.subheading}>Individual Member Calculation Sheets</Text>

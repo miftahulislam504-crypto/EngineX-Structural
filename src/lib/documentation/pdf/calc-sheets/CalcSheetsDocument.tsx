@@ -37,6 +37,7 @@ export interface CalcSheetsDocumentProps {
   context: ReportContext;
   /** না দিলে সব category বান্ডেল করে — Phase 11i এর "Beam only" জাতীয় ফিল্টার UI এই প্যারামিটার দিয়ে কল করবে। */
   filterCategories?: DesignElementCategory[];
+  revisionNumber: string;
 }
 
 const FOUNDATION_CATEGORIES: DesignElementCategory[] = [
@@ -54,9 +55,37 @@ const FOUNDATION_CATEGORIES: DesignElementCategory[] = [
 // wall/shear-wall/core-wall, retaining wall একটা আলাদা future item।
 const WALL_CATEGORIES: DesignElementCategory[] = ["wall", "shear-wall", "core-wall"];
 
-function UnsupportedCategoryPage({ elementLabel, category }: { elementLabel: string; category: string }) {
+/** SectionA_Cover.tsx/QcReportDocument.tsx এর মতো একই local helper। */
+function formatDateLabel(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
+}
+
+function UnsupportedCategoryPage({
+  elementLabel,
+  category,
+  project,
+  revisionNumber,
+  generatedAt,
+}: {
+  elementLabel: string;
+  category: string;
+  project: ReturnType<typeof deriveProject>;
+  revisionNumber: string;
+  generatedAt: string;
+}) {
   return (
-    <ReportPage footerLabel={`Calculation Sheet — ${elementLabel}`}>
+    <ReportPage
+      footerLabel={`Calculation Sheet — ${elementLabel}`}
+      titleblock={{
+        project,
+        documentKind: "calc-sheets",
+        sheetNumber: `CS-${elementLabel}`,
+        sheetTitle: `Calculation Sheet — ${elementLabel}`,
+        date: formatDateLabel(generatedAt),
+        revisionNumber,
+      }}
+    >
       <Text style={{ fontSize: pdfFontSize.h1, fontFamily: "Helvetica-Bold", marginBottom: 10 }}>
         {elementLabel}
       </Text>
@@ -68,11 +97,16 @@ function UnsupportedCategoryPage({ elementLabel, category }: { elementLabel: str
   );
 }
 
-export function CalcSheetsDocument({ context, filterCategories }: CalcSheetsDocumentProps) {
+/** context.hub?.projectInfo ?? null — একাধিক জায়গায় ব্যবহৃত হওয়ায় helper আকারে, UnsupportedCategoryPage কে টাইপ দেওয়ার জন্যও দরকার। */
+function deriveProject(context: ReportContext) {
+  return context.hub?.projectInfo ?? null;
+}
+
+export function CalcSheetsDocument({ context, filterCategories, revisionNumber }: CalcSheetsDocumentProps) {
   const results = filterCategories
     ? context.designResults.filter((r) => filterCategories.includes(r.elementCategory))
     : context.designResults;
-  const project = context.hub?.projectInfo ?? null;
+  const project = deriveProject(context);
 
   if (results.length === 0) {
     return (
@@ -80,7 +114,17 @@ export function CalcSheetsDocument({ context, filterCategories }: CalcSheetsDocu
         title={`${project?.projectName ?? "Untitled Project"} — Calculation Sheets`}
         creator="CivilOS Structural — Documentation Engine"
       >
-        <ReportPage footerLabel="Calculation Sheets">
+        <ReportPage
+          footerLabel="Calculation Sheets"
+          titleblock={{
+            project,
+            documentKind: "calc-sheets",
+            sheetNumber: "CS-00",
+            sheetTitle: "Calculation Sheets",
+            date: formatDateLabel(context.generatedAt),
+            revisionNumber,
+          }}
+        >
           <Text style={{ fontSize: pdfFontSize.h1, fontFamily: "Helvetica-Bold", marginBottom: 10 }}>
             Calculation Sheets
           </Text>
@@ -100,25 +144,28 @@ export function CalcSheetsDocument({ context, filterCategories }: CalcSheetsDocu
     >
       {results.map((result) => {
         if (result.elementCategory === "beam") {
-          return <BeamCalcSheet key={result.elementId} context={context} result={result} />;
+          return <BeamCalcSheet key={result.elementId} context={context} result={result} revisionNumber={revisionNumber} />;
         }
         if (result.elementCategory === "column") {
-          return <ColumnCalcSheet key={result.elementId} context={context} result={result} />;
+          return <ColumnCalcSheet key={result.elementId} context={context} result={result} revisionNumber={revisionNumber} />;
         }
         if (result.elementCategory === "slab") {
-          return <SlabCalcSheet key={result.elementId} context={context} result={result} />;
+          return <SlabCalcSheet key={result.elementId} context={context} result={result} revisionNumber={revisionNumber} />;
         }
         if (WALL_CATEGORIES.includes(result.elementCategory)) {
-          return <WallCalcSheet key={result.elementId} context={context} result={result} />;
+          return <WallCalcSheet key={result.elementId} context={context} result={result} revisionNumber={revisionNumber} />;
         }
         if (FOUNDATION_CATEGORIES.includes(result.elementCategory)) {
-          return <FootingCalcSheet key={result.elementId} context={context} result={result} />;
+          return <FootingCalcSheet key={result.elementId} context={context} result={result} revisionNumber={revisionNumber} />;
         }
         return (
           <UnsupportedCategoryPage
             key={result.elementId}
             elementLabel={result.elementLabel}
             category={result.elementCategory}
+            project={project}
+            revisionNumber={revisionNumber}
+            generatedAt={context.generatedAt}
           />
         );
       })}

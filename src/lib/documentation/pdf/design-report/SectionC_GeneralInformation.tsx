@@ -31,6 +31,13 @@ import type { StructuralStory, StructuralGrid } from "@/lib/types/geometry";
 
 export interface GeneralInformationProps {
   context: ReportContext;
+  revisionNumber: string;
+}
+
+/** SectionA_Cover.tsx/QcReportDocument.tsx এর মতো একই local helper — এই কোডবেসে shared utility না বানিয়ে per-file duplicate রাখার existing pattern অনুসরণ করা হলো। */
+function formatDateLabel(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
 }
 
 const styles = StyleSheet.create({
@@ -60,7 +67,7 @@ const styles = StyleSheet.create({
   },
 });
 
-export function GeneralInformation({ context }: GeneralInformationProps) {
+export function GeneralInformation({ context, revisionNumber }: GeneralInformationProps) {
   const stories = [...context.geometry.stories].sort((a, b) => a.order - b.order);
   const grids = [...context.geometry.grids].sort(
     (a, b) => a.direction.localeCompare(b.direction) || a.coordinate - b.coordinate
@@ -69,9 +76,20 @@ export function GeneralInformation({ context }: GeneralInformationProps) {
   const baseStory = stories.find((s) => s.isBaseLevel) ?? stories[0];
   const totalHeight =
     topStory && baseStory ? topStory.elevation + topStory.height - baseStory.elevation : null;
+  const project = context.hub?.projectInfo ?? null;
 
   return (
-    <ReportPage footerLabel="Structural Design Report — Section C: General Information">
+    <ReportPage
+      footerLabel="Structural Design Report — Section C: General Information"
+      titleblock={{
+        project,
+        documentKind: "design-report",
+        sheetNumber: "DR-C",
+        sheetTitle: "Design Report — Section C: General Information",
+        date: formatDateLabel(context.generatedAt),
+        revisionNumber,
+      }}
+    >
       <Text style={styles.heading}>C. General Information</Text>
 
       <View style={styles.descRow}>
