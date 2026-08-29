@@ -265,6 +265,18 @@ function isDrawPoint2D(v: unknown): v is DrawPoint2D {
   return typeof v === "object" && v !== null && isFiniteNumber((v as DrawPoint2D).x) && isFiniteNumber((v as DrawPoint2D).y);
 }
 
+/** modelChecker.ts এর isLineElement()-এর সাথে হুবহু একই duck-type — এখানে আলাদা রাখা হলো (import না করে), কারণ validation layer parser layer-কে depend করবে এটাই স্বাভাবিক দিক, উল্টোটা না। */
+function isLineElement(
+  e: StructuralElement,
+): e is Extract<StructuralElement, { startPoint: Point3D; endPoint: Point3D }> {
+  return "startPoint" in e && "endPoint" in e;
+}
+
+/** modelChecker.ts এর isAreaElement()-এর সাথে হুবহু একই duck-type, একই কারণে এখানে আলাদা রাখা হলো। */
+function isAreaElement(e: StructuralElement): e is Extract<StructuralElement, { vertices: Point3D[] }> {
+  return "vertices" in e;
+}
+
 /**
  * Wall/Shear-Wall → WallElement | ShearWallElement।
  *
@@ -740,6 +752,189 @@ function mapFooting(ref: BuildingElementRef, baseElevationM: number, issues: Par
   };
 }
 
+// ─── Cross-element vertex reconciliation ───────────────────────────────
+
+/**
+ * ⚠️ বাগফিক্স (Miftahul, ২০২৬-০৮-২৮ — "সমস্যা টা কিছুতেই ঠিক হচ্ছে না"):
+ * একটা ৪-তলা ভবনে প্রায় প্রতিটা column/beam "not connected", আর প্রায়
+ * প্রতিটা wall/stair/stair-landing/slab "no vertex matching" পাচ্ছিল —
+ * যদিও Draw-এ ভবনটা normal ভাবেই framed ছিল (কোনো সত্যিকারের floating
+ * member ছিল না)। কারণ:
+ *
+ * checkConnectivity() (modelChecker.ts) দুইটা point-কে "একই node" ধরে
+ * শুধু coordKey() (3-decimal, ~1mm bucket) মিললে — এই কড়া tolerance
+ * ইচ্ছাকৃত, কারণ backend-এর NodeGraph.index_of() (analysis_orchestration.py,
+ * আলাদা repo) একই convention-এ node merge করে; দুটো এক না থাকলে "frontend
+ * এ connected দেখানো" আর "backend এ আসলে merge হওয়া" আলাদা হয়ে যাবে।
+ *
+ * কিন্তু Draw-এর নিজস্ব snap tolerance এই ~1mm precision-এর ধারেকাছেও
+ * না — BEAM_COLUMN_CENTER_SNAP_TOLERANCE_M (FloorPlanCanvas.tsx) 0.3m,
+ * GRID_INTERSECTION_SNAP_TOLERANCE_M (structural-coordination.ts) 0.4m,
+ * SNAP_SUGGEST_RADIUS_M 0.5m, gridSize (design-studio-store.ts) ডিফল্ট
+ * 0.5m। showFloorBelow অফ থাকলে বা কোনো tool-এর dedicated snap-assist
+ * না থাকলে (Beam-এর column-snap ছাড়া বাকি বেশিরভাগ tool grid-snap বা
+ * freehand-এর ওপরই নির্ভর করে — Wall/Stair-এর জন্য "নিচের/পাশের element-এর
+ * সাথে snap" এমন কোনো mechanism নেই), একই সংযোগস্থলের জন্য দুইটা
+ * স্বাধীনভাবে আঁকা element-এর point কয়েক সেন্টিমিটার থেকে কয়েক ডেসিমিটার
+ * পর্যন্ত আলাদা হতে পারে — এটা Draw একটা architectural sketch tool বলেই
+ * স্বাভাবিক, কোনো ইঞ্জিনিয়ার "আরেকটু নিখুঁতভাবে" এঁকেও এই App-এর কড়া
+ * 1mm bucket-এ মিলবে এমন guarantee নেই।
+ *
+ * শুধু checker-এর tolerance ঢিলা করাটা ভুল সমাধান হতো — backend আলাদা
+ * repo-তে থাকায় এখান থেকে touch করা যায় না, সেও একই কড়া 1mm bucket দিয়ে
+ * node merge করে, তাই checker চুপ করালেও analysis-এ সেই node গুলো তখনও
+ * merge হতো না (silently ভুল/অর্থহীন ফলাফল — ঠিক এই ফাইলের হেডার কমেন্টে
+ * যে ঝুঁকির কথা বলা আছে)। তাই সমাধান raw geometry-টাকেই import-time এ
+ * reconcile করা — যাতে parseArchitecturalExport() থেকে যা বেরোয় সেটা
+ * সত্যিকারের সংযোগস্থলে bit-exact coincident হয়, checker আর (future)
+ * backend দুটোই তখন তাদের কড়া 1mm convention অক্ষত রেখেই সঠিক ফলাফল দেয় —
+ * নিচের reconcileCoincidentVertices() এটাই করে, runModelChecks() চালানোর
+ * আগে, এখানেই, একবার।
+ */
+
+/**
+ * modelChecker.ts এর FOOTING_ALIGNMENT_TOLERANCE_M এর সাথে ইচ্ছাকৃতভাবে
+ * একই মান — নতুন সংখ্যা আবিষ্কার না করে, ইতিমধ্যে established cross-app
+ * tolerance পুনর্ব্যবহার করা হলো (Draw-এর isColumnSupportedByFooting()
+ * এর সাথে মেলানো, ওই ফাইলের কমেন্ট দ্রষ্টব্য)। দুটো প্রশ্নই আসলে একই:
+ * "Draw-এর architectural sketch precision-এ কতটা কাছাকাছি হলে এক বিন্দু
+ * ধরা উচিত?" বাস্তব RC residential building-এ এর চেয়ে কাছাকাছি (< 15cm)
+ * কিন্তু সত্যিই আলাদা দুইটা element (দুইটা পাশাপাশি column, বা দুইটা
+ * পাশাপাশি লোড-বহনকারী wall) থাকা অস্বাভাবিক, তাই ভুলভাবে দুইটা আলাদা
+ * উপাদান জোড়া লাগার ঝুঁকি কম — অথচ Draw-এর looser snap tolerance-এর
+ * একটা যুক্তিসঙ্গত অংশ কভার করে।
+ */
+const VERTEX_RECONCILIATION_TOLERANCE_M = 0.15;
+
+/**
+ * Line element (startPoint/endPoint) ও area element (vertices[]) — সব
+ * mapped element জুড়ে প্রতিটা point/vertex-কে একটা mutable "slot" হিসেবে
+ * ধরা হয়, যাতে reconcileCoincidentVertices() সরাসরি element object-এর
+ * ভেতরের point replace করতে পারে। mappedElements-এর প্রতিটা element এই
+ * ফাংশনের একমাত্র caller (parseArchitecturalExport) এর জন্যই তাজা-বানানো
+ * object, তাই in-place mutation নিরাপদ — কোথাও শেয়ার্ড/cached reference
+ * নেই যা এতে ভুলভাবে প্রভাবিত হতে পারে।
+ */
+interface VertexSlot {
+  point: Point3D;
+  elementId: string;
+  set(p: Point3D): void;
+}
+
+function collectVertexSlots(elements: StructuralElement[]): VertexSlot[] {
+  const slots: VertexSlot[] = [];
+  for (const e of elements) {
+    if (isLineElement(e)) {
+      slots.push({ point: e.startPoint, elementId: e.elementId, set: (p) => { e.startPoint = p; } });
+      slots.push({ point: e.endPoint, elementId: e.elementId, set: (p) => { e.endPoint = p; } });
+    } else if (isAreaElement(e)) {
+      e.vertices.forEach((v, i) => {
+        slots.push({ point: v, elementId: e.elementId, set: (p) => { e.vertices[i] = p; } });
+      });
+    }
+  }
+  return slots;
+}
+
+/**
+ * Connectivity Reconciliation — উপরের বাগফিক্স নোটে বর্ণিত সমস্যার আসল
+ * সমাধান। প্রতিটা ভিন্ন-element point-জোড়া VERTEX_RECONCILIATION_TOLERANCE_M
+ * এর মধ্যে থাকলে (union-find দিয়ে transitively — একটা point একাধিক
+ * প্রতিবেশীর কাছাকাছি হলে সবগুলো একই cluster-এ পড়ে) একই canonical
+ * coordinate-এ merge করা হয়, যাতে পরের checkConnectivity()/(future)
+ * backend NodeGraph merge কড়া ~1mm tolerance দিয়েও এগুলোকে সঠিকভাবে
+ * "একই node" চিনতে পারে।
+ *
+ * দুইটা নিয়ম:
+ *   (১) একই elementId-র নিজের দুই প্রান্ত/দুই vertex কখনো একসাথে merge
+ *       হয় না — নাহলে একটা ছোট কিন্তু আসল member (short wall/beam) ভুলভাবে
+ *       zero-length/degenerate হয়ে যেতে পারে, যা checkGeometry()-এর
+ *       zero-length/degenerate-polygon check ঠিক ধরার কথা — সেই একই ভুল
+ *       এখানে নীরবে ঘটে যাবে যদি এই গার্ড না থাকে।
+ *   (২) কোনো cluster-এ base-level (y ≤ 1e-3, checkSupports()/backend
+ *       auto-support heuristic যেটা ব্যবহার করে) এর কোনো point থাকলে
+ *       সেটাই canonical হিসেবে বেছে নেওয়া হয় (গড় করা হয় না) — নাহলে গড়
+ *       করলে একটা true Y=0 point সামান্য positive Y-এ সরে যেতে পারে,
+ *       ভুলভাবে base-support হারিয়ে ফেলতে পারে। base-level point না
+ *       থাকলে cluster-এর প্রথম point-টাই (elements array-এর ক্রম অনুযায়ী,
+ *       deterministic) canonical — কোনো নতুন synthetic coordinate বানানো
+ *       হয় না, সবসময় আসল কোনো element-এর আসল point-ই ব্যবহার হয়, যাতে
+ *       ফলাফল predictable/debuggable থাকে (auto-averaging একটা নতুন,
+ *       কোনো element-ই আসলে যেখানে নেই এমন coordinate তৈরি করে দিতে পারে,
+ *       যা debug করা কঠিন করে তুলত)।
+ *
+ * O(n²) pairwise distance — একটা সাধারণ building model-এ কয়েকশো point
+ * (৪-তলা residential ভবনেও সাধারণত হাজারখানেকের নিচে), তাই বাড়তি spatial
+ * index ছাড়াই এটা তাৎক্ষণিক। কোনো element material/section/category ছোঁয়
+ * না — pure geometry cleanup।
+ */
+function reconcileCoincidentVertices(elements: StructuralElement[]): void {
+  const slots = collectVertexSlots(elements);
+  const n = slots.length;
+  if (n < 2) return;
+
+  const parent = Array.from({ length: n }, (_, i) => i);
+  function find(i: number): number {
+    while (parent[i] !== i) {
+      parent[i] = parent[parent[i]];
+      i = parent[i];
+    }
+    return i;
+  }
+  function union(a: number, b: number): void {
+    const ra = find(a);
+    const rb = find(b);
+    if (ra !== rb) parent[ra] = rb;
+  }
+
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      if (slots[i].elementId === slots[j].elementId) continue; // নিয়ম (১)
+      const dx = slots[i].point.x - slots[j].point.x;
+      const dy = slots[i].point.y - slots[j].point.y;
+      const dz = slots[i].point.z - slots[j].point.z;
+      if (Math.sqrt(dx * dx + dy * dy + dz * dz) <= VERTEX_RECONCILIATION_TOLERANCE_M) {
+        union(i, j);
+      }
+    }
+  }
+
+  const clusters = new Map<number, number[]>();
+  for (let i = 0; i < n; i++) {
+    const root = find(i);
+    const list = clusters.get(root) ?? [];
+    list.push(i);
+    clusters.set(root, list);
+  }
+
+  let weldedPointCount = 0;
+  const weldedElementIds = new Set<string>();
+
+  for (const idxs of clusters.values()) {
+    if (idxs.length < 2) continue;
+    const baseIdx = idxs.find((i) => slots[i].point.y <= 1e-3); // নিয়ম (২)
+    const canonicalIdx = baseIdx ?? idxs[0];
+    const canonical = slots[canonicalIdx].point;
+    for (const i of idxs) {
+      if (i === canonicalIdx) continue;
+      const p = slots[i].point;
+      if (Math.hypot(p.x - canonical.x, p.y - canonical.y, p.z - canonical.z) > 1e-6) {
+        slots[i].set({ x: canonical.x, y: canonical.y, z: canonical.z });
+        weldedPointCount++;
+        weldedElementIds.add(slots[i].elementId);
+        weldedElementIds.add(slots[canonicalIdx].elementId);
+      }
+    }
+  }
+
+  if (weldedPointCount > 0) {
+    // eslint-disable-next-line no-console
+    console.info(
+      `[hub-geometry-parser] connectivity reconciliation: ${weldedPointCount}টা vertex, ${weldedElementIds.size}টা element জুড়ে, কাছাকাছি (≤${VERTEX_RECONCILIATION_TOLERANCE_M}m) অন্য element-এর vertex-এর সাথে merge করা হলো — Draw-এর snap tolerance এই App-এর ~1mm connectivity convention-এর চেয়ে ঢিলা বলে (এই সেকশনের বাগফিক্স নোট দেখুন)। কোনো merge ভুল মনে হলে (দুইটা আসলে আলাদা element একসাথে জোড়া লেগেছে), সেগুলো Draw-এ আরেকটু দূরে সরিয়ে re-publish করুন।`,
+    );
+  }
+}
+
 // ─── Top-level entry point ────────────────────────────────────────────
 
 /**
@@ -770,6 +965,14 @@ function mapFooting(ref: BuildingElementRef, baseElevationM: number, issues: Par
  * অথবা foundation (mat/raft-type) এর জন্য এখনো কোনো structural
  * counterpart mapping সংজ্ঞায়িত হয়নি (ভবিষ্যতে MatFoundationElement-এর
  * সাথে একইভাবে reference-mapping যোগ হতে পারে)।
+ *
+ * সব mapping শেষে, return করার আগে, reconcileCoincidentVertices()
+ * একবার চলে (উপরের "Cross-element vertex reconciliation" সেকশনের
+ * বাগফিক্স নোট দ্রষ্টব্য) — কাছাকাছি (Draw-এর snap tolerance-এর
+ * পরিসরে) কিন্তু bit-exact না এমন point/vertex গুলোকে একই coordinate-এ
+ * merge করে, যাতে এই ফাংশনের আউটপুট সরাসরি checkConnectivity()/
+ * (future) backend NodeGraph-এর কড়া ~1mm tolerance-এও সঠিকভাবে
+ * "সংযুক্ত" ধরা পড়ে।
  */
 export function parseArchitecturalExport(data: DrawArchitecturalExport): ParseGeometryResult {
   const nowIso = new Date().toISOString();
@@ -843,6 +1046,18 @@ export function parseArchitecturalExport(data: DrawArchitecturalExport): ParseGe
 
     if (mapped) mappedElements.push(mapped);
   }
+
+  // ⚠️ বাগফিক্স (Miftahul, ২০২৬-০৮-২৮): reconcileCoincidentVertices()
+  // এই ফাইলের উপরের "Cross-element vertex reconciliation" সেকশনের
+  // বাগফিক্স নোট দ্রষ্টব্য — Draw-এর snap tolerance এই App-এর কড়া
+  // ~1mm connectivity convention-এর চেয়ে ঢিলা বলে, একই সংযোগস্থলে
+  // স্বাধীনভাবে আঁকা element-এর point কয়েক সেন্টিমিটার আলাদা থাকতে
+  // পারতো — checkConnectivity()/checkGeometry() (modelChecker.ts) এই
+  // reconciled elements-এর ওপরই চলে (useArchitecturalImport.ts এর
+  // fetchAndParse() দেখুন), তাই এখানেই, mapping শেষে কিন্তু return
+  // করার আগে, একবার চালানো হচ্ছে — mappedElements[] in-place mutate
+  // হয়।
+  reconcileCoincidentVertices(mappedElements);
 
   return { elements: mappedElements, grids, stories, issues };
 }
