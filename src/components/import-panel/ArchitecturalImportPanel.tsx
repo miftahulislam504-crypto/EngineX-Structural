@@ -394,13 +394,15 @@ function ImportItemRow({
       {item.issue && (
         <div className="rounded-md bg-status-holdBg border border-status-holdBorder/40 px-2 py-1.5 space-y-1">
           <p className="text-[11px] text-status-holdText">{item.issue.reason}</p>
-          {/* TEMP DEBUG (Miftahul, ২০২৬-০৯-০৩): floating element coordinate যাচাইয়ের
-              জন্য সাময়িক — root cause confirm হলে এই ব্লক সরিয়ে ফেলতে হবে। */}
+          {/* TEMP DEBUG v2 (Miftahul, ২০২৬-০৯-০৩): rounding-boundary সন্দেহ
+              যাচাইয়ের জন্য ৬-decimal precision-এ upgrade করা হলো (আগে ৩-decimal
+              ছিল, যা exactly coordKey()-এর মতো bucket করে ফেলছিল বলে raw মান
+              দেখা যাচ্ছিল না) — root cause confirm হলে এই ব্লক সরিয়ে ফেলতে হবে। */}
           <p className="text-[10px] font-mono text-status-holdText/80 break-all">
             {"startPoint" in item.original && "endPoint" in item.original
-              ? `start(${item.original.startPoint.x.toFixed(3)}, ${item.original.startPoint.y.toFixed(3)}, ${item.original.startPoint.z.toFixed(3)}) → end(${item.original.endPoint.x.toFixed(3)}, ${item.original.endPoint.y.toFixed(3)}, ${item.original.endPoint.z.toFixed(3)})`
+              ? `start(${item.original.startPoint.x.toFixed(6)}, ${item.original.startPoint.y.toFixed(6)}, ${item.original.startPoint.z.toFixed(6)}) → end(${item.original.endPoint.x.toFixed(6)}, ${item.original.endPoint.y.toFixed(6)}, ${item.original.endPoint.z.toFixed(6)})`
               : "vertices" in item.original
-                ? item.original.vertices.map((v) => `(${v.x.toFixed(3)}, ${v.y.toFixed(3)}, ${v.z.toFixed(3)})`).join(" | ")
+                ? item.original.vertices.map((v) => `(${v.x.toFixed(6)}, ${v.y.toFixed(6)}, ${v.z.toFixed(6)})`).join(" | ")
                 : "(কোনো coordinate ফিল্ড পাওয়া যায়নি)"}
           </p>
         </div>
