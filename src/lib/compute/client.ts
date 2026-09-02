@@ -106,6 +106,35 @@ function getComputeBaseUrl(): string {
   return url.replace(/\/$/, ""); // trailing slash সরিয়ে দেয়
 }
 
+export interface ComputeHealthResult {
+  status: string;
+  service: string;
+}
+
+/**
+ * শুধু কম্পিউট সার্ভিসটা reachable ও জীবিত কিনা যাচাই করে (/health
+ * endpoint — কোনো model validation বা solve হয় না)। Phase 0
+ * ইনফ্রাস্ট্রাকচার চেকের জন্য এটাই সঠিক call — একটা fake/placeholder
+ * analysis job submit করে পুরো model-parsing/solve path টেস্ট করা
+ * উদ্দেশ্য না, শুধু "সার্ভিসটা উঠে আছে কিনা ও নেটওয়ার্ক পথ ঠিক আছে
+ * কিনা" যাচাই করাই যথেষ্ট।
+ */
+export async function checkComputeHealth(): Promise<ComputeHealthResult> {
+  const baseUrl = getComputeBaseUrl();
+
+  const response = await fetch(`${baseUrl}/health`, {
+    method: "GET",
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Health check failed (${response.status}): ${errorText}`);
+  }
+
+  return response.json();
+}
+
 /**
  * একটা analysis job সাবমিট করে। Phase 0-তে সার্ভিস সাথে সাথেই
  * "completed" স্ট্যাটাসসহ একটা placeholder ফলাফল দেয় (Phase 4-এ

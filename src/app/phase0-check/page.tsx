@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { submitAndAwaitJob } from "@/lib/compute/client";
+import { checkComputeHealth } from "@/lib/compute/client";
 import { auth } from "@/lib/firebase/client";
 
 type CheckStatus = "idle" | "running" | "success" | "error";
@@ -60,30 +60,13 @@ export default function Phase0CheckPage() {
   }
 
   async function checkCompute() {
-    setComputeCheck({ status: "running", message: "Cloud Run-এ জব পাঠানো হচ্ছে..." });
+    setComputeCheck({ status: "running", message: "Cloud Run-এ স্বাস্থ্য পরীক্ষা পাঠানো হচ্ছে..." });
     try {
-      const result = await submitAndAwaitJob(
-        {
-          projectId: "phase0-diagnostic",
-          analysisType: "linear-static",
-          modelPayload: { elements: [{ id: "diagnostic-element" }] },
-        },
-        { timeoutMs: 20000 }
-      );
-
-      if (result.status === "completed") {
-        setComputeCheck({
-          status: "success",
-          message: `Cloud Run থেকে সাড়া পাওয়া গেছে। Job ID: ${result.jobId}, ফলাফল: ${JSON.stringify(
-            result.result
-          )}`,
-        });
-      } else {
-        setComputeCheck({
-          status: "error",
-          message: `Job status: ${result.status}. Error: ${result.error ?? "N/A"}`,
-        });
-      }
+      const result = await checkComputeHealth();
+      setComputeCheck({
+        status: "success",
+        message: `Cloud Run থেকে সাড়া পাওয়া গেছে। status: ${result.status}, service: ${result.service}`,
+      });
     } catch (err) {
       setComputeCheck({
         status: "error",
