@@ -392,8 +392,17 @@ function ImportItemRow({
       </div>
 
       {item.issue && (
-        <div className="rounded-md bg-status-holdBg border border-status-holdBorder/40 px-2 py-1.5">
+        <div className="rounded-md bg-status-holdBg border border-status-holdBorder/40 px-2 py-1.5 space-y-1">
           <p className="text-[11px] text-status-holdText">{item.issue.reason}</p>
+          {/* TEMP DEBUG (Miftahul, ২০২৬-০৯-০৩): floating element coordinate যাচাইয়ের
+              জন্য সাময়িক — root cause confirm হলে এই ব্লক সরিয়ে ফেলতে হবে। */}
+          <p className="text-[10px] font-mono text-status-holdText/80 break-all">
+            {"startPoint" in item.original && "endPoint" in item.original
+              ? `start(${item.original.startPoint.x.toFixed(3)}, ${item.original.startPoint.y.toFixed(3)}, ${item.original.startPoint.z.toFixed(3)}) → end(${item.original.endPoint.x.toFixed(3)}, ${item.original.endPoint.y.toFixed(3)}, ${item.original.endPoint.z.toFixed(3)})`
+              : "vertices" in item.original
+                ? item.original.vertices.map((v) => `(${v.x.toFixed(3)}, ${v.y.toFixed(3)}, ${v.z.toFixed(3)})`).join(" | ")
+                : "(কোনো coordinate ফিল্ড পাওয়া যায়নি)"}
+          </p>
         </div>
       )}
 
