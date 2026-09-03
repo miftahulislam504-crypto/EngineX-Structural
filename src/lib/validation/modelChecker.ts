@@ -55,7 +55,20 @@ function isAreaElement(
 export function checkConnectivity(elements: StructuralElement[]): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   const lineElements = elements.filter(isLineElement);
+  const areaElements = elements.filter(isAreaElement);
 
+  // বাগফিক্স (Miftahul, 2026-09-03): coordUsage আগে শুধু lineElements
+  // (Column/Beam) endpoint দিয়ে বানানো হতো — তাই একটা Column-এর top যদি
+  // ঠিক একটা Wall/Slab-এর vertex-এর সাথে exact মিলে যায় (কিন্তু কোনো
+  // Beam/অন্য Column ওই বিন্দুতে না থাকে), সেটাও "not connected" ধরে
+  // নিত। ফাইল হেডারের নকশা-নোট অনুযায়ী intent ছিল two-way
+  // (line↔area উভয় দিকেই "শেয়ার করলে connected" গণনা করা — নিচের
+  // area-element loop line endpoint-কে ঠিকই ধরে), কিন্তু এই লাইন
+  // element loop-টা area vertex ধরত না — একমুখী ফাঁক। এখন area
+  // element-এর প্রতিটা vertex-ও একই coordUsage ম্যাপে যোগ করা হচ্ছে,
+  // যাতে line↔area উভয় দিকেই connectivity সমানভাবে ধরা পড়ে। এই ফিক্সের
+  // ফলে column/beam-এর "not connected" warning কমতে পারে এমনকি Wall-এর
+  // নিজস্ব height ঠিক থাকা অবস্থাতেও (আগে কখনোই Wall গোনা হতোই না)।
   const coordUsage = new Map<string, string[]>();
   for (const e of lineElements) {
     for (const p of [e.startPoint, e.endPoint]) {
@@ -65,10 +78,22 @@ export function checkConnectivity(elements: StructuralElement[]): ValidationIssu
       coordUsage.set(key, list);
     }
   }
+  for (const e of areaElements) {
+    for (const v of e.vertices) {
+      const key = coordKey(v.x, v.y, v.z);
+      const list = coordUsage.get(key) ?? [];
+      list.push(e.elementId);
+      coordUsage.set(key, list);
+    }
+  }
 
   for (const e of lineElements) {
     const startKey = coordKey(e.startPoint.x, e.startPoint.y, e.startPoint.z);
     const endKey = coordKey(e.endPoint.x, e.endPoint.y, e.endPoint.z);
+    // "নিজের ছাড়া অন্তত আরেকটা element" — লাইন element-দের জন্য
+    // coordUsage-এ নিজের দুই প্রান্তই লেখা থাকে, তাই length > 1 মানেই
+    // অন্য কেউ শেয়ার করছে (নিজে তো একবারই ওই key-তে লেখা)। এটা আগের
+    // আচরণের সাথে সামঞ্জস্যপূর্ণ রাখা হলো।
     const startShared = (coordUsage.get(startKey)?.length ?? 0) > 1;
     const endShared = (coordUsage.get(endKey)?.length ?? 0) > 1;
     const startAtBase = e.startPoint.y <= 1e-3;
@@ -101,28 +126,13 @@ export function checkConnectivity(elements: StructuralElement[]): ValidationIssu
     }
   }
 
-  // বাগফিক্স: আগে coordUsage শুধু line-element (Beam/Column) endpoint
-  // দিয়ে বানানো হতো, তাই এই নিচের area-element heuristic কোনো wall-to-
-  // wall বা wall-to-slab shared-edge connectivity চিনতোই না — একটা
-  // সম্পূর্ণ সংযুক্ত wall (যেমন corner-এ আরেকটা wall-এর সাথে জোড়া লাগা,
-  // বা slab-এর বেসে বসা) শুধু কোনো column/beam node স্পর্শ না করলেই
-  // "no vertex matching" info পেত, যা প্রতিটা প্রায় সাধারণ wall-এই আসত
-  // (false positive, যদিও severity "info" বলে ব্লক করত না)। এখন প্রতিটা
-  // area-element vertex-ও coordUsage-এ যোগ করা হচ্ছে (নিজের elementId
-  // সহ), যাতে area-to-area shared vertex সঠিকভাবে "connected" ধরা যায় —
-  // heuristic এখনো conservative থাকছে (edge-এর মাঝামাঝি কোনো vertex
-  // ছাড়া touch এখনও ধরবে না), কিন্তু সবচেয়ে সাধারণ কেস (wall corner,
-  // wall-slab base) আর false-flag হবে না।
-  const areaElements = elements.filter(isAreaElement);
-  for (const e of areaElements) {
-    for (const v of e.vertices) {
-      const key = coordKey(v.x, v.y, v.z);
-      const list = coordUsage.get(key) ?? [];
-      list.push(e.elementId);
-      coordUsage.set(key, list);
-    }
-  }
-
+  // বাগফিক্স: coordUsage-এ area element vertex এখন উপরেই (এই ফাংশনের
+  // শুরুতে, line-element loop-এর ঠিক পরে) একবারে যোগ করা হয়েছে — line↔
+  // area উভয় দিকে connectivity একই ম্যাপ থেকে ধরার জন্য (দেখুন ওপরের
+  // বাগফিক্স নোট)। এই loop শুধু সেই সম্মিলিত coordUsage ব্যবহার করে
+  // area element-দের নিজেদের "possibly floating" info flag বসায় —
+  // wall-to-wall corner, wall-to-slab base, বা এখন column/beam-endpoint-
+  // এর সাথে shared vertex থাকলেও সঠিকভাবে "connected" ধরা যায়।
   for (const e of areaElements) {
     const anyVertexConnectedOrBase = e.vertices.some((v) => {
       const key = coordKey(v.x, v.y, v.z);
