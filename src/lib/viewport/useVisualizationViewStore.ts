@@ -44,6 +44,9 @@ const ALL_CATEGORIES: ElementCategory[] = [
   "wall",
   "shear-wall",
   "core-wall",
+  "stair",
+  "stair-landing",
+  "parapet",
   "footing",
   "combined-footing",
   "strip-footing",
@@ -52,10 +55,19 @@ const ALL_CATEGORIES: ElementCategory[] = [
   "pile-group",
 ];
 
+/**
+ * "wall" (সাধারণ, non-lateral partition/architectural wall) ডিফল্টভাবে
+ * hidden — ETABS-এর মতো default frame view এ শুধু structural skeleton
+ * (Beam/Column/Slab/Footing/Stair) এবং lateral system (Shear-Wall/
+ * Core-Wall) দেখানোর জন্য। data মুছে যায় না, Element Visibility
+ * প্যানেলের checkbox থেকে যেকোনো সময় আবার visible করা যায়।
+ */
+const DEFAULT_HIDDEN_CATEGORIES: ElementCategory[] = ["wall"];
+
 function defaultCategoryVisibility(): Record<ElementCategory, boolean> {
   const map = {} as Record<ElementCategory, boolean>;
   for (const category of ALL_CATEGORIES) {
-    map[category] = true;
+    map[category] = !DEFAULT_HIDDEN_CATEGORIES.includes(category);
   }
   return map;
 }

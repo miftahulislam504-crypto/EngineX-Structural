@@ -220,6 +220,7 @@ export function VisualizationElementsLayer({
             return (
               <AreaElementMesh
                 key={element.elementId}
+                category={element.category}
                 vertices={element.vertices.map(deformPoint)}
                 thickness={element.thickness}
                 materialProps={materialProps}
@@ -271,6 +272,7 @@ export function VisualizationElementsLayer({
             return (
               <AreaElementMesh
                 key={element.elementId}
+                category={element.category}
                 vertices={element.vertices}
                 thickness={element.thickness}
                 materialProps={materialProps}
@@ -287,6 +289,7 @@ export function VisualizationElementsLayer({
             return (
               <AreaElementMesh
                 key={element.elementId}
+                category={element.category}
                 vertices={element.vertices}
                 thickness={element.thickness}
                 materialProps={materialProps}
@@ -302,6 +305,7 @@ export function VisualizationElementsLayer({
             return (
               <AreaElementMesh
                 key={element.elementId}
+                category={element.category}
                 vertices={element.vertices}
                 thickness={element.thickness}
                 materialProps={materialProps}
@@ -316,6 +320,7 @@ export function VisualizationElementsLayer({
             return (
               <AreaElementMesh
                 key={element.elementId}
+                category={element.category}
                 vertices={element.vertices}
                 thickness={element.thickness}
                 materialProps={materialProps}
@@ -435,14 +440,53 @@ function LineElementMesh({ startPoint, endPoint, materialProps, onSelect }: Line
   );
 }
 
+/**
+ * প্রতিটা area-element category-র জন্য Solid mode-এ সর্বোচ্চ (base,
+ * non-xray) opacity — ETABS-এর মতো "ভিতরের ফ্রেম সবসময় দেখা যাক"
+ * look এর জন্য। আগে এখানে সব category-র জন্য একটাই hardcoded 0.85 cap
+ * ছিল — একটা multi-storey building-এ কয়েক layer slab/wall stack হয়ে
+ * cumulative light-blocking অনেক বেশি হয়ে যেত, ফলে পুরো মডেল একটা
+ * opaque কালচে ব্লকের মতো দেখাত এবং ভিতরের Beam/Column/Stair পুরোপুরি
+ * ঢাকা পড়ে যেত (screenshot-এ রিপোর্ট করা সমস্যা)।
+ *
+ * Slab সবচেয়ে বেশি transparent (floor plate — মূল উদ্দেশ্যই ভিতরের
+ * frame visible রাখা)। Shear-Wall/Core-Wall সবচেয়ে বেশি opaque —
+ * lateral-load-resisting system হিসেবে দৃশ্যত জোরালো উপস্থিতি দরকার,
+ * সাধারণ Wall-এর সাথে গুলিয়ে না যায়। বাকিগুলো (সাধারণ Wall,
+ * Mat-Foundation, Stair/Stair-Landing, Parapet) মাঝামাঝি।
+ *
+ * এই cap শুধু Solid mode-এর base opacity (=1) এর উপর প্রযোজ্য;
+ * x-ray mode এর 0.35 base ও story-fade multiplier অপরিবর্তিত থাকে
+ * (materialProps.opacity ইতিমধ্যেই সেই হিসাব ধরে আসে, এই cap তার
+ * চেয়ে ছোট হলেই কেবল effective হয়)।
+ */
+function getAreaElementOpacityCap(category: StructuralElement["category"]): number {
+  switch (category) {
+    case "slab":
+      return 0.35;
+    case "shear-wall":
+    case "core-wall":
+      return 0.55;
+    case "wall":
+    case "mat-foundation":
+    case "stair":
+    case "stair-landing":
+    case "parapet":
+      return 0.5;
+    default:
+      return 0.85;
+  }
+}
+
 interface AreaElementMeshProps {
+  category: StructuralElement["category"];
   vertices: { x: number; y: number; z: number }[];
   thickness: number;
   materialProps: MaterialProps;
   onSelect: () => void;
 }
 
-function AreaElementMesh({ vertices, thickness, materialProps, onSelect }: AreaElementMeshProps) {
+function AreaElementMesh({ category, vertices, thickness, materialProps, onSelect }: AreaElementMeshProps) {
   // Plane-agnostic builder — polygon-এর প্রকৃত 3D plane (Newell's
   // method normal) থেকে geometry+position+quaternion বানায়, তাই flat
   // horizontal slab, vertical wall, ও inclined stair waist slab সবই
@@ -465,7 +509,7 @@ function AreaElementMesh({ vertices, thickness, materialProps, onSelect }: AreaE
       <meshStandardMaterial
         {...materialProps}
         transparent
-        opacity={Math.min(materialProps.opacity, 0.85)}
+        opacity={Math.min(materialProps.opacity, getAreaElementOpacityCap(category))}
         side={THREE.DoubleSide}
       />
     </mesh>
