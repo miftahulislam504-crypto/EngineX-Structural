@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import * as THREE from "three";
 import type { StructuralElement } from "@/lib/types/element";
+import { buildPlanarPolygonMesh } from "@/lib/viewport/planarPolygonMesh";
 
 interface ElementsLayerProps {
   elements: StructuralElement[];
@@ -309,48 +310,26 @@ function AreaElementMesh({
   onSelect,
   interactionDisabled = false,
 }: AreaElementMeshProps) {
-  const geometry = useMemo(() => {
-    if (vertices.length < 3) {
-      return null;
-    }
+  // Plane-agnostic builder — polygon-এর প্রকৃত 3D plane (Newell's
+  // method normal) থেকে geometry+position+quaternion বানায়। আগে এখানে
+  // hardcoded XZ-plane assumption ছিল (শুধু vertices[].x, vertices[].z
+  // পড়ে shape বানানো, rotateX(-90°), constant averageY এ বসানো) — এটা
+  // flat horizontal Slab/Wall এর জন্য কাকতালীয়ভাবে ঠিক দেখাত, কিন্তু
+  // inclined Stair waist slab (vertex থেকে vertex এ Y পাল্টায়) ভুলভাবে
+  // flat হয়ে যেত। VisualizationElementsLayer.tsx-এর সাথে shared
+  // (planarPolygonMesh.ts) — দুই viewport এই একই element একইভাবে
+  // দেখানোর existing নীতি বজায় রেখে।
+  const built = useMemo(() => buildPlanarPolygonMesh(vertices, thickness), [vertices, thickness]);
 
-    // Three.js ShapeGeometry একটা 2D shape (XY প্লেনে) থেকে বানাতে হয়,
-    // তারপর আমরা সেটাকে আমাদের XZ প্লেনে rotate করে বসাই (কারণ এই
-    // viewport এ Y = elevation, তাই "প্লান" প্লেন হলো XZ)।
-    const shape = new THREE.Shape();
-    shape.moveTo(vertices[0].x, vertices[0].z);
-    for (let i = 1; i < vertices.length; i++) {
-      shape.lineTo(vertices[i].x, vertices[i].z);
-    }
-    shape.closePath();
-
-    const extrudeSettings = {
-      depth: Math.max(thickness / 1000, 0.01), // mm থেকে মিটারে কনভার্ট, viewport এর একক অনুযায়ী
-      bevelEnabled: false,
-    };
-
-    const geom = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-    // ExtrudeGeometry XY প্লেনে তৈরি হয় এবং Z-দিকে extrude করে; আমাদের
-    // দরকার XZ প্লেনে থাকা এবং Y-দিকে (elevation) সামান্য extrude।
-    // তাই X-অক্ষ বরাবর -90° rotate করে geometry-কে সঠিক অভিমুখে আনা হচ্ছে।
-    geom.rotateX(-Math.PI / 2);
-
-    return geom;
-  }, [vertices, thickness]);
-
-  const averageY = useMemo(() => {
-    if (vertices.length === 0) return 0;
-    return vertices.reduce((sum, v) => sum + v.y, 0) / vertices.length;
-  }, [vertices]);
-
-  if (!geometry) {
+  if (!built) {
     return null;
   }
 
   return (
     <mesh
-      geometry={geometry}
-      position={[0, averageY, 0]}
+      geometry={built.geometry}
+      position={built.position}
+      quaternion={built.quaternion}
       onClick={
         interactionDisabled
           ? undefined

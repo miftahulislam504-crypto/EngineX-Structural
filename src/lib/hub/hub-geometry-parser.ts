@@ -64,19 +64,29 @@
  *
  * এখন Draw-এ Wall.isShearWall (explicit boolean, ইঞ্জিনিয়ার নিজে সেট
  * করেন — geometry.ts এর ফিল্ড কমেন্ট দেখুন) যোগ হয়েছে, আর hub-write.ts
- * সেই অনুযায়ী ref.type "wall" বা "shear-wall" পাঠায়। তাই classification
- * এখন Hub-এ আসার আগেই, উৎসেই ঠিক — এই App-এ আর কোনো thickness-ভিত্তিক
- * অনুমান বা review-time checkbox override নেই। mapWall() (নিচে) সরাসরি
- * ref.type read করে category বসায়, দুই category-র geometry mapping
- * হুবহু একই (ShearWallElement জ্যামিতিকভাবে WallElement থেকে ভিন্ন না)।
- * useArchitecturalImport.ts-এও এখন wall/shear-wall উভয়ই বাকি সব
- * category-র মতোই সবসময় import হয় — কোনো wall silently বাদ পড়ে না,
- * কারণ "সাধারণ wall structural analysis model-এ থাকা উচিত না" ধারণাটাই
- * পাল্টেছে: সাধারণ wall (category "wall") এখন self-weight/dead-load
- * contributor হিসেবে সবসময় মডেল হয় (Beam/Column/Slab-এর মতোই), শুধু
- * lateral design/capacity check (Design Engine, weightOptimization.ts)
- * "shear-wall"/"core-wall" ছাড়া প্রযোজ্য হয় না — এই পার্থক্যটা category
- * ট্যাগেই ধরা আছে, import-time gate দিয়ে না।
+ * সেই অনুযায়ী ref.type "wall" বা "shear-wall" পাঠায়। classification
+ * Hub-এ আসার আগেই, উৎসেই ঠিক — এই App-এ কোনো thickness-ভিত্তিক অনুমান
+ * বা review-time checkbox override নেই।
+ *
+ * ⚠️ তৃতীয় সংশোধনী নোট (Miftahul, 2026-09-04 — payload-size split,
+ * hub-write.ts এর সংশ্লিষ্ট নোট দেখুন): উপরের প্যারাগ্রাফের "দুই
+ * category-র geometry mapping হুবহু একই, সাধারণ wall-ও সবসময় modeled
+ * হয়" বর্ণনা আর বর্তমান আচরণ না — শুধু ইতিহাস প্রসঙ্গের জন্য রাখা হলো।
+ * Hub থেকে ordinary wall (isShearWall: false) এর ডাটা এখন Firestore
+ * load কমাতে lightweight আসে (পূর্ণ modeling-এর geometry না) — তাই এই
+ * parser আর ref.type "wall" কে ShearWallElement-এর মতো WallElement
+ * বানায় না। mapWall() (নিচে) এখন শুধু "shear-wall" handle করে;
+ * ordinary wall mapWallSelfWeightRef() দিয়ে আলাদাভাবে parse হয়ে
+ * WallSelfWeightRef (StructuralElement না, শুধু centerline+self-weight
+ * ইনপুট) হিসেবে ParseGeometryResult.wallSelfWeightRefs এ যায় —
+ * elements[] এ না। এই refs deriveWallLineLoadFromSelfWeight.ts
+ * (loads pipeline) consume করে, useArchitecturalImport.ts-এর review UI
+ * তে material/section resolve করার কিছু নেই (elements[] এ নেই বলে)।
+ * শুধু shear-wall/core-wall lateral design/capacity check-এ প্রযোজ্য
+ * থাকা অপরিবর্তিত (weightOptimization.ts) — ordinary wall আগেও self-
+ * weight-এর বেশি কিছু ছিল না, এই পরিবর্তন শুধু সেই self-weight-টা কীভাবে
+ * derive হয় (modeled element এর area-load বনাম lightweight ref এর
+ * line-load) সেটা পাল্টেছে, ফলাফল/উদ্দেশ্য না।
  *
  * ═══════════════════════════════════════════════════════════════════
  * Stair mapping — mapStair() দ্রষ্টব্য
@@ -114,7 +124,7 @@
  * overall dead load-এ contribute করে।
  */
 
-import type { StructuralElement, Point3D, WallElement, ShearWallElement, SlabElement, StairElement, LandingElement, ParapetElement, FootingElement } from "@/lib/types/element";
+import type { StructuralElement, Point3D, ShearWallElement, SlabElement, StairElement, LandingElement, ParapetElement, FootingElement } from "@/lib/types/element";
 import type { StructuralGrid, StructuralStory } from "@/lib/types/geometry";
 import type { BuildingElementRef } from "./contract.types";
 import type {
@@ -222,11 +232,31 @@ export interface ParsedElementIssue {
   reason: string;
 }
 
+/**
+ * Ordinary Wall (ref.type "wall") এর centerline + self-weight input —
+ * StructuralElement না, তাই ParseGeometryResult.elements এ ঢোকে না।
+ * mapWallSelfWeightRef() এর ফাইল-হেডার কমেন্ট দেখুন কেন এই আলাদা
+ * shape দরকার (Hub এর payload-size split, hub-write.ts)। start/end
+ * baseElevationM যোগ করে toPoint3D() দিয়ে already-converted (X-Z
+ * প্লেনে) — mapWall() এর সাথে সামঞ্জস্যপূর্ণ কনভেনশন।
+ */
+export interface WallSelfWeightRef {
+  refId: string;
+  storyId: string | undefined;
+  start: Point3D;
+  end: Point3D;
+  thicknessM: number;
+  heightM: number;
+  materialLabel?: string;
+}
+
 export interface ParseGeometryResult {
   elements: StructuralElement[];
   grids: StructuralGrid[];
   stories: StructuralStory[];
   issues: ParsedElementIssue[];
+  /** ordinary wall (ref.type "wall") centerline refs — modeled StructuralElement না, শুধু self-weight derivation এর ইনপুট (deriveWallLineLoadFromSelfWeight.ts)। shear-wall এখানে না, সেটা elements[] এ ShearWallElement হিসেবে থাকে। */
+  wallSelfWeightRefs: WallSelfWeightRef[];
 }
 
 /** materialId/sectionId এই App-এর নিজস্ব library-তে থাকে, Draw পাঠায় না (Draw শুধু materialLabel/libraryItemId পাঠায়, যা Draw-এর নিজস্ব material catalog রেফারেন্স করে, এই App-এর MaterialLibrary/SectionLibrary না)। তাই স্পষ্টভাবে "unresolved" মার্ক করা প্লেসহোল্ডার বসানো হচ্ছে — বাস্তব-দেখতে কোনো id বানানো হচ্ছে না যা ভুল করে সত্যিকারের library entry মনে হতে পারে। UI import flow (এই ফাইলের বাইরে) এই elements review করিয়ে ইঞ্জিনিয়ারকে প্রকৃত material/section বেছে দিতে বলবে। */
@@ -278,7 +308,7 @@ function isAreaElement(e: StructuralElement): e is Extract<StructuralElement, { 
 }
 
 /**
- * Wall/Shear-Wall → WallElement | ShearWallElement।
+ * Shear-Wall → ShearWallElement।
  *
  * ⚠️ সংশোধনী নোট (Miftahul, 2026-08-25 — পুরনো "কখনো automatic
  * classification না" নীতি প্রতিস্থাপিত): আগে এই ফাংশন সবসময়
@@ -288,20 +318,27 @@ function isAreaElement(e: StructuralElement): e is Extract<StructuralElement, { 
  * override)। এখন classification Draw-এ উৎসেই ঠিক হয়ে যায়: Draw এর
  * Wall.isShearWall (ইঞ্জিনিয়ার নিজে সেট করেন, কখনো thickness থেকে
  * অনুমান না — geometry.ts এর ফিল্ড কমেন্ট দেখুন) অনুযায়ী hub-write.ts
- * ref.type "wall" বা "shear-wall" পাঠায়। এই ফাংশন সরাসরি সেই type read
- * করে category বসায় — geometry mapping (vertices/thickness) দুই
- * category-র জন্যই হুবহু একই (ShearWallElement জ্যামিতিকভাবে WallElement
- * থেকে আলাদা না, element.ts এর ShearWallElement কমেন্ট দেখুন), শুধু
- * category ট্যাগ ভিন্ন। thickness-ভিত্তিক review-recommended warning আর
- * নেই — classification এখন থেকে Draw-এর explicit flag, thickness অনুমান
- * না, তাই সেই সতর্কতা আর প্রাসঙ্গিক না।
+ * ref.type "wall" বা "shear-wall" পাঠায়।
+ *
+ * ⚠️ দ্বিতীয় সংশোধনী নোট (Miftahul, 2026-09-04 — payload-size split,
+ * hub-write.ts এর সংশ্লিষ্ট নোট দেখুন): আগে এই একই ফাংশন ref.type
+ * "wall" ও "shear-wall" উভয়ই handle করতো, দুই category-র geometry
+ * mapping হুবহু একই রেখে শুধু category ট্যাগ ভিন্ন করতো। এখন Draw
+ * নিজেই ref.type "wall" এর জন্য একটা lightweight ref পাঠায় (vertices
+ * বানানোর মতো পূর্ণ geometry না) — তাই এই ফাংশন এখন শুধু "shear-wall"
+ * handle করে, WallElement আর তৈরি হয় না Hub import path এ। ordinary
+ * wall এখন mapWallSelfWeightRef() (নিচে) দিয়ে আলাদাভাবে parse হয়ে
+ * WallSelfWeightRef হিসেবে ফেরত যায় (StructuralElement না) —
+ * parseArchitecturalExport() এর dispatch loop এই দুই path আলাদা রাখে।
+ * geometry mapping অংশ (vertices বানানো) অপরিবর্তিত, শুধু কলার এখন
+ * শুধু "shear-wall"-এর জন্যই এটা কল করে।
  */
 function mapWall(
   ref: BuildingElementRef,
   baseElevationM: number,
   issues: ParsedElementIssue[],
   nowIso: string,
-): WallElement | ShearWallElement | null {
+): ShearWallElement | null {
   const g = ref.geometry as DrawWallGeometry | undefined;
   if (!g || !isDrawPoint2D(g.start) || !isDrawPoint2D(g.end)) {
     warnSkipped(issues, ref, "start/end পয়েন্ট অনুপস্থিত বা ভুল shape");
@@ -328,11 +365,9 @@ function mapWall(
   const startTop = toPoint3D(g.start, baseElevationM + g.height);
   const endTop = toPoint3D(g.end, baseElevationM + g.height);
 
-  const category: "wall" | "shear-wall" = ref.type === "shear-wall" ? "shear-wall" : "wall";
-
   return {
     elementId: ref.id,
-    category,
+    category: "shear-wall",
     label: ref.id,
     materialId: UNRESOLVED_MATERIAL_ID,
     storyId: ref.levelId || undefined,
@@ -340,6 +375,51 @@ function mapWall(
     thickness: g.thickness * 1000, // mm — element.ts এর AreaElement.thickness একক
     createdAt: nowIso,
     updatedAt: nowIso,
+  };
+}
+
+/**
+ * Ordinary Wall (ref.type "wall") → WallSelfWeightRef। StructuralElement
+ * *না* — এই wall আর Hub import path এ modeled area element হয় না
+ * (hub-write.ts এর 2026-09-04 payload-size split নোট দেখুন, ordinary
+ * wall geometry Hub এ এখন lightweight আসে)। এই ফাংশন শুধু centerline +
+ * thickness/height তুলে নেয়, যাতে deriveWallLineLoadFromSelfWeight.ts
+ * (loads pipeline) সেই centerline-এর নিচে/along থাকা beam খুঁজে একটা
+ * self-weight UniformLineLoadCase বসাতে পারে (না পেলে slab এ
+ * uniform-area fallback — সেই ফাংশনের নিজস্ব কমেন্ট দেখুন)।
+ *
+ * baseElevationM ও endপয়েন্ট elevation যোগ করে top point বের করার
+ * দরকার নেই এখানে — line-load matching plan-view (X-Z প্লেন) এ হয়,
+ * height শুধু self-weight formula তে ব্যবহার হয় (volume = length ×
+ * height × thickness)।
+ */
+function mapWallSelfWeightRef(
+  ref: BuildingElementRef,
+  baseElevationM: number,
+  issues: ParsedElementIssue[],
+): WallSelfWeightRef | null {
+  const g = ref.geometry as DrawWallGeometry | undefined;
+  if (!g || !isDrawPoint2D(g.start) || !isDrawPoint2D(g.end)) {
+    warnSkipped(issues, ref, "start/end পয়েন্ট অনুপস্থিত বা ভুল shape");
+    return null;
+  }
+  if (!isFiniteNumber(g.thickness) || g.thickness <= 0) {
+    warnSkipped(issues, ref, "thickness অনুপস্থিত বা অবৈধ (সংখ্যা হতে হবে, > 0)");
+    return null;
+  }
+  if (!isFiniteNumber(g.height) || g.height <= 0) {
+    warnSkipped(issues, ref, "height অনুপস্থিত বা অবৈধ (সংখ্যা হতে হবে, > 0)");
+    return null;
+  }
+
+  return {
+    refId: ref.id,
+    storyId: ref.levelId || undefined,
+    start: toPoint3D(g.start, baseElevationM),
+    end: toPoint3D(g.end, baseElevationM),
+    thicknessM: g.thickness,
+    heightM: g.height,
+    materialLabel: g.materialLabel,
   };
 }
 
@@ -995,6 +1075,7 @@ export function parseArchitecturalExport(data: DrawArchitecturalExport): ParseGe
   const elevationByLevelId = new Map<string, number>(levels.map((lvl) => [lvl.id, lvl.elevation]));
 
   const mappedElements: StructuralElement[] = [];
+  const wallSelfWeightRefs: WallSelfWeightRef[] = [];
 
   for (const ref of elements) {
     const baseElevationM = elevationByLevelId.get(ref.levelId);
@@ -1012,9 +1093,18 @@ export function parseArchitecturalExport(data: DrawArchitecturalExport): ParseGe
       continue;
     }
 
+    // ordinary wall — ২০২৬-০৯-০৪ payload-size split (hub-write.ts,
+    // mapWallSelfWeightRef() এর ফাইল-হেডার কমেন্ট দেখুন)। এটা আর
+    // StructuralElement হয় না, তাই mappedElements এ না গিয়ে আলাদা
+    // wallSelfWeightRefs[] এ যায় — নিচের switch-এ "wall" case নেই।
+    if (ref.type === "wall") {
+      const wallRef = mapWallSelfWeightRef(ref, baseElevationM, issues);
+      if (wallRef) wallSelfWeightRefs.push(wallRef);
+      continue;
+    }
+
     let mapped: StructuralElement | null;
     switch (ref.type) {
-      case "wall":
       case "shear-wall":
         mapped = mapWall(ref, baseElevationM, issues, nowIso);
         break;
@@ -1059,7 +1149,7 @@ export function parseArchitecturalExport(data: DrawArchitecturalExport): ParseGe
   // হয়।
   reconcileCoincidentVertices(mappedElements);
 
-  return { elements: mappedElements, grids, stories, issues };
+  return { elements: mappedElements, grids, stories, issues, wallSelfWeightRefs };
 }
 
 /**

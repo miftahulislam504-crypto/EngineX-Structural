@@ -36,6 +36,10 @@
  * useAutoLoadSync.ts এই hook এর mount এর উপর নির্ভরশীল — layout.tsx
  * এ দুটোই একসাথে (এই hook আগে) কল করা উচিত, নাহলে useAutoLoadSync
  * চিরকাল isLoading=true দেখে কখনো sync চালাবে না।
+ *
+ * ⚠️ ২০২৬-০৯-০৪ সংযোজন: wallSelfWeightRefs subscription যোগ হয়েছে
+ * (elements এর subscription এর পাশেই, একই কারণে — useAutoLoadSync এর
+ * নতুন deriveWallLineLoadFromSelfWeight.ts এই ডেটার ওপর নির্ভর করে)।
  */
 
 import { useEffect } from "react";
@@ -43,6 +47,9 @@ import { useEnsureAuth } from "@/lib/firebase/useEnsureAuth";
 
 import { useElementsStore } from "@/lib/elements/useElementsStore";
 import { subscribeToElements } from "@/lib/elements/firestore";
+
+import { useWallSelfWeightRefsStore } from "@/lib/elements/useWallSelfWeightRefsStore";
+import { subscribeToWallSelfWeightRefs } from "@/lib/elements/wallSelfWeightRefs.firestore";
 
 import { useGeometryStore } from "@/lib/geometry/useGeometryStore";
 import { subscribeToGeometryCore } from "@/lib/geometry/firestore";
@@ -78,6 +85,37 @@ function useElementsSubscription(projectId: string, isAuthReady: boolean, authEr
       projectId,
       (elements) => {
         setElements(elements);
+        setLoading(false);
+        setLoadError(null);
+      },
+      (error) => {
+        setLoadError(error.message);
+        setLoading(false);
+      }
+    );
+    return () => unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId, isAuthReady, authError]);
+}
+
+/** Wall self-weight refs subscription — ordinary wall centerline+self-weight ইনপুট, ২০২৬-০৯-০৪ Hub payload-size split। elements এর মতোই subcollection, তাই একই প্যাটার্ন — useElementsSubscription() এর হুবহু ডুপ্লিকেট শুধু store/subscribe function ভিন্ন। */
+function useWallSelfWeightRefsSubscription(projectId: string, isAuthReady: boolean, authError: string | null) {
+  const setRefs = useWallSelfWeightRefsStore((s) => s.setRefs);
+  const setLoading = useWallSelfWeightRefsStore((s) => s.setLoading);
+  const setLoadError = useWallSelfWeightRefsStore((s) => s.setLoadError);
+
+  useEffect(() => {
+    if (!isAuthReady) return;
+    if (authError) {
+      setLoadError(authError);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const unsubscribe = subscribeToWallSelfWeightRefs(
+      projectId,
+      (refs) => {
+        setRefs(refs);
         setLoading(false);
         setLoadError(null);
       },
@@ -253,14 +291,16 @@ function useLoadsSubscription(projectId: string, isAuthReady: boolean, authError
 }
 
 /**
- * layout.tsx এ একবার কল করলেই elements/geometry/library/loads — চারটা
- * store সবসময় সচল থাকে, ইউজার সংশ্লিষ্ট page ভিজিট না করলেও।
- * useAutoLoadSync এই ডেটার উপর নির্ভর করে real-time sync চালায়।
+ * layout.tsx এ একবার কল করলেই elements/wallSelfWeightRefs/geometry/
+ * library/loads — পাঁচটা store সবসময় সচল থাকে, ইউজার সংশ্লিষ্ট page
+ * ভিজিট না করলেও। useAutoLoadSync এই ডেটার উপর নির্ভর করে real-time
+ * sync চালায় (wallSelfWeightRefs সহ, ২০২৬-০৯-০৪ থেকে — deriveWallLineLoadFromSelfWeight.ts)।
  */
 export function useGlobalModelSubscriptions(projectId: string) {
   const { isReady: isAuthReady, error: authError } = useEnsureAuth();
 
   useElementsSubscription(projectId, isAuthReady, authError);
+  useWallSelfWeightRefsSubscription(projectId, isAuthReady, authError);
   useGeometrySubscription(projectId, isAuthReady, authError);
   useLibrarySubscription(projectId, isAuthReady, authError);
   useLoadsSubscription(projectId, isAuthReady, authError);

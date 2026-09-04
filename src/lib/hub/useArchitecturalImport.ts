@@ -20,7 +20,8 @@
  *     হবে।
  *   - সব category (wall/shear-wall/slab/column/beam/stair/stair-landing/
  *     parapet/footing) সবসময় import হয় — কোনো category-ভিত্তিক
- *     ম্যানুয়াল include/exclude gate নেই।
+ *     ম্যানুয়াল include/exclude gate নেই। (২০২৬-০৯-০৪: ordinary "wall"
+ *     আসলে এখন items[]/StructuralElement একদমই না — নিচের নোট দেখুন।)
  *
  * ⚠️ সংশোধনী নোট (Miftahul, 2026-08-25 — নিচের ইতিহাস প্রসঙ্গের জন্য
  * রাখা হলো, বর্তমান আচরণ না): আগে category "wall" ওয়ালা প্রতিটা item
@@ -41,6 +42,20 @@
  * (self-weight/dead-load contributor হিসেবে, ঠিক Beam/Column/Slab-এর
  * মতো — lateral design/capacity check শুধু "shear-wall"/"core-wall"-এ
  * প্রযোজ্য, element.ts-এর ShearWallElement কমেন্ট দেখুন)।
+ *
+ * ⚠️ চতুর্থ সংশোধনী নোট (Miftahul, 2026-09-04 — উপরের প্যারাগ্রাফের
+ * "category 'wall' বাকি সব category-র মতোই import হয়" অংশ আর বর্তমান
+ * আচরণ না, শুধু ইতিহাস প্রসঙ্গের জন্য রাখা হলো): Hub payload-size split
+ * এর পর ordinary wall (isShearWall: false) parser থেকে আর
+ * StructuralElement হিসেবে আসেই না (hub-geometry-parser.ts এর
+ * mapWallSelfWeightRef()/WallSelfWeightRef কমেন্ট দেখুন) — তাই এই hook
+ * এর items[] এ ordinary wall কখনো নেই, material/section resolve করার
+ * প্রশ্নই ওঠে না তাদের জন্য। এরা এখন state.wallSelfWeightRefs এ আলাদা
+ * array হিসেবে থাকে (ParseGeometryResult.wallSelfWeightRefs সরাসরি
+ * কপি করা) — confirm এ replaceAllWallSelfWeightRefs() দিয়ে persist হয়
+ * (wallSelfWeightRefs.firestore.ts), items[]/resolvedElements() এর
+ * পথে না। শুধু "shear-wall" এখনো items[] এ StructuralElement হিসেবে
+ * থাকে, উপরের সব review/resolve যুক্তি তার জন্য অপরিবর্তিত।
  *   - re-import নিরাপদ: elementId Draw-এর BuildingElementRef.id থেকে
  *     সরাসরি আসে (parser অপরিবর্তিত রাখে), তাই একই element আবার import
  *     করলে saveElement() (setDoc) ওভাররাইট করবে, ডুপ্লিকেট হবে না।
@@ -68,6 +83,7 @@ import {
   parseArchitecturalExport,
   type ParseGeometryResult,
   type ParsedElementIssue,
+  type WallSelfWeightRef,
 } from "./hub-geometry-parser";
 import type { StructuralElement } from "@/lib/types/element";
 import type { StructuralGrid, StructuralStory, GeometryCore } from "@/lib/types/geometry";
@@ -101,6 +117,8 @@ export interface ArchitecturalImportState {
   grids: StructuralGrid[];
   stories: StructuralStory[];
   skippedIssues: ParsedElementIssue[]; // element কখনো তৈরিই হয়নি এমন issue (missing/invalid geometry ইত্যাদি) — শুধু তথ্যের জন্য দেখানো, override করার কিছু নেই
+  /** ordinary wall (ref.type "wall") centerline+self-weight ref — ২০২৬-০৯-০৪ Hub payload-size split। StructuralElement না বলে items[] এ নেই, তাই কোনো material/section resolve লাগে না — সরাসরি confirm এ replaceAllWallSelfWeightRefs() দিয়ে persist হয় (wallSelfWeightRefs.firestore.ts)। */
+  wallSelfWeightRefs: WallSelfWeightRef[];
   /** Model Checker (modelChecker.ts) ফলাফল — connectivity/duplicate/geometry/support, category override প্রয়োগ করা elements এর ওপর চালানো (নিচে fetchAndParse দেখুন)। runValidation.ts এর মতোই buildValidationReport() দিয়ে wrap করা (errorCount/healthScore সহ) — ValidationPanel.tsx এর সাথে সামঞ্জস্যপূর্ণ shape, যাতে Import Review UI একই কার্ড/ব্যাজ প্যাটার্ন পুনর্ব্যবহার করতে পারে। fetch/parse ব্যর্থ হলে বা কোনো element না থাকলে খালি issues (healthScore 100)। */
   modelCheckReport: ValidationReport;
   moduleVersion: number | null;
@@ -114,6 +132,7 @@ const INITIAL_STATE: ArchitecturalImportState = {
   grids: [],
   stories: [],
   skippedIssues: [],
+  wallSelfWeightRefs: [],
   modelCheckReport: buildValidationReport([]),
   moduleVersion: null,
   fetchedAt: null,
@@ -212,6 +231,7 @@ export function useArchitecturalImport(projectId: string) {
         grids: result.grids,
         stories: result.stories,
         skippedIssues,
+        wallSelfWeightRefs: result.wallSelfWeightRefs,
         modelCheckReport,
         moduleVersion: fetched.moduleVersion,
         fetchedAt: fetched.fetchedAt,

@@ -15,6 +15,7 @@ import {
 import { dcrRatioToColor } from "@/lib/viewport/dcrColorScale";
 import { stressProxyToColor } from "@/lib/viewport/stressContourColorScale";
 import type { DcrElementRecord } from "@/lib/design/useDcrStore";
+import { buildPlanarPolygonMesh } from "@/lib/viewport/planarPolygonMesh";
 
 interface VisualizationElementsLayerProps {
   elements: StructuralElement[];
@@ -442,33 +443,25 @@ interface AreaElementMeshProps {
 }
 
 function AreaElementMesh({ vertices, thickness, materialProps, onSelect }: AreaElementMeshProps) {
-  const geometry = useMemo(() => {
-    if (vertices.length < 3) return null;
-    const shape = new THREE.Shape();
-    shape.moveTo(vertices[0].x, vertices[0].z);
-    for (let i = 1; i < vertices.length; i++) {
-      shape.lineTo(vertices[i].x, vertices[i].z);
-    }
-    shape.closePath();
-    const geom = new THREE.ExtrudeGeometry(shape, {
-      depth: Math.max(thickness / 1000, 0.01),
-      bevelEnabled: false,
-    });
-    geom.rotateX(-Math.PI / 2);
-    return geom;
-  }, [vertices, thickness]);
-
-  const averageY = useMemo(() => {
-    if (vertices.length === 0) return 0;
-    return vertices.reduce((sum, v) => sum + v.y, 0) / vertices.length;
-  }, [vertices]);
+  // Plane-agnostic builder — polygon-এর প্রকৃত 3D plane (Newell's
+  // method normal) থেকে geometry+position+quaternion বানায়, তাই flat
+  // horizontal slab, vertical wall, ও inclined stair waist slab সবই
+  // সঠিকভাবে render হয়। আগে এখানে hardcoded XZ-plane assumption ছিল
+  // (শুধু x,z পড়ে shape বানানো, rotateX(-90°), constant averageY এ
+  // বসানো) — inclined polygon flat দেখাত ও ভুল উচ্চতায় বসত।
+  const built = useMemo(() => buildPlanarPolygonMesh(vertices, thickness), [vertices, thickness]);
 
   const handleClick = useClickHandler(onSelect);
 
-  if (!geometry) return null;
+  if (!built) return null;
 
   return (
-    <mesh geometry={geometry} position={[0, averageY, 0]} onClick={handleClick}>
+    <mesh
+      geometry={built.geometry}
+      position={built.position}
+      quaternion={built.quaternion}
+      onClick={handleClick}
+    >
       <meshStandardMaterial
         {...materialProps}
         transparent

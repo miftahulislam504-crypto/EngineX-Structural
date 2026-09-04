@@ -42,6 +42,16 @@
  *     বাড়তি বিশেষ-ব্যবস্থার দরকার হয়নি।
  *   - Composite/Prestressed/Cold-Formed material এর জন্য effectiveUnitWeight
  *     ব্যবহার (deriveSelfWeightLoads.ts এর সাথে সঙ্গতিপূর্ণ)।
+ *
+ * ⚠️ নোট (Miftahul, 2026-09-04 — Hub payload-size split, hub-write.ts/
+ * hub-geometry-parser.ts এর সংশ্লিষ্ট নোট দেখুন): এই ফাংশনের category
+ * "wall" branch এখনো বৈধ ও অপরিবর্তিত — এটা শুধু Hub import path
+ * এর জন্য বন্ধ হয়েছে (ordinary wall Hub থেকে আর WallElement হয়ে
+ * আসে না)। কেউ যদি এই App-এ সরাসরি (Hub ছাড়া) একটা Wall/category
+ * "wall" element মডেল করেন, সেটা এখনো এই ফাংশন দিয়েই স্বাভাবিকভাবে
+ * self-weight পাবে। Hub-imported ordinary wall-এর self-weight এখন
+ * আলাদা পথে আসে — deriveWallLineLoadFromSelfWeight.ts, যেটা beam/
+ * slab-এর case-এর intensity-তে সরাসরি merge হয় (useAutoLoadSync.ts)।
  */
 
 import type { StructuralElement, SlabElement, WallElement, ShearWallElement, CoreWallElement, ParapetElement, LandingElement } from "@/lib/types/element";

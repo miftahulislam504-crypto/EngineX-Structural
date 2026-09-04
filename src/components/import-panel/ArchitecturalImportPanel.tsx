@@ -6,14 +6,13 @@
  * useArchitecturalImport() hook-এর UI স্তর। ইঞ্জিনিয়ার এখানে:
  *  ১. "Draw থেকে আনুন" চেপে সর্বশেষ প্রকাশিত architectural model fetch+parse করেন
  *  ২. প্রতিটা parsed element-এর জন্য Material (ও line element হলে Section) বেছে দেন
- *  ৩. প্রতিটা wall item-এ "Shear Wall হিসেবে import করুন" চেকপয়েন্ট দেখেন —
- *     ডিফল্ট un-checked (thickness ≥150mm হলে parser-এর review-recommended
- *     সতর্কতাও দেখা যায়, কিন্তু checkbox থাকে thickness নির্বিশেষে সব wall-এ)।
- *     checkpoint না দিলে সেই wall confirm-এর সময় silently বাদ পড়ে (ETABS-এর
- *     মতো এই মডেলেও সাধারণ/architectural wall কখনো analysis element হয় না —
- *     শুধু beam/column/slab/stairs/shear-wall)।
- *  ৪. সব resolved হলে "আমদানি নিশ্চিত করুন" চেপে Grid/Story+Elements লাইভ মডেলে লেখেন
- *     (un-checked wall বাদ দিয়ে)
+ *  ৩. সাধারণ (architectural) wall এখানে আলাদা item হিসেবেই আসে না (২০২৬-০৯-০৪ Hub
+ *     payload-size split, useArchitecturalImport.ts এর চতুর্থ সংশোধনী নোট দেখুন) —
+ *     শুধু Draw-এ isShearWall চিহ্নিত wall গুলো "Shear Wall" category-তে item হিসেবে
+ *     আসে, Material/Section লাগে। বাকি সব wall এর self-weight এখানে অদৃশ্যভাবেই
+ *     confirm-এর সাথে persist হয় (নিচে handleConfirm দেখুন)।
+ *  ৪. সব resolved হলে "আমদানি নিশ্চিত করুন" চেপে Grid/Story+Elements+Wall self-weight
+ *     refs লাইভ মডেলে লেখেন
  *
  * ElementPanel.tsx/AreaElementPanel.tsx (elements-panel) থেকে form styling
  * (dark slate select/input, sky accent) হুবহু ধার করা হয়েছে যাতে নতুন এই
@@ -25,6 +24,7 @@ import { useArchitecturalImport, type ImportReviewItem } from "@/lib/hub/useArch
 import { useLibraryStore } from "@/lib/library/useLibraryStore";
 import { useGeometryStore } from "@/lib/geometry/useGeometryStore";
 import { saveGeometryCore } from "@/lib/geometry/firestore";
+import { replaceAllWallSelfWeightRefs } from "@/lib/elements/wallSelfWeightRefs.firestore";
 import type { StructuralElement } from "@/lib/types/element";
 
 const SELECT_CLASS =
@@ -33,7 +33,6 @@ const SELECT_CLASS =
 const CATEGORY_LABELS: Record<string, string> = {
   beam: "Beam",
   column: "Column",
-  wall: "Wall",
   "shear-wall": "Shear Wall",
   slab: "Slab",
   stair: "Stairs",
@@ -97,6 +96,14 @@ export function ArchitecturalImportPanel({ projectId, onAddElement }: Architectu
         await onAddElement(element);
       }
 
+      // Ordinary wall self-weight refs — ২০২৬-০৯-০৪ payload-size split।
+      // elements[] এর পথে না (StructuralElement না, material/section
+      // resolve লাগে না), তাই আলাদাভাবে replaceAllWallSelfWeightRefs()
+      // দিয়ে পুরো ব্যাচ একসাথে persist হয় (আগের import-এর stale ref
+      // মুছে নতুন সেট বসায়, wallSelfWeightRefs.firestore.ts এর কমেন্ট
+      // দেখুন)।
+      await replaceAllWallSelfWeightRefs(projectId, state.wallSelfWeightRefs);
+
       setImportedCount(elements.length);
       reset();
     } catch (err) {
@@ -110,14 +117,16 @@ export function ArchitecturalImportPanel({ projectId, onAddElement }: Architectu
     <div className="space-y-4">
       <div className="rounded-lg border border-surface-border bg-surface-card/40 p-3">
         <p className="text-xs text-text-secondary mb-2">
-          EngineXDraw-এ সর্বশেষ প্রকাশিত architectural model থেকে Beam/Column/Slab/Stairs/Wall
-          জ্যামিতি আনুন। কোনো ডেটা সরাসরি লেখা হবে না — প্রতিটা element-এর Material/Section বেছে
-          দিয়ে নিশ্চিত করার পরেই মডেলে যোগ হবে। সাধারণ (architectural) wall ডিফল্টে মডেলে যোগ হয়
-          না — শুধু যেগুলোকে আপনি &quot;Shear Wall হিসেবে import করুন&quot; চেকপয়েন্ট দেবেন সেগুলোই
-          shear wall হিসেবে মডেলে যোগ হবে, বাকি সব ETABS-এর মতোই বাদ থাকবে। প্রতিটা category (Wall,
-          Column, Beam, Slab, Stairs) এর উপরে একটা bulk Material/Section সিলেক্টর আছে — যেহেতু এই
-          import সবসময় একটা preliminary ধাপ, একবারে পুরো category-তে একই selection বসিয়ে দ্রুত শুরু
-          করুন, পরে প্রয়োজনে নিচে নির্দিষ্ট item আলাদা করে বদলে নিন।
+          EngineXDraw-এ সর্বশেষ প্রকাশিত architectural model থেকে Beam/Column/Slab/Stairs/Shear
+          Wall জ্যামিতি আনুন। কোনো ডেটা সরাসরি লেখা হবে না — প্রতিটা element-এর Material/Section
+          বেছে দিয়ে নিশ্চিত করার পরেই মডেলে যোগ হবে। সাধারণ (architectural, shear wall না) wall
+          এখানে আলাদাভাবে দেখানো হয় না ও কোনো Material/Section লাগে না — Draw-এ যেটাকে ইঞ্জিনিয়ার
+          &quot;Shear Wall&quot; হিসেবে চিহ্নিত করেছেন শুধু সেটাই এখানে Shear Wall category-তে আসে,
+          বাকি সব সাধারণ wall শুধু তাদের self-weight (dead load) নিয়ে মডেলে যোগ হয় — নিচে
+          &quot;নিশ্চিত করুন&quot; চাপলে এই self-weight ও একসাথে সংরক্ষিত হয়। প্রতিটা category (Shear
+          Wall, Column, Beam, Slab, Stairs) এর উপরে একটা bulk Material/Section সিলেক্টর আছে —
+          যেহেতু এই import সবসময় একটা preliminary ধাপ, একবারে পুরো category-তে একই selection বসিয়ে
+          দ্রুত শুরু করুন, পরে প্রয়োজনে নিচে নির্দিষ্ট item আলাদা করে বদলে নিন।
         </p>
         <button
           type="button"
@@ -163,6 +172,13 @@ export function ArchitecturalImportPanel({ projectId, onAddElement }: Architectu
               {state.fetchedAt ? ` — সর্বশেষ প্রকাশিত: ${new Date(state.fetchedAt).toLocaleString("bn-BD")}` : ""}
               {state.moduleVersion !== null ? ` (version ${state.moduleVersion})` : ""}
             </p>
+            {state.wallSelfWeightRefs.length > 0 && (
+              <p className="text-text-muted">
+                এছাড়া {state.wallSelfWeightRefs.length}টা সাধারণ wall পাওয়া গেছে — এগুলো আলাদা
+                element হিসেবে মডেলে যোগ হবে না, শুধু self-weight (dead load) হিসেবে নিশ্চিত করার
+                সাথেই স্বয়ংক্রিয়ভাবে সংরক্ষিত হবে (কোনো Material/Section লাগবে না)।
+              </p>
+            )}
           </div>
 
           {state.skippedIssues.length > 0 && (

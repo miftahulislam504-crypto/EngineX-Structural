@@ -15,6 +15,7 @@
  *   1a. Self-weight (Dead pattern) — সব Slab/Wall/Shear-Wall/Core-Wall এ (deriveAreaSelfWeightLoads.ts, ২০২৬-০৮ যোগ হলো)
  *   1b. Self-weight (Dead pattern) — সব Stair (waist slab + step) এ, riserHeightM দেওয়া element-এ পূর্ণ, না দেওয়া থাকলে flat-only + warning (deriveStairSelfWeightLoads.ts, ২০২৬-০৮ যোগ হলো)
  *   1c. Self-weight (Dead pattern, point load) — সব Footing/Pile-Cap/Mat-Foundation এ, Combined/Strip Footing বাদ (dimension sizing calculation থেকে আসে, element এ সংরক্ষিত না) (deriveFootingSelfWeightLoads.ts, Miftahul এর structural audit গ্যাপ-ক্লোজিং, ২০২৬-০৮)
+ *   1d. Self-weight (Dead pattern) — ordinary wall (Hub WallSelfWeightRef, StructuralElement না) এর ওজন সমর্থনকারী beam-এর line-load এ, না পেলে containing slab-এর area-load এ extra হিসেবে merge (deriveWallLineLoadFromSelfWeight.ts, Hub payload-size split, ২০২৬-০৯-০৪)
  *   2. Occupancy Live Load — সব Slab এ, per-slab liveLoadOverride থাকলে সেটাই ব্যবহার হয় (deriveLiveLoadCases.ts, override ২০২৬-০৮ যোগ হলো)
  *   3. Wind X/Y pattern + story-force Column/Brace distribution (deriveWindLoad.ts + distributeStoryForceToColumns.ts, Brace stiffness ২০২৬-০৮ যোগ হলো)
  *   4. Seismic X/Y pattern + story-force Column/Brace distribution (deriveSeismicLoad.ts + distributeStoryForceToColumns.ts)
@@ -43,6 +44,7 @@
 
 import { useEffect, useRef } from "react";
 import { useElementsStore } from "@/lib/elements/useElementsStore";
+import { useWallSelfWeightRefsStore } from "@/lib/elements/useWallSelfWeightRefsStore";
 import { useLibraryStore } from "@/lib/library/useLibraryStore";
 import { useGeometryStore } from "@/lib/geometry/useGeometryStore";
 import { useLoadStore } from "@/lib/loads/useLoadStore";
@@ -54,6 +56,7 @@ import { deriveSelfWeightLoads } from "@/lib/derive/deriveSelfWeightLoads";
 import { deriveAreaSelfWeightLoads } from "@/lib/derive/deriveAreaSelfWeightLoads";
 import { deriveStairSelfWeightLoads } from "@/lib/derive/deriveStairSelfWeightLoads";
 import { deriveFootingSelfWeightLoads } from "@/lib/derive/deriveFootingSelfWeightLoads";
+import { deriveWallLineLoadFromSelfWeight } from "@/lib/derive/deriveWallLineLoadFromSelfWeight";
 import { deriveLiveLoadCases } from "@/lib/derive/deriveLiveLoadCases";
 import { deriveWindLoadBothDirections } from "@/lib/derive/deriveWindLoad";
 import { deriveSeismicLoad } from "@/lib/derive/deriveSeismicLoad";
@@ -130,6 +133,9 @@ export function useAutoLoadSync(projectId: string): AutoLoadSyncStatus {
   const elements = useElementsStore((s) => s.elements);
   const elementsLoading = useElementsStore((s) => s.isLoading);
 
+  const wallSelfWeightRefs = useWallSelfWeightRefsStore((s) => s.refs);
+  const wallSelfWeightRefsLoading = useWallSelfWeightRefsStore((s) => s.isLoading);
+
   const materialLibrary = useLibraryStore((s) => s.materialLibrary);
   const sectionLibrary = useLibraryStore((s) => s.sectionLibrary);
   const libraryLoading = useLibraryStore((s) => s.isLoading);
@@ -165,7 +171,7 @@ export function useAutoLoadSync(projectId: string): AutoLoadSyncStatus {
     // সব dependency store লোড না হওয়া পর্যন্ত অপেক্ষা — অসম্পূর্ণ ডেটা
     // দিয়ে derive করলে ভুলভাবে element/case মুছে যেতে পারে (যেমন
     // elements এখনো লোড হয়নি মানে "কোনো element নেই" না)।
-    if (elementsLoading || libraryLoading || geometryLoading || loadsLoading) {
+    if (elementsLoading || libraryLoading || geometryLoading || loadsLoading || wallSelfWeightRefsLoading) {
       return;
     }
     if (hubBnbc.status === "loading" || hubSiteInfo.status === "loading") {
@@ -209,6 +215,30 @@ export function useAutoLoadSync(projectId: string): AutoLoadSyncStatus {
       // ---- 1c. Self-weight (Dead, point load) — Footing/Pile-Cap/Mat-Foundation ----
       const footingSelfWeightResult = deriveFootingSelfWeightLoads(elements, materials, DEAD_PATTERN_ID);
       warnings.push(...footingSelfWeightResult.warnings);
+
+      // ---- 1d. Ordinary wall self-weight (Dead) — supporting beam এ
+      // extra line-load, না পেলে containing slab এ extra area-load
+      // (২০২৬-০৯-০৪, Hub payload-size split — deriveWallLineLoadFromSelfWeight.ts
+      // এর ফাইল-হেডার কমেন্ট দেখুন কেন এটা নিজে LoadCase না বানিয়ে শুধু
+      // contribution map রিটার্ন করে)। নিচে selfWeightResult/areaSelfWeightResult
+      // এর সংশ্লিষ্ট case-এর intensity-তে সরাসরি যোগ করা হচ্ছে, diff key
+      // (pattern+element+applicationType) unique রাখার জন্য — একই
+      // elementId-তে দ্বিতীয় আলাদা case বানানো হয়নি ইচ্ছাকৃতভাবে।
+      const wallLineLoadResult = deriveWallLineLoadFromSelfWeight(wallSelfWeightRefs, elements, materials);
+      warnings.push(...wallLineLoadResult.warnings);
+
+      for (const beamCase of selfWeightResult.loadCases) {
+        const extra = wallLineLoadResult.beamExtraIntensityY.get(beamCase.elementId);
+        if (extra !== undefined) {
+          beamCase.intensityY += extra;
+        }
+      }
+      for (const slabCase of areaSelfWeightResult.loadCases) {
+        const extra = wallLineLoadResult.slabExtraIntensity.get(slabCase.elementId);
+        if (extra !== undefined) {
+          slabCase.intensity += extra;
+        }
+      }
 
       // ---- 2. Occupancy Live Load (Slab) ----
       const liveLoadResult = deriveLiveLoadCases(
@@ -306,6 +336,8 @@ export function useAutoLoadSync(projectId: string): AutoLoadSyncStatus {
     projectId,
     elements,
     elementsLoading,
+    wallSelfWeightRefs,
+    wallSelfWeightRefsLoading,
     materialLibrary,
     sectionLibrary,
     libraryLoading,
