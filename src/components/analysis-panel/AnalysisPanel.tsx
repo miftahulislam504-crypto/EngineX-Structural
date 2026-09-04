@@ -145,7 +145,7 @@ export function AnalysisPanel({ projectId }: AnalysisPanelProps) {
   const [nonlinearResult, setNonlinearResult] = useState<ParsedNonlinearStaticResult | null>(null);
   const [pushoverResult, setPushoverResult] = useState<ParsedPushoverResult | null>(null);
 
-  const runnableCheck = checkAnalysisRunnable(elements, loadCases);
+  const runnableCheck = checkAnalysisRunnable(elements, materials, sections, loadCases);
   const hasElements = elements.length > 0;
   const hasBaseLevelElement = elements.some(
     (e) => "startPoint" in e && (e.startPoint.y <= 1e-3 || e.endPoint.y <= 1e-3)

@@ -45,9 +45,23 @@ export interface AnalysisRunnableCheck {
  * সাথে বলে দেওয়া কেন চালানো যাচ্ছে না। এটা backend এর validation
  * প্রতিস্থাপন করে না (backend নিজেও validate করে, defense in depth) —
  * এটা শুধু দ্রুত UX feedback এর জন্য।
+ *
+ * materialId/sectionId library-lookup check (২০২৬-০৯ যোগ) — এর আগে এই
+ * mismatch client-side এ ধরা পড়ত না, সরাসরি backend পর্যন্ত গিয়ে
+ * অস্বচ্ছ "মডেল পার্স করতে ব্যর্থ: elementId='...' খুঁজে পাওয়া যায়নি
+ * — library তে অনুপস্থিত" 422 error হিসেবে ফেরত আসত (elementId, label
+ * না, তাই ইউজারের পক্ষে কোন element সেটা বোঝা কঠিন ছিল)। এই ধরনের
+ * orphaned reference ঘটে যখন কোনো element এর materialId/sectionId এমন
+ * একটা library entry কে point করে যেটা পরে মুছে ফেলা হয়েছে (বা import
+ * pipeline এ ভুল id বসেছে) — element নিজে ঠিক আছে, কিন্তু তার
+ * material/section link stale। এখন label সহ প্রতিটা এমন element ধরে
+ * একসাথে রিপোর্ট করা হয় (প্রথমটায় থেমে না গিয়ে) যাতে ইউজার একবারেই
+ * সব ঠিক করতে পারে।
  */
 export function checkAnalysisRunnable(
   elements: StructuralElement[],
+  materials: StructuralMaterial[],
+  sections: StructuralSection[],
   loadCases: LoadCase[]
 ): AnalysisRunnableCheck {
   const lineElements = elements.filter((e) => LINE_ELEMENT_CATEGORIES.has(e.category));
@@ -56,6 +70,33 @@ export function checkAnalysisRunnable(
     return {
       canRun: false,
       reason: "কোনো Beam/Column/Brace/Pile নেই — Analysis চালানোর জন্য অন্তত একটা লাগবে।",
+    };
+  }
+
+  const materialIds = new Set(materials.map((m) => m.materialId));
+  const sectionIds = new Set(sections.map((s) => s.sectionId));
+
+  const missingMaterialElements = elements.filter((e) => !materialIds.has(e.materialId));
+  const missingSectionElements = lineElements.filter(
+    (e) => "sectionId" in e && !sectionIds.has(e.sectionId)
+  );
+
+  if (missingMaterialElements.length > 0 || missingSectionElements.length > 0) {
+    const parts: string[] = [];
+    if (missingMaterialElements.length > 0) {
+      const labels = missingMaterialElements.map((e) => e.label).join(", ");
+      parts.push(`Material লিংক নষ্ট: ${labels}`);
+    }
+    if (missingSectionElements.length > 0) {
+      const labels = missingSectionElements.map((e) => e.label).join(", ");
+      parts.push(`Section লিংক নষ্ট: ${labels}`);
+    }
+    return {
+      canRun: false,
+      reason:
+        `${parts.join(" | ")} — এই element গুলোর material/section, ` +
+        `library তে আর নেই (হয়তো পরে মুছে ফেলা হয়েছে)। প্রতিটা element খুলে ` +
+        `material/section নতুন করে select করে save করুন।`,
     };
   }
 
