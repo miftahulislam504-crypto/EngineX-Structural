@@ -7,7 +7,7 @@ import { useLoadStore } from "@/lib/loads/useLoadStore";
 import { runValidation } from "@/lib/validation/runValidation";
 import type { ValidationCategory, ValidationIssue, ValidationSeverity } from "@/lib/validation/types";
 
-const CATEGORY_LABELS: Record<ValidationCategory, string> = {
+const CATEGORY_LABELS: Record < ValidationCategory, string > = {
   connectivity: "Connectivity",
   duplicate: "Duplicates",
   geometry: "Geometry",
@@ -41,22 +41,23 @@ export function ValidationPanel() {
   const sections = useLibraryStore((s) => s.sectionLibrary.sections);
   const loadCases = useLoadStore((s) => s.loadCases);
   const patterns = useLoadStore((s) => s.patternLibrary.patterns);
-
+  
   const [hasRun, setHasRun] = useState(false);
-  const [activeSeverityFilter, setActiveSeverityFilter] = useState<ValidationSeverity | "all">("all");
-
+  const [activeSeverityFilter, setActiveSeverityFilter] = useState < ValidationSeverity | "all" > ("all");
+  
   const report = useMemo(
     () => runValidation({ elements, materials, sections, loadCases, patterns }),
     [elements, materials, sections, loadCases, patterns]
   );
-
+  
   const filteredIssues =
-    activeSeverityFilter === "all"
-      ? report.issues
-      : report.issues.filter((i) => i.severity === activeSeverityFilter);
-
+    activeSeverityFilter === "all" ?
+    report.issues :
+    report.issues.filter((i) => i.severity === activeSeverityFilter);
+  
   const groupedByCategory = useMemo(() => {
-    const groups = new Map<ValidationCategory, ValidationIssue[]>();
+    const groups = new Map < ValidationCategory,
+      ValidationIssue[] > ();
     for (const issue of filteredIssues) {
       const list = groups.get(issue.category) ?? [];
       list.push(issue);
@@ -64,7 +65,7 @@ export function ValidationPanel() {
     }
     return groups;
   }, [filteredIssues]);
-
+  
   return (
     <div className="space-y-4">
       <div>
@@ -106,17 +107,17 @@ export function ValidationPanel() {
   );
 }
 
-function HealthScoreCard({ report }: { report: ReturnType<typeof runValidation> }) {
+function HealthScoreCard({ report }: { report: ReturnType < typeof runValidation > }) {
   const scoreColor =
-    report.healthScore >= 85
-      ? "text-status-activeText"
-      : report.healthScore >= 60
-        ? "text-status-holdText"
-        : "text-red-600";
-
+    report.healthScore >= 85 ?
+    "text-status-activeText" :
+    report.healthScore >= 60 ?
+    "text-status-holdText" :
+    "text-red-600";
+  
   const barColor =
     report.healthScore >= 85 ? "bg-status-activeText" : report.healthScore >= 60 ? "bg-status-holdText" : "bg-red-600";
-
+  
   return (
     <div className="rounded-md bg-surface border border-surface-border px-3 py-3">
       <div className="flex items-center justify-between mb-2">
@@ -142,15 +143,15 @@ function SeverityFilterBar({
 }: {
   active: ValidationSeverity | "all";
   onChange: (s: ValidationSeverity | "all") => void;
-  report: ReturnType<typeof runValidation>;
+  report: ReturnType < typeof runValidation > ;
 }) {
-  const options: { key: ValidationSeverity | "all"; label: string; count: number }[] = [
+  const options: { key: ValidationSeverity | "all";label: string;count: number } [] = [
     { key: "all", label: "All", count: report.issues.length },
     { key: "error", label: "Errors", count: report.errorCount },
     { key: "warning", label: "Warnings", count: report.warningCount },
     { key: "info", label: "Info", count: report.infoCount },
   ];
-
+  
   return (
     <div className="flex gap-1.5">
       {options.map((opt) => (
@@ -171,11 +172,11 @@ function SeverityFilterBar({
   );
 }
 
-function CategoryGroup({ category, issues }: { category: ValidationCategory; issues: ValidationIssue[] }) {
+function CategoryGroup({ category, issues }: { category: ValidationCategory;issues: ValidationIssue[] }) {
   const sorted = [...issues].sort(
     (a, b) => SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity)
   );
-
+  
   return (
     <div className="rounded-md bg-surface border border-surface-border px-3 py-2.5 space-y-1.5">
       <p className="text-xs text-text-muted font-medium">{CATEGORY_LABELS[category]}</p>
@@ -186,18 +187,60 @@ function CategoryGroup({ category, issues }: { category: ValidationCategory; iss
   );
 }
 
+/**
+ * বাগফিক্স (Miftahul, ২০২৬-০৯-০৫ — "structural এ label শো হয়, কিন্তু
+ * draw তে raw ID লাগবে"): buildDisplayLabel() (hub-geometry-parser.ts)
+ * এর ফলে issue.message এখন human-readable label দেখায় ("column
+ * "C3 (Level 2)""), কিন্তু raw elementId (Draw-এর Firestore doc ID,
+ * যেটা Draw-এর dashboard/tools/find-element টুলে লাগে) message
+ * স্ট্রিং-এ আর নেই — ValidationIssue.elementIds এ ঠিকই আছে, কিন্তু
+ * আগে কোথাও render হতো না, তাই ইঞ্জিনিয়ারের কাছে সম্পূর্ণ invisible
+ * ছিল। এই বাটন সেই gap বন্ধ করে: elementIds[0] থাকলে (multi-element
+ * issue এ প্রথমটাই যথেষ্ট — এখন পর্যন্ত সব single-element issue),
+ * ক্লিক করলে raw ID ক্লিপবোর্ডে কপি হয়ে যায়, যা সরাসরি Draw-এর
+ * find-element টুলে পেস্ট করা যাবে। elementIds না থাকলে (যেমন
+ * support:no-base-level এর মতো model-wide issue) বাটন দেখানো হয় না।
+ */
 function IssueRow({ issue }: { issue: ValidationIssue }) {
   const style =
-    issue.severity === "error"
-      ? "text-red-600"
-      : issue.severity === "warning"
-        ? "text-status-holdText"
-        : "text-text-secondary";
+    issue.severity === "error" ?
+    "text-red-600" :
+    issue.severity === "warning" ?
+    "text-status-holdText" :
+    "text-text-secondary";
   const icon = issue.severity === "error" ? "✗" : issue.severity === "warning" ? "⚠" : "ℹ";
-
+  
+  const [copied, setCopied] = useState(false);
+  const rawId = issue.elementIds?.[0];
+  
+  async function copyId() {
+    if (!rawId) return;
+    try {
+      await navigator.clipboard.writeText(rawId);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // clipboard API ব্লকড/অনুপলব্ধ হতে পারে (কিছু in-app webview এ) —
+      // silently ignore, ইঞ্জিনিয়ার তখনও ID সিলেক্ট-কপি ম্যানুয়ালি করতে
+      // পারবেন যদি raw ID টেক্সট হিসেবে অন্য কোথাও দেখানো থাকে।
+    }
+  }
+  
   return (
-    <p className={`text-xs ${style} leading-relaxed`}>
-      {icon} {issue.message}
-    </p>
+    <div className="flex items-start justify-between gap-2">
+      <p className={`text-xs ${style} leading-relaxed`}>
+        {icon} {issue.message}
+      </p>
+      {rawId && (
+        <button
+          type="button"
+          onClick={copyId}
+          title={rawId}
+          className="shrink-0 text-[10px] text-text-muted hover:text-text-secondary border border-surface-border rounded px-1.5 py-0.5 whitespace-nowrap"
+        >
+          {copied ? "Copied ✓" : "Copy ID"}
+        </button>
+      )}
+    </div>
   );
 }
