@@ -221,6 +221,80 @@ export function toPoint3D(p: DrawPoint2D, elevationM: number): Point3D {
   return { x: p.x, y: elevationM, z: p.y };
 }
 
+// ─── Human-readable display label ───────────────────────────────────────
+
+/**
+ * বাগফিক্স (Miftahul, ২০২৬-০৯-০৫ — "elementsID দেখে কোন element এ সমস্যা
+ * বোঝা কঠিন"): আগে প্রতিটা mapXxx() label: ref.id বসাতো — অর্থাৎ
+ * Draw-এর Firestore document ID (যেমন "SawKUhYFxDT0LgC7zPLK") সরাসরি
+ * label হিসেবে ব্যবহার হতো, যেটা BuildingElementRef.id-এর সাথে identical
+ * (contract.types.ts দেখুন — BuildingElementRef-এ id ছাড়া কোনো name/mark/
+ * tag field-ই নেই, Draw সেটা এখনো পাঠায় না)। ফলে Model Checker/Import
+ * Review-এর প্রতিটা issue message ও প্রতিটা ImportItemRow-এ ইঞ্জিনিয়ার
+ * শুধু একটা অর্থহীন random string দেখতেন — কোন কলাম/বিম/স্ল্যাব, কোন
+ * তলায়, সেটা বোঝার কোনো উপায় ছিল না ("এভাবে elementsID দেখে কোন কলাম
+ * বা ফুটিং বা বিম বা স্লাব এ সমস্যা তা বুঝা কঠিন")।
+ *
+ * এখন label category + story name + সেই category-র মধ্যে সেই story-তে
+ * ক্রমিক সংখ্যা দিয়ে বানানো হয় — যেমন "Column C3 (Level 2)",
+ * "Beam B12 (Ground Floor)", "Slab S2 (Level 1)"। elementId অপরিবর্তিত
+ * (ref.id-ই থাকে, re-import overwrite safety-র জন্য — উপরের ফাইল হেডার
+ * কমেন্ট দেখুন), শুধু ইঞ্জিনিয়ার-facing label বদলেছে। CATEGORY_TAGS এখানেই
+ * local রাখা হলো (ArchitecturalImportPanel.tsx-এর CATEGORY_LABELS আলাদা,
+ * ওটা full category name group heading-এর জন্য — এই ট্যাগ প্রতিটা item-এর
+ * নিজস্ব সংক্ষিপ্ত mark)।
+ *
+ * ইউনিকনেস: একই (category, storyId) জোড়ায় ক্রমিক সংখ্যা counter দিয়ে
+ * নিশ্চিত করা হয় (নিচের LabelCounter দেখুন) — একই তলায় দুইটা Column কখনো
+ * একই label পাবে না, ঠিক যেমন বাস্তবে ইঞ্জিনিয়াররা C1, C2, C3... ক্রমে
+ * ট্যাগ করেন। এটা Draw-এর নিজস্ব মার্ক না (Draw এখনো মার্ক পাঠায় না),
+ * তাই স্থায়ী engineering tag হিসেবে ধরা ঠিক না — শুধু import review/Model
+ * Checker-এ কোন element সেটা দ্রুত identify করার সহায়ক লেবেল, permanent
+ * numbering scheme হিসেবে নির্ভর করা উচিত না (re-import এ ref.id একই
+ * থাকলেও element-এর ক্রম বদলালে/নতুন element যোগ হলে এই সংখ্যা বদলে যেতে
+ * পারে)।
+ */
+const CATEGORY_TAGS: Record<string, string> = {
+  column: "C",
+  beam: "B",
+  "shear-wall": "SW",
+  slab: "S",
+  stair: "ST",
+  "stair-landing": "SL",
+  parapet: "P",
+  footing: "F",
+};
+
+/** category+storyId জোড়া অনুযায়ী পরবর্তী ক্রমিক সংখ্যা দেয় (১ থেকে শুরু)। */
+class LabelCounter {
+  private counts = new Map<string, number>();
+
+  next(category: string, storyId: string | undefined): number {
+    const key = `${category}::${storyId ?? ""}`;
+    const n = (this.counts.get(key) ?? 0) + 1;
+    this.counts.set(key, n);
+    return n;
+  }
+}
+
+/**
+ * levelId → ProjectLevel.name lookup দিয়ে "Column C3 (Level 2)" প্যাটার্নে
+ * label বানায়। level name পাওয়া না গেলে (ProjectLevel.name খালি/missing)
+ * levelId নিজেই fallback হিসেবে বন্ধনীতে বসে, যাতে কোন তলা সেটা অন্তত কিছু
+ * একটা সূত্র থাকে — সম্পূর্ণ বন্ধনী বাদ দেওয়া হয় না।
+ */
+function buildDisplayLabel(
+  category: string,
+  ref: BuildingElementRef,
+  counter: LabelCounter,
+  levelNameById: Map<string, string>,
+): string {
+  const tag = CATEGORY_TAGS[category] ?? category.toUpperCase();
+  const n = counter.next(category, ref.levelId);
+  const levelName = (ref.levelId && levelNameById.get(ref.levelId)) || ref.levelId || "";
+  return levelName ? `${tag}${n} (${levelName})` : `${tag}${n}`;
+}
+
 // ─── Issue tracking (defensive skip + warn, deriveSiteClass-এর একই নীতি) ──
 
 export type ParsedElementIssueSeverity = "skipped" | "review-recommended";
@@ -338,6 +412,8 @@ function mapWall(
   baseElevationM: number,
   issues: ParsedElementIssue[],
   nowIso: string,
+  counter: LabelCounter,
+  levelNameById: Map<string, string>,
 ): ShearWallElement | null {
   const g = ref.geometry as DrawWallGeometry | undefined;
   if (!g || !isDrawPoint2D(g.start) || !isDrawPoint2D(g.end)) {
@@ -368,7 +444,7 @@ function mapWall(
   return {
     elementId: ref.id,
     category: "shear-wall",
-    label: ref.id,
+    label: buildDisplayLabel("shear-wall", ref, counter, levelNameById),
     materialId: UNRESOLVED_MATERIAL_ID,
     storyId: ref.levelId || undefined,
     vertices: [startBase, endBase, endTop, startTop],
@@ -435,6 +511,8 @@ function mapParapet(
   baseElevationM: number,
   issues: ParsedElementIssue[],
   nowIso: string,
+  counter: LabelCounter,
+  levelNameById: Map<string, string>,
 ): ParapetElement | null {
   const g = ref.geometry as DrawParapetGeometry | undefined;
   if (!g || !isDrawPoint2D(g.start) || !isDrawPoint2D(g.end)) {
@@ -469,7 +547,7 @@ function mapParapet(
   return {
     elementId: ref.id,
     category: "parapet",
-    label: ref.id,
+    label: buildDisplayLabel("parapet", ref, counter, levelNameById),
     materialId: UNRESOLVED_MATERIAL_ID,
     storyId: ref.levelId || undefined,
     vertices: [startBase, endBase, endTop, startTop],
@@ -488,7 +566,14 @@ function mapParapet(
  * মডেলে সমর্থিত না, ঠিক যেমন element.ts এর MatFoundationElement-ও
  * একই সরলীকরণ করে)।
  */
-function mapSlab(ref: BuildingElementRef, baseElevationM: number, issues: ParsedElementIssue[], nowIso: string): SlabElement | null {
+function mapSlab(
+  ref: BuildingElementRef,
+  baseElevationM: number,
+  issues: ParsedElementIssue[],
+  nowIso: string,
+  counter: LabelCounter,
+  levelNameById: Map<string, string>,
+): SlabElement | null {
   const g = ref.geometry as DrawSlabGeometry | undefined;
   if (!g || !Array.isArray(g.boundary) || g.boundary.length < 3) {
     warnSkipped(issues, ref, "boundary অনুপস্থিত বা polygon বানাতে ন্যূনতম ৩টা vertex নেই");
@@ -509,7 +594,7 @@ function mapSlab(ref: BuildingElementRef, baseElevationM: number, issues: Parsed
   return {
     elementId: ref.id,
     category: "slab",
-    label: ref.id,
+    label: buildDisplayLabel("slab", ref, counter, levelNameById),
     materialId: UNRESOLVED_MATERIAL_ID,
     storyId: ref.levelId || undefined,
     vertices,
@@ -538,6 +623,8 @@ function mapStairLanding(
   baseElevationM: number,
   issues: ParsedElementIssue[],
   nowIso: string,
+  counter: LabelCounter,
+  levelNameById: Map<string, string>,
 ): LandingElement | null {
   const g = ref.geometry as DrawStairLandingGeometry | undefined;
   if (!g || !Array.isArray(g.boundary) || g.boundary.length < 3) {
@@ -567,7 +654,7 @@ function mapStairLanding(
   return {
     elementId: ref.id,
     category: "stair-landing",
-    label: ref.id,
+    label: buildDisplayLabel("stair-landing", ref, counter, levelNameById),
     materialId: UNRESOLVED_MATERIAL_ID,
     storyId: ref.levelId || undefined,
     vertices,
@@ -620,6 +707,8 @@ function mapStair(
   baseElevationM: number,
   issues: ParsedElementIssue[],
   nowIso: string,
+  counter: LabelCounter,
+  levelNameById: Map<string, string>,
 ): StairElement[] {
   const g = ref.geometry as DrawStairGeometry | undefined;
   if (!g || !isFiniteNumber(g.width) || g.width <= 0) {
@@ -633,10 +722,16 @@ function mapStair(
 
   const result: StairElement[] = [];
   let runningRiseM = 0;
+  // পুরো Stair ref-এর সব flight একই স্টেয়ারের অংশ, তাই ইঞ্জিনিয়ার-facing
+  // ক্রমিক সংখ্যা একবারই (flight loop-এর বাইরে) নেওয়া হয় — নাহলে ৩-flight
+  // এর একটা stair "ST1", "ST2", "ST3" (তিনটা আলাদা stair মনে হবে) হয়ে
+  // যেত, "ST1-F1", "ST1-F2", "ST1-F3" এর বদলে।
+  const displayLabelBase = buildDisplayLabel("stair", ref, counter, levelNameById);
 
   for (let i = 0; i < g.flights.length; i++) {
     const flight = g.flights[i];
     const flightLabel = g.flights.length > 1 ? `${ref.id}-F${i + 1}` : ref.id;
+    const flightDisplayLabel = g.flights.length > 1 ? `${displayLabelBase}-F${i + 1}` : displayLabelBase;
 
     if (!isDrawPoint2D(flight.start) || !isDrawPoint2D(flight.end)) {
       warnSkipped(issues, { ...ref, id: flightLabel }, "flight-এর start/end পয়েন্ট অনুপস্থিত বা ভুল shape");
@@ -685,7 +780,7 @@ function mapStair(
     result.push({
       elementId: flightLabel,
       category: "stair",
-      label: flightLabel,
+      label: flightDisplayLabel,
       materialId: UNRESOLVED_MATERIAL_ID,
       storyId: ref.levelId || undefined,
       // bottom edge (start elevation) থেকে top edge (end elevation) —
@@ -731,7 +826,14 @@ function mapStair(
  * Column/Beam না — তাই এই দুটো ফাংশন বোনাস হিসেবে রাখা হলো, একই
  * defensive নীতিতে, কিন্তু sectionId সবসময় UNRESOLVED_SECTION_ID)।
  */
-function mapColumn(ref: BuildingElementRef, baseElevationM: number, issues: ParsedElementIssue[], nowIso: string): StructuralElement | null {
+function mapColumn(
+  ref: BuildingElementRef,
+  baseElevationM: number,
+  issues: ParsedElementIssue[],
+  nowIso: string,
+  counter: LabelCounter,
+  levelNameById: Map<string, string>,
+): StructuralElement | null {
   const g = ref.geometry as DrawColumnGeometry | undefined;
   if (!g || !isDrawPoint2D(g.center)) {
     warnSkipped(issues, ref, "center পয়েন্ট অনুপস্থিত বা ভুল shape");
@@ -745,7 +847,7 @@ function mapColumn(ref: BuildingElementRef, baseElevationM: number, issues: Pars
   return {
     elementId: ref.id,
     category: "column",
-    label: ref.id,
+    label: buildDisplayLabel("column", ref, counter, levelNameById),
     materialId: UNRESOLVED_MATERIAL_ID,
     sectionId: UNRESOLVED_SECTION_ID,
     storyId: ref.levelId || undefined,
@@ -758,7 +860,14 @@ function mapColumn(ref: BuildingElementRef, baseElevationM: number, issues: Pars
 }
 
 /** Beam → BeamElement। Column-এর মতোই defensive নীতি ও সীমাবদ্ধতা (sectionId unresolved)। elevation offset Draw-এর beam.elevation (সোফিট height) সরাসরি ব্যবহার করে। */
-function mapBeam(ref: BuildingElementRef, baseElevationM: number, issues: ParsedElementIssue[], nowIso: string): StructuralElement | null {
+function mapBeam(
+  ref: BuildingElementRef,
+  baseElevationM: number,
+  issues: ParsedElementIssue[],
+  nowIso: string,
+  counter: LabelCounter,
+  levelNameById: Map<string, string>,
+): StructuralElement | null {
   const g = ref.geometry as DrawBeamGeometry | undefined;
   if (!g || !isDrawPoint2D(g.start) || !isDrawPoint2D(g.end)) {
     warnSkipped(issues, ref, "start/end পয়েন্ট অনুপস্থিত বা ভুল shape");
@@ -770,7 +879,7 @@ function mapBeam(ref: BuildingElementRef, baseElevationM: number, issues: Parsed
   return {
     elementId: ref.id,
     category: "beam",
-    label: ref.id,
+    label: buildDisplayLabel("beam", ref, counter, levelNameById),
     materialId: UNRESOLVED_MATERIAL_ID,
     sectionId: UNRESOLVED_SECTION_ID,
     storyId: ref.levelId || undefined,
@@ -798,7 +907,14 @@ function mapBeam(ref: BuildingElementRef, baseElevationM: number, issues: Parsed
  * করা উচিত না। elevation বাদবাকি sub-grade element (Foundation) এর
  * মতোই baseElevationM এর সাপেক্ষে অফসেট (সাধারণত ঋণাত্মক)।
  */
-function mapFooting(ref: BuildingElementRef, baseElevationM: number, issues: ParsedElementIssue[], nowIso: string): FootingElement | null {
+function mapFooting(
+  ref: BuildingElementRef,
+  baseElevationM: number,
+  issues: ParsedElementIssue[],
+  nowIso: string,
+  counter: LabelCounter,
+  levelNameById: Map<string, string>,
+): FootingElement | null {
   const g = ref.geometry as DrawFootingGeometry | undefined;
   if (!g || !isDrawPoint2D(g.center)) {
     warnSkipped(issues, ref, "center পয়েন্ট অনুপস্থিত বা ভুল shape");
@@ -820,7 +936,7 @@ function mapFooting(ref: BuildingElementRef, baseElevationM: number, issues: Par
   return {
     elementId: ref.id,
     category: "footing",
-    label: ref.id,
+    label: buildDisplayLabel("footing", ref, counter, levelNameById),
     materialId: UNRESOLVED_MATERIAL_ID,
     storyId: ref.levelId || undefined,
     location: toPoint3D(g.center, elevationM),
@@ -1073,6 +1189,14 @@ export function parseArchitecturalExport(data: DrawArchitecturalExport): ParseGe
   const elements = data.elements ?? [];
 
   const elevationByLevelId = new Map<string, number>(levels.map((lvl) => [lvl.id, lvl.elevation]));
+  // levelId → ProjectLevel.name — buildDisplayLabel() এই দিয়ে label-এ
+  // "(Level 2)"/"(Ground Floor)" ইত্যাদি বন্ধনী অংশ বসায় (উপরের
+  // buildDisplayLabel() কমেন্ট দেখুন)।
+  const levelNameById = new Map<string, string>(levels.map((lvl) => [lvl.id, lvl.name]));
+  // প্রতিটা (category, storyId) জোড়ার জন্য ক্রমিক সংখ্যা — পুরো এই একটা
+  // parse call জুড়ে shared, যাতে একই তলায় একই category-র দুইটা element
+  // কখনো একই সংখ্যা না পায়।
+  const labelCounter = new LabelCounter();
 
   const mappedElements: StructuralElement[] = [];
   const wallSelfWeightRefs: WallSelfWeightRef[] = [];
@@ -1088,7 +1212,7 @@ export function parseArchitecturalExport(data: DrawArchitecturalExport): ParseGe
     // আসতে পারে (multi-flight), তাই এখানেই সরাসরি push করে পরের ref-এ
     // যাওয়া হয়, নিচের single-mapped flow-এ ঢোকানো হয় না।
     if (ref.type === "stair") {
-      const stairElements = mapStair(ref, baseElevationM, issues, nowIso);
+      const stairElements = mapStair(ref, baseElevationM, issues, nowIso, labelCounter, levelNameById);
       mappedElements.push(...stairElements);
       continue;
     }
@@ -1097,6 +1221,8 @@ export function parseArchitecturalExport(data: DrawArchitecturalExport): ParseGe
     // mapWallSelfWeightRef() এর ফাইল-হেডার কমেন্ট দেখুন)। এটা আর
     // StructuralElement হয় না, তাই mappedElements এ না গিয়ে আলাদা
     // wallSelfWeightRefs[] এ যায় — নিচের switch-এ "wall" case নেই।
+    // (ordinary wall-এর কখনো UI-facing label লাগে না, তাই এখানে
+    // LabelCounter ছোঁয়া হয় না।)
     if (ref.type === "wall") {
       const wallRef = mapWallSelfWeightRef(ref, baseElevationM, issues);
       if (wallRef) wallSelfWeightRefs.push(wallRef);
@@ -1106,25 +1232,25 @@ export function parseArchitecturalExport(data: DrawArchitecturalExport): ParseGe
     let mapped: StructuralElement | null;
     switch (ref.type) {
       case "shear-wall":
-        mapped = mapWall(ref, baseElevationM, issues, nowIso);
+        mapped = mapWall(ref, baseElevationM, issues, nowIso, labelCounter, levelNameById);
         break;
       case "slab":
-        mapped = mapSlab(ref, baseElevationM, issues, nowIso);
+        mapped = mapSlab(ref, baseElevationM, issues, nowIso, labelCounter, levelNameById);
         break;
       case "column":
-        mapped = mapColumn(ref, baseElevationM, issues, nowIso);
+        mapped = mapColumn(ref, baseElevationM, issues, nowIso, labelCounter, levelNameById);
         break;
       case "beam":
-        mapped = mapBeam(ref, baseElevationM, issues, nowIso);
+        mapped = mapBeam(ref, baseElevationM, issues, nowIso, labelCounter, levelNameById);
         break;
       case "parapet":
-        mapped = mapParapet(ref, baseElevationM, issues, nowIso);
+        mapped = mapParapet(ref, baseElevationM, issues, nowIso, labelCounter, levelNameById);
         break;
       case "stair-landing":
-        mapped = mapStairLanding(ref, baseElevationM, issues, nowIso);
+        mapped = mapStairLanding(ref, baseElevationM, issues, nowIso, labelCounter, levelNameById);
         break;
       case "footing":
-        mapped = mapFooting(ref, baseElevationM, issues, nowIso);
+        mapped = mapFooting(ref, baseElevationM, issues, nowIso, labelCounter, levelNameById);
         break;
       default:
         // door/window/room/roof/ceiling/foundation/ইত্যাদি —
